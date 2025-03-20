@@ -6,7 +6,7 @@ export default function Index() {
 
   // If user is authenticated, redirect to home
   if (isAuthenticated) {
-    return <Redirect href="/(app)/home" />;
+    return <Redirect href="/(tabs)/home" />;
   }
 
   return <Redirect href="/(auth)/login" />;
