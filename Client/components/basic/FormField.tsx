@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -12,6 +12,9 @@ interface FormFieldProps {
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   icon?: keyof typeof MaterialIcons.glyphMap;
+  actionIcon?: keyof typeof MaterialIcons.glyphMap;
+  onActionPress?: () => void;
+  editable?: boolean;
 }
 
 export const FormField: React.FC<FormFieldProps> = ({
@@ -23,6 +26,9 @@ export const FormField: React.FC<FormFieldProps> = ({
   keyboardType = 'default',
   autoCapitalize = 'none',
   icon,
+  actionIcon,
+  onActionPress,
+  editable = true,
 }) => {
   const { theme } = useTheme();
 
@@ -44,6 +50,7 @@ export const FormField: React.FC<FormFieldProps> = ({
               color: 'rgba(0, 0, 0, 0.87)',
             },
             icon ? styles.inputWithIcon : null,
+            actionIcon ? styles.inputWithAction : null,
           ]}
           value={value}
           onChangeText={onChangeText}
@@ -52,7 +59,16 @@ export const FormField: React.FC<FormFieldProps> = ({
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          editable={editable}
         />
+        {actionIcon && onActionPress && (
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.color.lightPrimary }]}
+            onPress={onActionPress}
+          >
+            <MaterialIcons name={actionIcon} size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -72,6 +88,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   input: {
     flex: 1,
@@ -84,11 +101,21 @@ const styles = StyleSheet.create({
   inputWithIcon: {
     paddingLeft: 44, // Make space for the icon
   },
+  inputWithAction: {
+    paddingRight: 8, // Less padding when there's an action button
+  },
   iconContainer: {
     position: 'absolute',
     left: 12,
     height: '100%',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  actionButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

@@ -53,6 +53,13 @@ function RootLayoutNav() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen 
+              name="addPackage" 
+              options={{
+                headerShown: true,
+                title: "Add Package",
+              }}
+            />
           </>
         )}
       </Stack>

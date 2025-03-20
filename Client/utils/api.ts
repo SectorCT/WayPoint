@@ -60,4 +60,3 @@ export const makeAuthenticatedRequest = async (
     throw error;
   }
 };
-
