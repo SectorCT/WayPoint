@@ -20,7 +20,8 @@ def register(request):
             "user": user_data
         }, status=status.HTTP_200_OK)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
+    return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(views.APIView):
     permission_classes = []
@@ -36,7 +37,8 @@ class LoginView(views.APIView):
                 'refresh': str(refresh),
                 "user": user_data
             }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+        error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
+        return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
     
 
 class LogoutView(APIView):
