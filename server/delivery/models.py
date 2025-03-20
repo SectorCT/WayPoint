@@ -6,7 +6,6 @@ User = get_user_model()
 
 
 class PackageManager(models.Manager):
-    
     def pending_packages(self):
         return self.filter(status='pending')
 
@@ -20,17 +19,7 @@ class PackageManager(models.Manager):
         from django.utils.timezone import now
         return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
     
-    def create_package(
-        self,
-        address,
-        latitude,
-        recipient,
-        recipientPhoneNumber,
-        deliveryDate,
-        longitude,
-        weight,
-        status='pending'
-    ):
+    def create_package(self,address,latitude,recipient,recipientPhoneNumber,deliveryDate,longitude,weight,status='pending'):
         package = self.model(
             address=address,
             latitude=latitude,
@@ -50,6 +39,7 @@ class Package(models.Model):
         max_digits=9, decimal_places=6, null=True, blank=True,
         help_text="Latitude coordinate for geolocation"
     )
+    objects = PackageManager()
 
     recipient = models.CharField(max_length = 50)
 
