@@ -49,7 +49,8 @@ class RegisterSerializer(serializers.ModelSerializer):
                 email=validated_data['email'],
                 username=validated_data['username'],
                 phoneNumber=validated_data.get('phoneNumber'),
-                password=validated_data['password']
+                password=validated_data['password'],
+                isManager = validated_data['isManager']
             )
         except Exception as e:
             raise serializers.ValidationError(f"Error creating user: {str(e)}")

@@ -5,3 +5,4 @@ djangorestframework
 djangorestframework-simplejwt
 numpy
 scikit-learn
+requests
