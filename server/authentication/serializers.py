@@ -6,14 +6,14 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'username', 'phoneNumber')
+        fields = ('email', 'username', 'phoneNumber', 'isManager')
 
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, label="Confirm Password")
     
     class Meta:
         model = User
-        fields = ('email', 'username', 'phoneNumber', 'password', 'password2')
+        fields = ('email', 'username', 'phoneNumber', 'password', 'password2', 'isManager')
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -22,12 +22,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Check that the two passwords match.
         if data.get('password') != data.get('password2'):
             raise serializers.ValidationError("Passwords do not match.")
-        if not(data.get('email').exists) or not(data.get('password').exists) or not(data.get('phoneNumber').exists) or not(data.get('email').exists) or not(data.get('username').exists):
-            raise serializers.ValidationError("Missing fields.")
+        # if not(data.get('email').exists) or not(data.get('password').exists) or not(data.get('phoneNumber').exists) or not(data.get('email').exists) or not(data.get('username').exists):
+        #     raise serializers.ValidationError("Missing fields.")
         # Check if the email is already in use.
         if User.objects.filter(email=data.get('email')).exists():
             raise serializers.ValidationError("A user with this email already exists.")
-        
         # Check if the username is already in use.
         if User.objects.filter(username=data.get('username')).exists():
             raise serializers.ValidationError("A user with this username already exists.")

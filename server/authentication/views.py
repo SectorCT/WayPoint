@@ -7,21 +7,21 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-@api_view(['POST'])
-def register(request):
-    serializer = RegisterSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-        user_data = UserSerializer(user).data
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            "user": user_data
-        }, status=status.HTTP_200_OK)
-
-    error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
-    return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            user_data = UserSerializer(user).data
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': user_data
+            }, status=status.HTTP_200_OK)
+        
+        error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
+        return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(views.APIView):
     permission_classes = []
