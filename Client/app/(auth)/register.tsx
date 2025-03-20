@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
+import { GradientButton } from '../../components/GradientButton';
+import { COLORS } from '../../config/constants';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -50,11 +52,11 @@ export default function RegisterScreen() {
         onChangeText={setPhoneNumber}
         keyboardType="phone-pad"
       />
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
-      </TouchableOpacity>
+      <GradientButton title="Register" onPress={handleRegister} />
       <TouchableOpacity onPress={() => router.push('/login')}>
-        <Text style={styles.link}>Already have an account? Login</Text>
+        <Text style={styles.linkText}>
+          Already have an account? <Text style={styles.linkAction}>Login</Text>
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -65,35 +67,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: COLORS.BLACK,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.LIGHT,
     padding: 10,
     borderRadius: 5,
     marginBottom: 15,
+    backgroundColor: COLORS.WHITE,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  link: {
-    color: '#007AFF',
+  linkText: {
+    color: COLORS.BLACK,
     textAlign: 'center',
+    marginTop: 15,
+  },
+  linkAction: {
+    color: COLORS.MAIN,
+    fontWeight: '600',
   },
 }); 

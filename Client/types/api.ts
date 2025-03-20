@@ -19,5 +19,6 @@ export interface RegisterRequest {
     email: string;
     username: string;
     password: string;
+    password2: string;
     phoneNumber: string;
 } 
