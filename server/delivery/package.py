@@ -1,11 +1,16 @@
-from rest_framework.views import APIView   
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializer import PackageSerializer
+from .serializers import PackageSerializer
+from rest_framework.views import APIView   
+from django.http import JsonResponse
+from .permissions import IsManager
 from rest_framework import status
 from .models import Package
-from django.http import JsonResponse
 
 class createPackage(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     def post(self, request):
         serializer = PackageSerializer(data=request.data)
         if serializer.is_valid():
@@ -16,6 +21,8 @@ class createPackage(APIView):
         return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
 class bulkCreatePackages(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     def post(self, request):
         packages_data = request.data.get('packages', [])
         if not isinstance(packages_data, list):
@@ -42,12 +49,16 @@ class bulkCreatePackages(APIView):
         return Response(response, status=status_code)
     
 class getAllPackages(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     def get(self, request):
         packages = Package.objects.all()
         serializer = PackageSerializer(packages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class deletePackage(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     def delete(self, request, id):
         try:
             package = Package.objects.get(id=id)
