@@ -3,6 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
 import Cubes from "@assets/icons/cubes.svg";
 import House from "@assets/icons/house.svg";
+import Truck from "@assets/icons/truck.svg";
 import { View } from "react-native";
 
 export default function TabLayout() {
@@ -47,13 +48,14 @@ export default function TabLayout() {
         options={{
           title: "Trucks",
           tabBarIcon: ({ color }) => (
-            <Cubes height={ICON_SIZE} width={ICON_SIZE} fill={color} />
+            <Truck height={ICON_SIZE} width={ICON_SIZE} fill={color} />
           ),
         }}
       />
 
       <Tabs.Screen name="styles/homeStyles" options={{ href: null }} />
       <Tabs.Screen name="styles/packageStyles" options={{ href: null }} />
+      <Tabs.Screen name="styles/trucksStyles" options={{ href: null }} />
     </Tabs>
   );
 }
