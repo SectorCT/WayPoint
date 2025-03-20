@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { router } from "expo-router";
-import { GradientButton } from "../../components/basic/gradientButton";
+import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { FormField } from "../../components/basic/FormField";
 import useStyles from "./styles/loginStyles";
 

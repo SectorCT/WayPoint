@@ -14,7 +14,10 @@
       ],
       "@context/*": [
         "./context/*"
-      ]
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
     },
     "typeRoots": ["types"]
   },
