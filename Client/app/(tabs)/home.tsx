@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { router, Tabs } from "expo-router";
+import { router } from "expo-router";
 import { GradientButton } from "../../components/basic/gradientButton";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -20,7 +20,12 @@ export default function HomeScreen() {
       <View style={styles.actionContainer}>
         <GradientButton 
           title="Add New Package" 
-          onPress={() => router.navigate("/(tabs)/packages")}
+          onPress={() => router.push("/addPackage")}
+        />
+        <View style={styles.buttonSpacing} />
+        <GradientButton 
+          title="Add New Truck" 
+          onPress={() => router.push("/addTruck")}
         />
       </View>
     </View>
@@ -48,6 +53,9 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     marginTop: 16,
+  },
+  buttonSpacing: {
+    height: 16,
   },
 });
 
