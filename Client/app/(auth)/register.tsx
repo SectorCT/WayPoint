@@ -31,7 +31,10 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Create an Account</Text>
+        <Text style={styles.headerSubtitle}>Transform Your Fleet, Transform Your Business!</Text>
+      </View>
       <FormField
         label="Email"
         value={email}
