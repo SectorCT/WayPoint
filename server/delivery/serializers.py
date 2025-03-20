@@ -51,7 +51,7 @@ class PackageSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         try:
-            package = Package.objects.create(
+            package = Package.objects.create_package(
                 address=validated_data['address'],
                 latitude=validated_data.get('latitude'),
                 longitude=validated_data.get('longitude'),
@@ -75,7 +75,7 @@ class TruckSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         try:
-            truck = Truck.objects.create(
+            truck = Truck.objects.create_truck(
                 licensePlate=validated_data['licensePlate'],
                 kilogramCapacity=validated_data['kilogramCapacity']
             )

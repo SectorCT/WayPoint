@@ -13,5 +13,5 @@ urlpatterns = [
     path('trucks/create/', createTruck.as_view(), name='create-truck'),
     path('trucks/<int:id>/', deleteTruck.as_view(), name='delete-truck'),
 
-    path('route/partition', ClusterLocations.as_view(), name='cluster')
+    path('route/partition/', ClusterLocations.as_view(), name='cluster')
 ]
