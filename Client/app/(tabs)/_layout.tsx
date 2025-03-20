@@ -1,16 +1,27 @@
 import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
+import Cubes from "@assets/icons/cubes.svg";
+import House from "@assets/icons/house.svg";
+import { View } from "react-native";
 
 export default function TabLayout() {
   const { theme } = useTheme();
+  const ICON_SIZE = 25;
+
+  const backgroundColor = "#f2f3f5";
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: theme.color.darkPrimary,
-        tabBarInactiveTintColor: "rgba(0, 0, 0, 0.6)",
+        tabBarInactiveTintColor: "#8b8c90",
+        tabBarActiveBackgroundColor: "#f2f3f5",
+        tabBarInactiveBackgroundColor: "#f2f3f5",
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: backgroundColor,
+        },
       }}
     >
       <Tabs.Screen
@@ -18,7 +29,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="home" size={24} color={color} />
+            <House height={ICON_SIZE} width={ICON_SIZE} fill={color} />
           ),
         }}
       />
@@ -27,7 +38,7 @@ export default function TabLayout() {
         options={{
           title: "Packages",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="add-box" size={24} color={color} />
+            <Cubes height={ICON_SIZE} width={ICON_SIZE} fill={color} />
           ),
         }}
       />
@@ -36,4 +47,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
