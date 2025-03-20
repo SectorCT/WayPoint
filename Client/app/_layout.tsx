@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Stack } from "expo-router";
 import { AuthProvider } from "../context/AuthContext";
+import { PositionProvider } from "../context/PositionContext";
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Redirect } from "expo-router";
@@ -46,7 +47,8 @@ function RootLayoutNav() {
             <Stack.Screen name="(auth)/register" />
           </>
         ) : (
-          <>
+          
+            <>
             <Stack.Screen
               name="(tabs)"
               options={{
@@ -77,7 +79,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <PositionProvider>
+        <RootLayoutNav />
+      </PositionProvider>
     </AuthProvider>
   );
 }
