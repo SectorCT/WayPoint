@@ -19,12 +19,16 @@ export default function PackageModule({
     <View style={styles.container}>
       <View style={styles.firstRow}>
         <Text style={styles.title}>{id}</Text>
-        <Text style={styles.phoneNumber}>{phoneNumber}</Text>
+        <View style={styles.phoneNumberOuter}>
+          <Text style={styles.phoneNumber}>{phoneNumber}</Text>
+        </View>
       </View>
       <View style={styles.secondRow}>
-        <Text>{location}</Text>
-        <View style={styles.trashIcon}>
-          <Trash height={15} width={15} fill={theme.color.lightGrey} />
+        <Text style={styles.location}>{location}</Text>
+        <View style={styles.trashOuter}>
+          <View style={styles.trashIcon}>
+            <Trash height={15} width={15} fill={theme.color.lightGrey} />
+          </View>
         </View>
       </View>
     </View>
