@@ -23,6 +23,7 @@ interface Package {
   deliveryDate: string;
   weight: number;
   status: "pending" | "in_transit" | "delivered";
+  id?: string;
 }
 
 const exampleData: Package[] = [
@@ -35,6 +36,7 @@ const exampleData: Package[] = [
     deliveryDate: "2025-04-01",
     weight: 2.5,
     status: "pending",
+    id: "BHASH12111U",
   },
   {
     address: "1600 Pennsylvania Avenue NW, Washington, DC",
@@ -45,6 +47,7 @@ const exampleData: Package[] = [
     deliveryDate: "2025-04-02",
     weight: 3.2,
     status: "in_transit",
+    id: "BHASH12111U",
   },
   {
     address: "1 Infinite Loop, Cupertino, CA",
@@ -55,6 +58,7 @@ const exampleData: Package[] = [
     deliveryDate: "2025-04-03",
     weight: 1.8,
     status: "delivered",
+    id: "BHASH12111U",
   },
 ];
 import moment from "moment";
@@ -62,26 +66,26 @@ import moment from "moment";
 export default function PackagesScreen() {
   const { theme } = useTheme();
   const [packages, setPackages] = useState<Package[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const styles = useStyles();
 
-  useEffect(() => {
-    fetchPackages();
-  }, []);
+  // useEffect(() => {
+  //   fetchPackages();
+  // }, []);
 
-  const fetchPackages = async () => {
-    try {
-      const response = await makeAuthenticatedRequest("/delivery/packages/", {
-        method: "GET",
-      });
-      const data = await response.json();
-      setPackages(data.packages); // Accessing "packages" array
-    } catch (error) {
-      console.error("Error fetching packages:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchPackages = async () => {
+  //   try {
+  //     const response = await makeAuthenticatedRequest("/delivery/packages/", {
+  //       method: "GET",
+  //     });
+  //     const data = await response.json();
+  //     setPackages(data.packages); // Accessing "packages" array
+  //   } catch (error) {
+  //     console.error("Error fetching packages:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const groupPackagesByDate = (packages: Package[]) => {
     const today = moment().format("YYYY-MM-DD");
@@ -148,7 +152,7 @@ export default function PackagesScreen() {
                     keyExtractor={(pkg) => pkg.address}
                     renderItem={({ item }) => (
                       <PackageModule
-                        id={item.address}
+                        id={item.id ?? ""}
                         location={item.address}
                         phoneNumber={item.recipientPhoneNumber}
                       />
