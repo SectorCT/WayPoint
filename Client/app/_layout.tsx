@@ -11,9 +11,9 @@ import { ThemeProvider } from "@context/ThemeContext";
 
 const loadFonts = () => {
   return Font.loadAsync({
-    [FONTS.regular]: require("../assets/fonts/Bold.ttf"),
+    [FONTS.regular]: require("../assets/fonts/Regular.ttf"),
     [FONTS.medium]: require("../assets/fonts/Medium.ttf"),
-    [FONTS.semibold]: require("../assets/fonts/Semibold.ttf"),
+    [FONTS.semibold]: require("../assets/fonts/SemiBold.ttf"),
     [FONTS.bold]: require("../assets/fonts/Bold.ttf"),
   });
 };
