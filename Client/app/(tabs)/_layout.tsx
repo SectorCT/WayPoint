@@ -8,13 +8,9 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: theme.color.white,
-          height: 60,
-          borderTopWidth: 1,
-          borderTopColor: theme.color.lightPrimary,
-        },
+        tabBarActiveTintColor: theme.color.darkPrimary,
+        tabBarInactiveTintColor: 'rgba(0, 0, 0, 0.6)',
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -27,9 +23,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="addPackage"
+        name="packages"
         options={{
-          title: "Add Package",
+          title: "Packages",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="add-box" size={24} color={color} />
           ),

@@ -20,7 +20,7 @@ export default function HomeScreen() {
       <View style={styles.actionContainer}>
         <GradientButton 
           title="Add New Package" 
-          onPress={() => router.navigate("/(tabs)/addPackage")}
+          onPress={() => router.navigate("/(tabs)/packages")}
         />
       </View>
     </View>
