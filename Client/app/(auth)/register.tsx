@@ -1,13 +1,8 @@
 import React, { useState } from "react";
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  Alert,
-} from "react-native";
+import { View, TouchableOpacity, Text, Alert } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { router } from "expo-router";
-import { GradientButton } from "../../components/basic/gradientButton";
+import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { FormField } from "../../components/basic/FormField";
 import { ManagerToggle } from "../../components/basic/ManagerToggle";
 import useStyles from "./styles/registerStyles";
@@ -33,7 +28,9 @@ export default function RegisterScreen() {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Create an Account</Text>
-        <Text style={styles.headerSubtitle}>Transform Your Fleet, Transform Your Business!</Text>
+        <Text style={styles.headerSubtitle}>
+          Transform Your Fleet, Transform Your Business!
+        </Text>
       </View>
       <FormField
         label="Email"
@@ -77,4 +74,3 @@ export default function RegisterScreen() {
     </View>
   );
 }
-

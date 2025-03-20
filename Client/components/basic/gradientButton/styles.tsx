@@ -22,5 +22,6 @@ export default function useStyles() {
       fontSize: 16,
       fontWeight: "600",
     },
+    container: {},
   });
 }

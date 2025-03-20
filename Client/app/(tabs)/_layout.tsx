@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
-import { MaterialIcons } from '@expo/vector-icons';
-import { useTheme } from '@context/ThemeContext';
+import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@context/ThemeContext";
 
 export default function TabLayout() {
   const { theme } = useTheme();
@@ -9,7 +9,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: theme.color.darkPrimary,
-        tabBarInactiveTintColor: 'rgba(0, 0, 0, 0.6)',
+        tabBarInactiveTintColor: "rgba(0, 0, 0, 0.6)",
         headerShown: false,
       }}
     >
@@ -32,6 +32,8 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen name="styles/homeStyles" options={{ href: null }} />
+      <Tabs.Screen name="styles/packageStyles" options={{ href: null }} />
     </Tabs>
   );
-} 
+}
+
