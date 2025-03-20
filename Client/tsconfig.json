@@ -5,6 +5,15 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ],
+      "@constants/*": [
+        "./constants/*"
+      ],
+      "@context/*": [
+        "./context/*"
       ]
     },
     "typeRoots": ["types"]
