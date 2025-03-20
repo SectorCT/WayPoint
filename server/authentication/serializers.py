@@ -19,18 +19,40 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
     
     def validate(self, data):
-        if data['password'] != data['password2']:
+        # Check that the two passwords match.
+        if data.get('password') != data.get('password2'):
             raise serializers.ValidationError("Passwords do not match.")
+        
+        # Check if the email is already in use.
+        if User.objects.filter(email=data.get('email')).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        
+        # Check if the username is already in use.
+        if User.objects.filter(username=data.get('username')).exists():
+            raise serializers.ValidationError("A user with this username already exists.")
+        
+        # Validate phone number format: must contain only digits if provided.
+        phone = data.get('phoneNumber')
+        if phone and not phone.isdigit():
+            raise serializers.ValidationError("Phone number must contain only digits.")
+        
+        # Password complexity validation here.
+        if len(data.get('password')) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        
         return data
     
     def create(self, validated_data):
         validated_data.pop('password2')
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            phoneNumber=validated_data.get('phoneNumber'),
-            password=validated_data['password']
-        )
+        try:
+            user = User.objects.create_user(
+                email=validated_data['email'],
+                username=validated_data['username'],
+                phoneNumber=validated_data.get('phoneNumber'),
+                password=validated_data['password']
+            )
+        except Exception as e:
+            raise serializers.ValidationError(f"Error creating user: {str(e)}")
         return user
     
     def update(self, instance, validated_data):
@@ -39,7 +61,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.username = validated_data.get('username', instance.username)
         instance.phoneNumber = validated_data.get('phoneNumber', instance.phoneNumber)
-        instance.save()
+        try:
+            instance.save()
+        except Exception as e:
+            raise serializers.ValidationError(f"Error updating user: {str(e)}")
         return instance
 
 class LoginSerializer(serializers.Serializer):
