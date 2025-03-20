@@ -49,5 +49,13 @@ export default function useStyles() {
     outer: {
       flex: 1,
     },
+    sectionHeader: {
+      fontSize: theme.fontSize.mediumLarge,
+      fontFamily: theme.font.medium,
+      marginBottom: 7,
+    },
+    overdueHeader: {
+      color: "red", // Red color for overdue packages
+    },
   });
 }
