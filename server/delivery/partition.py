@@ -5,7 +5,6 @@ import numpy as np
 
 class ClusterLocations(APIView):
     def post(self, request, eps_km=1.5):
-        # Expecting the payload to be a list of packages
         packages = request.data  
         
         if not isinstance(packages, list):
@@ -13,7 +12,6 @@ class ClusterLocations(APIView):
 
         processed_locations = []
         for package in packages:
-            # Map package fields to our clustering location structure
             new_loc = {
                 "address": package.get("address", ""),
                 "latitude": package.get("latitude"),
