@@ -27,7 +27,10 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Log in to your account</Text>
+        <Text style={styles.headerSubtitle}>Welcome back! Please enter your details.</Text>
+      </View>
       <FormField
         label="Email"
         value={email}

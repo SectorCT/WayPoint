@@ -11,12 +11,19 @@ export default function useStyles() {
       padding: 20,
       backgroundColor: theme.color.white,
     },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
+    headerContainer: {
       marginBottom: 32,
-      textAlign: 'center',
+    },
+    headerTitle: {
+      fontSize: 32,
+      fontWeight: 'bold',
       color: theme.color.black,
+      marginBottom: 8,
+    },
+    headerSubtitle: {
+      fontSize: 16,
+      color: 'rgba(0, 0, 0, 0.6)',
+      lineHeight: 24,
     },
     input: {
       height: 48,
