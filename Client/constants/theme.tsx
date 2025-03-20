@@ -7,6 +7,7 @@ export const THEME = {
 
     fontSize: {
       medium: 15,
+      mediumLarge: 18,
       large: 20,
       extraExtraLarge: 40,
     },
