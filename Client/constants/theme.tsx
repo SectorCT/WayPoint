@@ -5,7 +5,13 @@ export const THEME = {
   light: {
     font: FONTS,
     fontSize: {},
-    color: {},
+    color: {
+      white: "#FFFFFF",
+      black: "#000000",
+      mediumPrimary: "#F39358",
+      darkPrimary: "#F05033",
+      lightPrimary: "#F8D5B0",
+    },
     shadow: {
       shadowColor: "#000", // Black shadow
       shadowOpacity: 0.1, // 25% opacity

@@ -47,7 +47,12 @@ function RootLayoutNav() {
           </>
         ) : (
           <>
-            <Stack.Screen name="(app)/home" />
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
           </>
         )}
       </Stack>
