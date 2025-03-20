@@ -4,9 +4,16 @@ import { useTheme } from "@context/ThemeContext";
 import { router, Tabs } from "expo-router";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useAuth } from "@context/AuthContext";
 
 export default function HomeScreen() {
   const { theme } = useTheme();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <View style={styles.container}>
@@ -28,6 +35,11 @@ export default function HomeScreen() {
         <GradientButton 
           title="Add New Truck" 
           onPress={() => router.push("/addTruck")}
+        />
+        <View style={styles.buttonSpacing} />
+        <GradientButton 
+          title="Logout" 
+          onPress={handleLogout}
         />
       </View>
     </View>

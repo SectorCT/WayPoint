@@ -36,14 +36,14 @@ export default function AddTruckScreen() {
           },
           body: JSON.stringify({
             licensePlate: formState.licensePlate,
-            maxCapacity: parseFloat(formattedMaxCapacity),
+            kilogramCapacity: parseFloat(formattedMaxCapacity),
           }),
         },
       );
 
       if (response.ok) {
         Alert.alert("Success", "Truck added successfully");
-        router.replace("/(tabs)/trucks");
+        router.replace("/(tabs)/home");
       } else {
         const errorData = await response.json();
         Alert.alert("Error", errorData.detail);

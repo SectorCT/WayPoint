@@ -60,6 +60,13 @@ function RootLayoutNav() {
                 title: "Add Package",
               }}
             />
+            <Stack.Screen 
+              name="addTruck" 
+              options={{
+                headerShown: true,
+                title: "Add Truck",
+              }}
+            />
           </>
         )}
       </Stack>
