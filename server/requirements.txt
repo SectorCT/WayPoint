@@ -3,3 +3,5 @@ psycopg2-binary
 gunicorn
 djangorestframework
 djangorestframework-simplejwt
+sklearn
+numpy
