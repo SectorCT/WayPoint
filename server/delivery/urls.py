@@ -8,8 +8,7 @@ urlpatterns = [
     path('packages/bulk-create/', bulkCreatePackages.as_view(), name='bulk-create-packages'),
 
     
-    path('trucks/', getAllTrucks.as_view(), name='bulk-create-packages'),
-    path('trucks/create/', createTruck.as_view(), name='bulk-create-packages'),
-    path('trucks/<int:id>/', deleteTruck.as_view(), name='bulk-create-packages'),
-
+    path('trucks/', getAllTrucks.as_view(), name='get-all-trucks'),
+    path('trucks/create/', createTruck.as_view(), name='create-truck'),
+    path('trucks/<int:id>/', deleteTruck.as_view(), name='delete-truck'),
 ]

@@ -5,8 +5,7 @@ class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
         fields = ('address', 'latitude', 'longitude', 'recipient', 
-                'recipientPhoneNumber', 'deliveryDate', 'weight')
-        ordering = ['deliveryDate']
+                  'recipientPhoneNumber', 'deliveryDate', 'weight')
 
     def validate(self, data):
         errors = {}
@@ -67,17 +66,19 @@ class PackageSerializer(serializers.ModelSerializer):
     
 class TruckSerializer(serializers.ModelSerializer):
     class Meta:
+        model = Truck
         fields = ['licensePlate', 'kilogramCapacity']
-        order = ['kilogramCapacity']
     
     def validate(self, data):
-        pass
+        # Add any custom validation if needed
+        return data
 
     def create(self, validated_data):
         try:
             truck = Truck.objects.create(
-                licensePlate = validated_data['licensePlate'],
-                kilogramCapacitor = validated_data['kilogramCapacity']
+                licensePlate=validated_data['licensePlate'],
+                kilogramCapacity=validated_data['kilogramCapacity']
             )
+            return truck
         except Exception as e:
             raise serializers.ValidationError(f"Error creating truck: {str(e)}")

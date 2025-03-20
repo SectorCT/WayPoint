@@ -58,7 +58,7 @@ class TruckManager(models.Manager):
 
 class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True,)
-    kilogramCapacity = models.DecimalField(max_digits=6, decimal_places=2,)
+    kilogramCapacity = models.FloatField()
 
     objects = TruckManager()
 
