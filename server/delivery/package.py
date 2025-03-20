@@ -1,28 +1,29 @@
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .serializers import PackageSerializer
-from rest_framework.views import APIView   
-from django.http import JsonResponse
-from .permissions import IsManager
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.core.exceptions import ObjectDoesNotExist
 from .models import Package
+from .serializers import PackageSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from .permissions import IsManager
 
 class createPackage(APIView):
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
+
     def post(self, request):
         serializer = PackageSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"detail": "Package created successfully."}, status=status.HTTP_201_CREATED)
+            package = serializer.save()
+            return Response({"detail": "Package created successfully.", "package": serializer.data}, status=status.HTTP_201_CREATED)
 
-        error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
-        return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class bulkCreatePackages(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
+
     def post(self, request):
         packages_data = request.data.get('packages', [])
         if not isinstance(packages_data, list):
@@ -34,11 +35,10 @@ class bulkCreatePackages(APIView):
         for idx, package_data in enumerate(packages_data):
             serializer = PackageSerializer(data=package_data)
             if serializer.is_valid():
-                serializer.save()
+                package = serializer.save()
                 created_packages.append(serializer.data)
             else:
-                error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
-                errors.append({"index": idx, "errors": error_messages})
+                errors.append({"index": idx, "errors": serializer.errors})
 
         response = {
             "created_packages": created_packages,
@@ -47,10 +47,11 @@ class bulkCreatePackages(APIView):
 
         status_code = status.HTTP_207_MULTI_STATUS if errors else status.HTTP_201_CREATED
         return Response(response, status=status_code)
-    
+
 class getAllPackages(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
+
     def get(self, request):
         packages = Package.objects.all()
         serializer = PackageSerializer(packages, many=True)
@@ -59,10 +60,14 @@ class getAllPackages(APIView):
 class deletePackage(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
+
     def delete(self, request, id):
         try:
+            id = int(id)  # Ensure ID is an integer
             package = Package.objects.get(id=id)
             package.delete()
             return Response({"detail": f"Package with ID {id} deleted."}, status=status.HTTP_200_OK)
+        except ValueError:
+            return Response({"detail": "Invalid package ID format."}, status=status.HTTP_400_BAD_REQUEST)
         except Package.DoesNotExist:
-            return JsonResponse({"detail": f"Package with ID {id} not found."}, status=404)
+            return Response({"detail": f"Package with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)

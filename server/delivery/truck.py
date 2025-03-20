@@ -9,8 +9,8 @@ from .models import Truck
 
 class createTruck(APIView):
     # Uncomment these if you want to enable authentication/permissions
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     
     def post(self, request, *args, **kwargs):
         serializer = TruckSerializer(data=request.data)
@@ -22,8 +22,8 @@ class createTruck(APIView):
         return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
 class getAllTrucks(APIView):
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     
     def get(self, request, *args, **kwargs):
         trucks = Truck.objects.all()
@@ -31,8 +31,8 @@ class getAllTrucks(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class deleteTruck(APIView):
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     
     def delete(self, request, id, *args, **kwargs):
         try:
