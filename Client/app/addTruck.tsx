@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Alert, StyleSheet } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
-import { GradientButton } from "../components/basic/gradientButton";
+import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -14,7 +14,7 @@ interface TruckState {
 
 export default function AddTruckScreen() {
   const { theme } = useTheme();
-  
+
   const [formState, setFormState] = useState<TruckState>({
     licensePlate: "",
     maxCapacity: "",
@@ -23,18 +23,23 @@ export default function AddTruckScreen() {
   const handleSubmit = async () => {
     try {
       // Format numeric values to 6 decimal places
-      const formattedMaxCapacity = parseFloat(formState.maxCapacity || "0").toFixed(6);
+      const formattedMaxCapacity = parseFloat(
+        formState.maxCapacity || "0",
+      ).toFixed(6);
 
-      const response = await makeAuthenticatedRequest('/delivery/trucks/create/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await makeAuthenticatedRequest(
+        "/delivery/trucks/create/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            licensePlate: formState.licensePlate,
+            maxCapacity: parseFloat(formattedMaxCapacity),
+          }),
         },
-        body: JSON.stringify({
-          licensePlate: formState.licensePlate,
-          maxCapacity: parseFloat(formattedMaxCapacity),
-        }),
-      });
+      );
 
       if (response.ok) {
         Alert.alert("Success", "Truck added successfully");
@@ -44,7 +49,7 @@ export default function AddTruckScreen() {
         Alert.alert("Error", errorData.detail);
       }
     } catch (error) {
-      console.error('Error adding truck:', error);
+      console.error("Error adding truck:", error);
       Alert.alert("Error", "Failed to add truck");
     }
   };
@@ -52,11 +57,22 @@ export default function AddTruckScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.color.lightPrimary }]}>
-          <MaterialIcons name="local-shipping" size={32} color={theme.color.darkPrimary} />
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: theme.color.lightPrimary },
+          ]}
+        >
+          <MaterialIcons
+            name="local-shipping"
+            size={32}
+            color={theme.color.darkPrimary}
+          />
         </View>
-        <Text style={[styles.headerTitle, { color: theme.color.black }]}>Add New Truck</Text>
-        <Text style={[styles.headerSubtitle, { color: 'rgba(0, 0, 0, 0.6)' }]}>
+        <Text style={[styles.headerTitle, { color: theme.color.black }]}>
+          Add New Truck
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
           Enter truck details
         </Text>
       </View>
@@ -65,7 +81,9 @@ export default function AddTruckScreen() {
         <FormField
           label="License Plate"
           value={formState.licensePlate}
-          onChangeText={(text) => setFormState({ ...formState, licensePlate: text })}
+          onChangeText={(text) =>
+            setFormState({ ...formState, licensePlate: text })
+          }
           placeholder="Enter license plate"
           icon="directions-car"
         />
@@ -73,17 +91,16 @@ export default function AddTruckScreen() {
         <FormField
           label="Max Capacity (kg)"
           value={formState.maxCapacity}
-          onChangeText={(text) => setFormState({ ...formState, maxCapacity: text })}
+          onChangeText={(text) =>
+            setFormState({ ...formState, maxCapacity: text })
+          }
           placeholder="Enter maximum capacity"
           icon="fitness-center"
           keyboardType="numeric"
         />
 
         <View style={styles.buttonContainer}>
-          <GradientButton 
-            title="Add Truck" 
-            onPress={handleSubmit}
-          />
+          <GradientButton title="Add Truck" onPress={handleSubmit} />
         </View>
       </View>
     </View>
@@ -94,7 +111,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   headerContainer: {
     marginTop: 20,
@@ -102,7 +119,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
   },
   headerSubtitle: {
@@ -116,11 +133,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   formContainer: {
     flex: 1,
   },
-}); 
+});
+

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker, MapPressEvent, Region } from 'react-native-maps';
-import { useLocalSearchParams, router } from 'expo-router';
-import * as Location from 'expo-location';
-import { GradientButton } from '../components/basic/gradientButton';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
+import MapView, { Marker, MapPressEvent, Region } from "react-native-maps";
+import { useLocalSearchParams, router } from "expo-router";
+import * as Location from "expo-location";
+import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 
 interface LocationState {
   latitude?: string;
@@ -24,7 +24,7 @@ export default function PickLocationScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted' && !params.latitude && !params.longitude) {
+      if (status === "granted" && !params.latitude && !params.longitude) {
         const location = await Location.getCurrentPositionAsync({});
         setSelectedLocation({
           latitude: location.coords.latitude,
@@ -38,10 +38,10 @@ export default function PickLocationScreen() {
 
   const handleMapPress = (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    setSelectedLocation(prev => ({
+    setSelectedLocation((prev) => ({
       ...prev,
       latitude,
-      longitude
+      longitude,
     }));
   };
 
@@ -53,8 +53,8 @@ export default function PickLocationScreen() {
       params: {
         ...params,
         latitude: selectedLocation.latitude.toString(),
-        longitude: selectedLocation.longitude.toString()
-      }
+        longitude: selectedLocation.longitude.toString(),
+      },
     });
   };
 
@@ -68,16 +68,13 @@ export default function PickLocationScreen() {
         <Marker
           coordinate={{
             latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude
+            longitude: selectedLocation.longitude,
           }}
           pinColor="#F39358"
         />
       </MapView>
       <View style={styles.buttonContainer}>
-        <GradientButton
-          title="Confirm Location"
-          onPress={handleDone}
-        />
+        <GradientButton title="Confirm Location" onPress={handleDone} />
       </View>
     </View>
   );
@@ -88,13 +85,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height - 100,
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height - 100,
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 20,
     right: 20,
   },
-}); 
+});
+
