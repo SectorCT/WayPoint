@@ -10,6 +10,7 @@ export default function useStyles() {
       padding: 20,
       paddingTop: 60,
       backgroundColor: "#FFFFFF",
+      gap: 20,
     },
     headerContainer: {
       flexDirection: "row",

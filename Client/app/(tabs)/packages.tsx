@@ -52,7 +52,11 @@ export default function PackagesScreen() {
           }}
         />
       </View>
-      <PackageModule />
+      <PackageModule
+        id={"BHASH12111U"}
+        location={"z.k. Дружба 1, 1592 Sofia"}
+        phoneNumber="0889567813"
+      />
     </View>
   );
 }
