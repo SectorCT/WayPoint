@@ -6,6 +6,7 @@ User = get_user_model()
 
 
 class PackageManager(models.Manager):
+    
     def pending_packages(self):
         return self.filter(status='pending')
 
@@ -18,6 +19,30 @@ class PackageManager(models.Manager):
     def recent_deliveries(self, days=7):
         from django.utils.timezone import now
         return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
+    
+    def create_package(
+        self,
+        address,
+        latitude,
+        recipient,
+        recipientPhoneNumber,
+        deliveryDate,
+        longitude,
+        weight,
+        status='pending'
+    ):
+        package = self.model(
+            address=address,
+            latitude=latitude,
+            recipient=recipient,
+            recipientPhoneNumber=recipientPhoneNumber,
+            deliveryDate=deliveryDate,
+            longitude=longitude,
+            weight=weight,
+            status=status
+        )
+        package.save(using=self._db)
+        return package
 
 class Package(models.Model):
     address = models.CharField(max_length=255)
@@ -53,8 +78,16 @@ class Package(models.Model):
     
 class TruckManager(models.Manager):
     def available_trucks(self, min_capacity=0):
-        """Returns trucks that have at least the given capacity available."""
-        return self.filter(kilogram_capacity__gte=min_capacity)
+        return self.filter(kilogramCapacity__gte=min_capacity)
+    
+    def create_truck(self, licensePlate, kilogramCapacity, **extra_fields):
+        truck = self.model(
+            licensePlate=licensePlate,
+            kilogramCapacity=kilogramCapacity,
+            **extra_fields
+        )
+        truck.save(using=self._db)
+        return truck
 
 class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True,)
