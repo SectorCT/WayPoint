@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const loginRequest: LoginRequest = { email, password };
-      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+      const response = await fetch(`${API_BASE_URL}/auth/signin/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,14 +76,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, username: string, password: string, phoneNumber: string) => {
     try {
-      const registerRequest: RegisterRequest = { email, username, password, phoneNumber };
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const registerRequest: RegisterRequest = { email, username, password, password2: password, phoneNumber };
+      const response = await fetch(`${API_BASE_URL}/auth/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(registerRequest),
       });
+
+      console.log(response);
 
       const data: AuthResponse | AuthError = await response.json();
 
