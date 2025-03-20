@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { makeAuthenticatedRequest } from "../../utils/api";
 import useStyles from "./styles/packageStyles";
@@ -12,6 +12,8 @@ interface Package {
   status: "pending" | "in_transit" | "delivered";
   createdAt: string;
 }
+
+import PackageModule from "@components/listModule/packageModule/packageModule";
 
 export default function PackagesScreen() {
   const { theme } = useTheme();
@@ -50,6 +52,7 @@ export default function PackagesScreen() {
           }}
         />
       </View>
+      <PackageModule />
     </View>
   );
 }
