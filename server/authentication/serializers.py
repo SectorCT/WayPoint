@@ -3,12 +3,17 @@ from django.contrib.auth import get_user_model, authenticate
 
 User = get_user_model()
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'phoneNumber')
+
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, label="Confirm Password")
     
     class Meta:
         model = User
-        fields = ('email', 'username', 'phone_number', 'password', 'password2')
+        fields = ('email', 'username', 'phoneNumber', 'password', 'password2')
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -23,7 +28,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             email=validated_data['email'],
             username=validated_data['username'],
-            phone_number=validated_data.get('phone_number'),
+            phoneNumber=validated_data.get('phoneNumber'),
             password=validated_data['password']
         )
         return user
@@ -33,7 +38,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         if password:
             instance.set_password(password)
         instance.username = validated_data.get('username', instance.username)
-        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.phoneNumber = validated_data.get('phoneNumber', instance.phoneNumber)
         instance.save()
         return instance
 
