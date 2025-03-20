@@ -20,9 +20,14 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.actionContainer}>
-        <GradientButton
-          title="Add New Package"
-          onPress={() => router.navigate("/(tabs)/packages")}
+        <GradientButton 
+          title="Add New Package" 
+          onPress={() => router.push("/addPackage")}
+        />
+        <View style={styles.buttonSpacing} />
+        <GradientButton 
+          title="Add New Truck" 
+          onPress={() => router.push("/addTruck")}
         />
       </View>
     </View>
@@ -50,5 +55,8 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     marginTop: 16,
+  },
+  buttonSpacing: {
+    height: 16,
   },
 });
