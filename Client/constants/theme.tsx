@@ -4,7 +4,9 @@ import { FONTS } from "@/constants/fonts";
 export const THEME = {
   light: {
     font: FONTS,
-    fontSize: {},
+    fontSize: {
+      extraExtraLarge: 40,
+    },
     color: {
       white: "#FFFFFF",
       black: "#000000",

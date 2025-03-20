@@ -40,12 +40,18 @@ export default function PackagesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle]}>Add your packages</Text>
-        <AddButton onPress={() => router.navigate("/addPackage")} />
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Add your packages</Text>
+        </View>
+        <AddButton
+          onPress={() => router.navigate("/addPackage")}
+          style={{
+            marginRight: 0,
+          }}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({});
-
