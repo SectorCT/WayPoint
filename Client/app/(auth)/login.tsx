@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
   TouchableOpacity,
   Text,
-  StyleSheet,
   Alert,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { router } from "expo-router";
 import { GradientButton } from "../../components/basic/gradientButton";
+import { FormField } from "../../components/basic/FormField";
 import useStyles from "./styles/loginStyles";
 
 export default function LoginScreen() {
@@ -29,20 +28,21 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <FormField
+        label="Email"
         value={email}
         onChangeText={setEmail}
-        autoCapitalize="none"
+        placeholder="Enter your email"
         keyboardType="email-address"
+        icon="email"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
+      <FormField
+        label="Password"
         value={password}
         onChangeText={setPassword}
+        placeholder="Enter your password"
         secureTextEntry
+        icon="lock"
       />
       <GradientButton title="Login" onPress={handleLogin} />
       <TouchableOpacity onPress={() => router.push("/register")}>

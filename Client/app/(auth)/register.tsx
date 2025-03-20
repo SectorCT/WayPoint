@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
   TouchableOpacity,
   Text,
-  StyleSheet,
   Alert,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { router } from "expo-router";
 import { GradientButton } from "../../components/basic/gradientButton";
+import { FormField } from "../../components/basic/FormField";
+import { ManagerToggle } from "../../components/basic/ManagerToggle";
 import useStyles from "./styles/registerStyles";
 
 export default function RegisterScreen() {
@@ -17,12 +17,13 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [isManager, setIsManager] = useState(false);
   const { register } = useAuth();
   const styles = useStyles();
 
   const handleRegister = async () => {
     try {
-      await register(email, username, password, phoneNumber);
+      await register(email, username, password, phoneNumber, isManager);
     } catch (error) {
       Alert.alert("Error", "Failed to register. Please try again.");
     }
@@ -31,35 +32,39 @@ export default function RegisterScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <FormField
+        label="Email"
         value={email}
         onChangeText={setEmail}
-        autoCapitalize="none"
+        placeholder="Enter your email"
         keyboardType="email-address"
+        icon="email"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
+      <FormField
+        label="Username"
         value={username}
         onChangeText={setUsername}
-        autoCapitalize="none"
+        placeholder="Choose a username"
+        icon="person"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
+      <FormField
+        label="Password"
         value={password}
         onChangeText={setPassword}
+        placeholder="Create a password"
         secureTextEntry
+        icon="lock"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
+      <FormField
+        label="Phone Number"
         value={phoneNumber}
         onChangeText={setPhoneNumber}
+        placeholder="Enter your phone number"
         keyboardType="phone-pad"
+        icon="phone"
       />
+      <Text style={[styles.label, { marginBottom: 8 }]}>Account Type</Text>
+      <ManagerToggle isManager={isManager} onToggle={setIsManager} />
       <GradientButton title="Register" onPress={handleRegister} />
       <TouchableOpacity onPress={() => router.push("/login")}>
         <Text style={styles.linkText}>
