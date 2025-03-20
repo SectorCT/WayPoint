@@ -1,5 +1,6 @@
 export interface User {
     email: string;
     phoneNumber: string;
-    name: string;
+    username: string;
+    isManager: boolean;
 } 

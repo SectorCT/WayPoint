@@ -21,4 +21,5 @@ export interface RegisterRequest {
     password: string;
     password2: string;
     phoneNumber: string;
+    isManager: boolean;
 } 
