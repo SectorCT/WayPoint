@@ -8,17 +8,24 @@ export default function useStyles() {
     container: {
       flex: 1,
       padding: 20,
-      paddingTop: 50,
+      paddingTop: 60,
       backgroundColor: "#FFFFFF",
     },
     headerContainer: {
-      marginTop: 20,
-      marginBottom: 24,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      gap: 10,
     },
-    headerTitle: {
-      fontSize: 39,
+    title: {
+      fontSize: theme.fontSize.extraExtraLarge,
       fontFamily: theme.font.medium,
-      marginBottom: 8,
+      color: theme.color.black,
+      lineHeight: 44,
+      marginTop: 0,
+      flexWrap: "wrap",
     },
+    titleContainer: {},
   });
 }
