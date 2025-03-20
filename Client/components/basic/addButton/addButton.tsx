@@ -13,10 +13,15 @@ export default function AddButton({
 }) {
   const styles = useStyles();
   const { theme } = useTheme();
+  const ICON_SIZE = 21;
 
   return (
     <TouchableOpacity style={[styles.container, style]} onPress={onPress}>
-      <Plus height={26} width={26} fill={theme.color.darkPrimary} />
+      <Plus
+        height={ICON_SIZE}
+        width={ICON_SIZE}
+        fill={theme.color.darkPrimary}
+      />
     </TouchableOpacity>
   );
 }
