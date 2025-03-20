@@ -113,6 +113,8 @@ export default function AddPackageScreen() {
         },
       );
 
+      console.log(response);
+
       if (response.ok) {
         Alert.alert("Success", "Package added successfully");
         router.replace("/(tabs)/packages");
