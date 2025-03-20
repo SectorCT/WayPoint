@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: myprojectdb
+      POSTGRES_USER: myprojectuser
+      POSTGRES_PASSWORD: yourpassword
+
+  web:
+    build: .
+    volumes:
+      - .:/home/app/
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DJANGO_SECRET_KEY: 'django-insecure-4$$96vkmn3@flse_=1zec=ma=o&j0en_c0rutj7*$1r)$59b)t'
+      ALLOWED_HOSTS: '*'
+      DB_NAME: myprojectdb
+      DB_USER: myprojectuser
+      DB_PASSWORD: yourpassword
+      DB_HOST: db
+      DB_PORT: 5432
+
+volumes:
+  pgdata:
