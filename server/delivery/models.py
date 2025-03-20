@@ -1,6 +1,6 @@
-from django.db import models
 from django.contrib.auth import get_user_model
-from datetime import timedelta 
+from datetime import timedelta
+from django.db import models
 
 User = get_user_model()
 
@@ -50,13 +50,24 @@ class Package(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='pending'
     )
+    
+class TruckManager(models.Manager):
+    def available_trucks(self, min_capacity=0):
+        """Returns trucks that have at least the given capacity available."""
+        return self.filter(kilogram_capacity__gte=min_capacity)
+
+class Truck(models.Model):
+    licensePlate = models.CharField(max_length=15, unique=True,)
+    kilogramCapacity = models.DecimalField(max_digits=6, decimal_places=2,)
+
+    objects = TruckManager()
 
 class RouteAssignment(models.Model):
     driver = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='route_assignments'
     )
     
-    package_sequence = models.JSONField(
+    packageSequence = models.JSONField(
         default=list,
         help_text="Ordered list of Package IDs representing delivery sequence"
     )

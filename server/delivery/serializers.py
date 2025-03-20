@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Package
+from .models import Package, Truck
 
 class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
         fields = ('address', 'latitude', 'longitude', 'recipient', 
                 'recipientPhoneNumber', 'deliveryDate', 'weight')
+        ordering = ['deliveryDate']
 
     def validate(self, data):
         errors = {}
@@ -63,3 +64,20 @@ class PackageSerializer(serializers.ModelSerializer):
             return package
         except Exception as e:
             raise serializers.ValidationError(f"Error creating package: {str(e)}")
+    
+class TruckSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ['licensePlate', 'kilogramCapacity']
+        order = ['kilogramCapacity']
+    
+    def validate(self, data):
+        pass
+
+    def create(self, validated_data):
+        try:
+            truck = Truck.objects.create(
+                licensePlate = validated_data['licensePlate'],
+                kilogramCapacitor = validated_data['kilogramCapacity']
+            )
+        except Exception as e:
+            raise serializers.ValidationError(f"Error creating truck: {str(e)}")
