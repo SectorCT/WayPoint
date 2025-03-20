@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class Package(models.Model):
-    id = models.IntegerField(primary_key=True)
     address = models.CharField(max_length=255)
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True,
