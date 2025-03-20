@@ -1,8 +1,8 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@context/ThemeContext";
+import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '@context/ThemeContext';
 
-export default function TabsLayout() {
+export default function TabLayout() {
   const { theme } = useTheme();
 
   return (
@@ -21,11 +21,21 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="home" size={24} color={color} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="addPackage"
+        options={{
+          title: "Add Package",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="add-box" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="styles/homeStyles" options={{ href: null }} />
     </Tabs>
   );
-}
+} 

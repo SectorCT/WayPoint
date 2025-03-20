@@ -1,19 +1,53 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useAuth } from "../../context/AuthContext";
-import useStyles from "./styles/homeStyles";
+import { View, Text, StyleSheet } from "react-native";
+import { useTheme } from "@context/ThemeContext";
+import { router, Tabs } from "expo-router";
+import { GradientButton } from "../../components/basic/gradientButton";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function HomeScreen() {
-  const { logout } = useAuth();
-  const styles = useStyles();
+  const { theme } = useTheme();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Hello</Text>
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <Text style={[styles.headerTitle, { color: theme.color.black }]}>Home</Text>
+        <Text style={[styles.headerSubtitle, { color: 'rgba(0, 0, 0, 0.6)' }]}>
+          Manage your deliveries
+        </Text>
+      </View>
+
+      <View style={styles.actionContainer}>
+        <GradientButton 
+          title="Add New Package" 
+          onPress={() => router.navigate("/(tabs)/addPackage")}
+        />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    marginTop: 20,
+    marginBottom: 32,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  actionContainer: {
+    marginTop: 16,
+  },
+});
 
