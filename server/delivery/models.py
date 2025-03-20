@@ -1,7 +1,23 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from datetime import timedelta 
 
 User = get_user_model()
+
+
+class PackageManager(models.Manager):
+    def pending_packages(self):
+        return self.filter(status='pending')
+
+    def in_transit_packages(self):
+        return self.filter(status='in_transit')
+
+    def delivered_packages(self):
+        return self.filter(status='delivered')
+
+    def recent_deliveries(self, days=7):
+        from django.utils.timezone import now
+        return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
 
 class Package(models.Model):
     address = models.CharField(max_length=255)
