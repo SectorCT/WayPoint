@@ -22,7 +22,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Check that the two passwords match.
         if data.get('password') != data.get('password2'):
             raise serializers.ValidationError("Passwords do not match.")
-        
+        if not(data.get('email').exists) or not(data.get('password').exists) or not(data.get('phoneNumber').exists) or not(data.get('email').exists) or not(data.get('username').exists):
+            raise serializers.ValidationError("Missing fields.")
         # Check if the email is already in use.
         if User.objects.filter(email=data.get('email')).exists():
             raise serializers.ValidationError("A user with this email already exists.")
