@@ -29,28 +29,24 @@ _Add screenshots of the application here_
 - API Keys (Google Maps, OSRM)
 
 ### Steps
-# 1. Clone the repository:
-git clone https://github.com/SectorCT/WayPoint.git
-cd WayPoint
-cd client
-
-# 2. Install dependencies:
-npm install
-
-# 3. Configure environment variables:
-cp .env.example .env
-# Add your API keys and database credentials:
-# EXPO_PUBLIC_API_BASE_URL=
-# EXPO_PUBLIC_GEOAPIFY_API_KEY=
-
-# 4. Run the application:
-npm start
-
-# 5. Start the server with Docker Compose:
-cd ..
-cd server
-docker compose up -d
-
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/waypoint.git
+   cd waypoint
+   ```
+2. Install dependencies:
+   ```bash
+   npm install  # or pip install -r requirements.txt
+   ```
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Add your API keys and database credentials
+   ```
+4. Run the application:
+   ```bash
+   npm start  # or python app.py
+   ```
 
 ## 🏗️ Tech Stack
 
