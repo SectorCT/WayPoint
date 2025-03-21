@@ -8,7 +8,6 @@ from rest_framework import status
 from .models import Truck
 
 class createTruck(APIView):
-    # Uncomment these if you want to enable authentication/permissions
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
     

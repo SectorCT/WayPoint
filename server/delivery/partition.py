@@ -1,62 +1,47 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from sklearn.cluster import DBSCAN
 import numpy as np
+from sklearn.cluster import DBSCAN, KMeans
+from .models import Truck
 
-class ClusterLocations(APIView):
-    def post(self, request, eps_km=1.5):
-        packages = request.data  
-        
-        if not isinstance(packages, list):
-            return Response({"detail": "Expected a list of packages."}, status=400)
+def cluster_locations(packages_data, driverUsernames):
+    if not isinstance(packages_data, list) or not isinstance(driverUsernames, list):
+        raise ValueError("Both 'packages' and 'driverUsernames' must be lists")
 
-        processed_locations = []
-        for package in packages:
-            new_loc = {
-                "address": package.get("address", ""),
-                "latitude": package.get("latitude"),
-                "longitude": package.get("longitude"),
-                "recipient": package.get("recipient", ""),
-                "recipientPhoneNumber": package.get("recipientPhoneNumber", ""),
-                "deliveryDate": package.get("deliveryDate", ""),
-                "weight": package.get("weight", "")
-            }
-            processed_locations.append(new_loc)
-        
-        # Ensure we have valid locations with latitude and longitude
-        try:
-            coords = np.array([
-                [float(loc["latitude"]), float(loc["longitude"])]
-                for loc in processed_locations
-            ])
-        except (TypeError, ValueError) as e:
-            return Response({"detail": "Invalid latitude or longitude data."}, status=400)
-        
-        # Convert degrees to radians for the haversine metric
-        coords_rad = np.radians(coords)
-        
-        # Earth's radius in kilometers
-        earth_radius = 6371.0
-        
-        # Convert eps from kilometers to radians
-        eps = eps_km / earth_radius
-        
-        # Create and fit the DBSCAN model using the haversine metric
-        dbscan = DBSCAN(eps=eps, min_samples=1, metric='haversine')
-        labels = dbscan.fit_predict(coords_rad)
-        
-        # Group processed locations by cluster label
+    numOfTrucks = Truck.objects.count()
+    delivers = min(numOfTrucks, len(driverUsernames))
+
+    # 2) Convert lat/long to arrays
+    coords = np.array([[loc["latitude"], loc["longitude"]] for loc in packages_data])
+    coords_rad = np.radians(coords)
+    earth_radius = 6371.0
+    eps_km = 1.5
+    eps = eps_km / earth_radius
+
+    # 3) DBSCAN
+    dbscan = DBSCAN(eps=eps, min_samples=1, metric='haversine')
+    labels = dbscan.fit_predict(coords_rad)
+
+    clusters = {}
+    for label, loc in zip(labels, packages_data):
+        clusters.setdefault(int(label), []).append(loc)
+
+    zones = [{"zone": zone_label, "driverUsername": "", "locations": locations}
+             for zone_label, locations in clusters.items()]
+
+    # 4) If more zones than delivers, fall back to KMeans
+    if len(zones) > delivers:
+        kmeans = KMeans(n_clusters=delivers, random_state=0)
+        kmeans_labels = kmeans.fit_predict(coords)
+
         clusters = {}
-        for label, loc in zip(labels, processed_locations):
+        for label, loc in zip(kmeans_labels, packages_data):
             clusters.setdefault(int(label), []).append(loc)
-        
-        # Format the clusters as a list of zones
-        zones = []
-        for zone_label, locations in clusters.items():
-            zone = {
-                "zone": zone_label,
-                "locations": locations
-            }
-            zones.append(zone)
-        
-        return Response(zones)
+
+        zones = [{"zone": zone_label, "driverUsername": "", "locations": locations}
+                 for zone_label, locations in clusters.items()]
+
+    # 5) Assign drivers
+    for i, zone in enumerate(zones):
+        if i < len(driverUsernames):
+            zone["driverUsername"] = driverUsernames[i]
+
+    return zones

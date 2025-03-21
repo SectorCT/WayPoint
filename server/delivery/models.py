@@ -2,8 +2,12 @@ from django.contrib.auth import get_user_model
 from datetime import timedelta
 from django.db import models
 from django.core.validators import RegexValidator
+import secrets
 
 User = get_user_model()
+
+def generate_package_id():
+    return secrets.token_hex(12)
 
 class PackageManager(models.Manager):
     def pending_packages(self):
@@ -34,6 +38,12 @@ class PackageManager(models.Manager):
         return package
 
 class Package(models.Model):
+    packageID = models.CharField(
+        max_length=24,
+        unique=True,
+        default=generate_package_id,
+        editable=False  
+    )
     address = models.CharField(max_length=255)
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=False, blank=False,

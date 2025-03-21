@@ -1,8 +1,7 @@
 from django.urls import path
 from .package import createPackage, deletePackage, bulkCreatePackages, getAllPackages
 from .truck import createTruck, getAllTrucks, deleteTruck
-from .partition import ClusterLocations
-from .createRoutes import CreateRoutes
+from .routing import RoutePlannerView
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
     path('packages/create/', createPackage.as_view(), name='create-package'),
@@ -14,6 +13,5 @@ urlpatterns = [
     path('trucks/create/', createTruck.as_view(), name='create-truck'),
     path('trucks/<int:id>/', deleteTruck.as_view(), name='delete-truck'),
 
-    path('route/partition/', ClusterLocations.as_view(), name='cluster'),
-    path('route/createRoute/', CreateRoutes.as_view(), name='route')
+    path('route/', RoutePlannerView.as_view(), name = 'route')
 ]
