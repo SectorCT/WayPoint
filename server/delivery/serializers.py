@@ -6,12 +6,12 @@ from datetime import date
 
 
 class RouteAssignmentSerializer(serializers.ModelSerializer):
-    driver = serializers.CharField(source='driver.username')
+    user  = serializers.CharField(source='driver.username')
     truck = serializers.CharField(source='truck.licensePlate')
     
     class Meta:
         model = RouteAssignment
-        fields = ['driver', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'isActive']
+        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', ]
 
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
