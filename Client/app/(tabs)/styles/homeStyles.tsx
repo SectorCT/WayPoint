@@ -7,25 +7,108 @@ export default function useStyles() {
   return StyleSheet.create({
     container: {
       flex: 1,
+      overflow: "visible",
+      backgroundColor: theme.color.white,
+      marginTop: 0,
+    },
+    headerContainer: {
+      paddingHorizontal: 20,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      gap: 10,
+      zIndex: 2,
+      backgroundColor: theme.color.white,
+      paddingBottom: 20,
+      opacity: 1,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.color.lightGrey,
+    },
+    title: {
+      fontSize: theme.fontSize.extraExtraLarge,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+      lineHeight: 44,
+      marginTop: 0,
+      flexWrap: "wrap",
+      flex: 1,
+    },
+    titleContainer: {},
+    inner: {
+      marginTop: 20,
+    },
+    topFill: {
+      top: 0,
+      left: 0,
+      right: 0,
+      position: "absolute",
+      flex: 1,
+      backgroundColor: theme.color.white,
+      height: 70,
+      zIndex: 1,
+    },
+    outer: {
+      flex: 1,
+    },
+    sectionHeader: {
+      fontSize: theme.fontSize.mediumLarge,
+      fontFamily: theme.font.medium,
+      marginBottom: 7,
+    },
+    overdueHeader: {
+      color: "red", // Red color for overdue packages
+    },
+    emptyStateContainer: {
+      flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "#fff",
+      paddingHorizontal: 20,
     },
-    text: {
-      fontSize: 24,
-      marginBottom: 20,
+    emptyStateText: {
+      fontSize: theme.fontSize.large,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+      marginBottom: 8,
     },
-    button: {
-      backgroundColor: "#FF3B30",
-      padding: 15,
-      borderRadius: 5,
-      width: 200,
+    emptyStateSubtext: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.regular,
+      color: theme.color.lightGrey,
+    },
+    startNewButton: {
       alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.color.mediumPrimary,
+      height: 55,
+      borderRadius: 10,
     },
-    buttonText: {
-      color: "#fff",
-      fontSize: 16,
-      fontWeight: "bold",
+    startNewButtonText: {
+      fontSize: theme.fontSize.large,
+      fontFamily: theme.font.semibold,
+      color: theme.color.white,
+    },
+    pastHistory: {
+      marginTop: 20,
+    },
+    titlepasthistory: {
+      fontFamily: theme.font.semibold,
+      fontSize: theme.fontSize.large,
+      marginBottom: 10,
+    },
+    logoutButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      justifyContent: "center",
+      alignItems: "center",
+      overflow: "hidden",
+      ...theme.shadow,
+    },
+    logoutButtonText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
     },
   });
 }

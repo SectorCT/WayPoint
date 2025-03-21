@@ -1,15 +1,16 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Package
+from .models import Package, RouteAssignment
 from .serializers import PackageSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
+from rest_framework.decorators import api_view
 
 class createPackage(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):
         serializer = PackageSerializer(data=request.data)
@@ -19,11 +20,13 @@ class createPackage(APIView):
 
         return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class bulkCreatePackages(APIView):
+class createManyPackages(APIView):
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
 
+
     def post(self, request):
+        
         packages_data = request.data.get('packages', [])
         if not isinstance(packages_data, list):
             return Response({"detail": "Invalid data format. Expecting a list of packages."}, status=status.HTTP_400_BAD_REQUEST)
@@ -70,7 +73,7 @@ class deletePackage(APIView):
         except Package.DoesNotExist:
             return Response({"detail": f"Package with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class MarkAsDelivered(APIView):
+class MarkAsDelivsered(APIView):
     def post(self, request):
         package_id = request.data.get('packageID')
         if not package_id:
@@ -83,3 +86,38 @@ class MarkAsDelivered(APIView):
         package.status = 'delivered'
         package.save()
         return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
+    
+
+@api_view(['POST'])
+def mark_delivered(request):
+    package_id = request.data.get('packageID')
+    if not package_id:
+        return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        package = Package.objects.get(packageID=package_id)
+    except Package.DoesNotExist:
+        return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if package.status == 'delivered':
+        return Response({"error": "Package already delivered"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Маркираме пратката като доставена
+    package.status = 'delivered'
+    package.save()
+
+    # Намираме всички активни route assignments, в които се съдържа тази пратка,
+    # и актуализираме статуса ѝ в packageSequence
+    route_assignments = RouteAssignment.objects.filter(isActive=True)
+    for route in route_assignments:
+        updated = False
+        sequence = route.packageSequence  # Списък от речници
+        for item in sequence:
+            if item.get('packageID') == package_id:
+                item['status'] = 'delivered'
+                updated = True
+        if updated:
+            route.packageSequence = sequence
+            route.save()
+
+    return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)

@@ -1,8 +1,31 @@
 from rest_framework import serializers
 from .models import Package, Truck
 from rest_framework import serializers
-from .models import Package
+from .models import Package, RouteAssignment
 from datetime import date
+
+
+class RouteAssignmentSerializer(serializers.ModelSerializer):
+    user  = serializers.CharField(source='driver.username')
+    truck = serializers.CharField(source='truck.licensePlate')
+    
+    class Meta:
+        model = RouteAssignment
+        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'routeID']
+    
+    def validate(self, data):
+        request = self.context.get('request')
+        user = request.user
+        qs = RouteAssignment.objects.filter(driver=user, isActive=True)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                "Only one active route assignment is allowed for the same user."
+            )
+        return data
+
+
 
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
@@ -10,15 +33,8 @@ class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Package
         fields = [
-            'packageID',
-            'address',
-            'latitude',
-            'longitude',
-            'recipient',
-            'recipientPhoneNumber',
-            'deliveryDate',
-            'weight',
-            'status'
+            'address', 'deliveryDate', 'latitude', 'longitude', 
+            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight'
         ]
 
     def validate_latitude(self, value):

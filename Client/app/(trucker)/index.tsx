@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { testRouteData } from "../../testRouteData";
+import { getRoute, markPackageAsDelivered } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
+import { useAuth } from "@context/AuthContext";
+import { makeAuthenticatedRequest } from "@/utils/api";
 
 interface Coordinate {
   latitude: number;
@@ -17,45 +19,59 @@ interface RouteLocation extends Coordinate {
   package_info: Package;
 }
 
+interface User {
+  email: string;
+  username: string;
+  phoneNumber: string;
+  isManager: boolean;
+}
+
+interface Package {
+  status: "pending" | "in_transit" | "delivered";
+  weight: number;
+  address: string;
+  latitude: number;
+  longitude: number;
+  packageID: string;
+  recipient: string;
+  deliveryDate: string;
+  recipientPhoneNumber: string;
+}
+
 interface RouteData {
-  zone: number;
-  route: {
-    waypoint_index: number;
-    package_info: Package;
-    route: [number, number][];
-    location: [number, number];
-    duration: number;
-  }[];
-  driverUsername: string;
+  user: string;
+  packageSequence: Package[];
+  mapRoute: [number, number][];
+  dateOfCreation: string;
+  truck?: string;
+  _id?: string;
 }
 
 const DRAWER_WIDTH = 300;
 
 // Function to generate a color based on a value
-const generateColorFromValue = (value: number): string => {
-  // Multiply by a larger number to create more variation
-  // Using prime numbers for better distribution
-  const hue = ((value * 47) % 360);  // 47 is prime, gives good distribution over 1-20
-  
-  // Lower saturation and value ranges for more muted colors
-  const s = 0.4 + (value % 3) * 0.15;  // Saturation varies between 0.4 and 0.85
-  const v = 0.5 + (value % 2) * 0.15;  // Value varies between 0.5 and 0.65
+const generateColorFromValue = (value: string): string => {
+  // Predefined distinct colors that are bright and easily distinguishable
+  const colors = [
+    '#FF4136', // Red
+    '#2ECC40', // Green
+    '#0074D9', // Blue
+    '#FF851B', // Orange
+    '#B10DC9', // Purple
+    '#01FF70', // Neon Green
+    '#F012BE', // Magenta
+    '#7FDBFF', // Light Blue
+    '#FFD700', // Gold
+    '#39CCCC', // Teal
+  ];
 
-  const c = v * s;
-  const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
-  const m = v - c;
+  // Simple hash function to get a consistent index for each username
+  let total = 0;
+  for (let i = 0; i < value.length; i++) {
+    total = (total + value.charCodeAt(i) * (i + 1)) % colors.length;
+  }
 
-  let r, g, b;
-  if (hue < 60) { r = c; g = x; b = 0; }
-  else if (hue < 120) { r = x; g = c; b = 0; }
-  else if (hue < 180) { r = 0; g = c; b = x; }
-  else if (hue < 240) { r = 0; g = x; b = c; }
-  else if (hue < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-
-  // Convert to hex
-  const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return colors[Math.abs(total)];
 };
 
 const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
@@ -88,14 +104,71 @@ const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
 );
 
 export default function TruckerViewScreen() {
+  const { user } = useAuth();
   const { theme } = useTheme();
-  const [deliveredPackages, setDeliveredPackages] = useState<Set<string>>(new Set());
-  const currentZone = testRouteData[0] as RouteData;
-  const routeColor = generateColorFromValue(currentZone.zone);
   const { position } = usePosition();
+  const { logout } = useAuth();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
-  const [isTracking, setIsTracking] = useState(false);
+  const [isDrawerReady, setIsDrawerReady] = useState(false);
+  const [locations, setLocations] = useState<RouteLocation[]>([]);
+  const [currentZone, setCurrentZone] = useState<RouteData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const routeColor = generateColorFromValue(currentZone?.user || '');
+  
+  useEffect(() => {
+    const fetchRoute = async () => {
+      try {
+        if (!user) {
+          throw new Error('User not found');
+        }
+        setIsLoading(true);
+        setError(null);
+        const data = await getRoute(user.username);
+        setCurrentZone(data);
+      } catch (err) {
+        setError('Failed to load route data');
+        console.error('Error loading route:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRoute();
+  }, []);
+  
+  useEffect(() => {
+    if (!currentZone?.packageSequence) {
+      return;
+    }
+    
+    const newLocations = currentZone.packageSequence.map((packageInfo, index) => ({
+      latitude: packageInfo.latitude,
+      longitude: packageInfo.longitude,
+      waypoint_index: index,
+      package_info: {
+        ...packageInfo,
+        // Automatically mark ADMIN packages as delivered
+        status: packageInfo.packageID === "ADMIN" ? "delivered" : packageInfo.status
+      }
+    }));
+    setLocations(newLocations);
+  }, [currentZone]);
+
+  const routePoints: Coordinate[] = currentZone?.mapRoute?.map((point) => ({
+    latitude: point[1],
+    longitude: point[0],
+  })) || [];
+
+  const activeLocations = locations.filter(
+    location => location.package_info.status !== 'delivered' && location.package_info.packageID !== "ADMIN"
+  );
+
+  useEffect(() => {
+    // Set drawer ready after initial render
+    setIsDrawerReady(true);
+  }, []);
 
   const handleRecenter = () => {
     if (mapRef.current && position.latitude && position.longitude) {
@@ -120,48 +193,39 @@ export default function TruckerViewScreen() {
 
   const handleDelivery = async (packageId: string) => {
     try {
-      // const response = await fetch(`/delivery/deliver/${packageId}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
+      const response = await markPackageAsDelivered(packageId);
 
-      // if (!response.ok) {
-      //   // throw new Error('Failed to mark package as delivered');
-      //   console.error('Failed to mark package as delivered:', response);
-      // }
+      if (!response.ok) {
+        console.error('Failed to mark package as delivered:', response);
+      }
 
-      await setDeliveredPackages(prev => new Set([...prev, packageId]));
+      // Update the status of the package in locations
+      const updatedLocations = locations.map(location => 
+        location.package_info.packageID === packageId 
+          ? { 
+              ...location, 
+              package_info: { 
+                ...location.package_info, 
+                status: 'delivered' as const 
+              } 
+            }
+          : location
+      );
+      setLocations(updatedLocations);
+      
     } catch (error) {
       console.error('Error marking package as delivered:', error);
     }
   };
 
-  // Extract locations from route data
-  const locations: RouteLocation[] = currentZone.route.map((routeSection) => ({
-    latitude: routeSection.location[1],
-    longitude: routeSection.location[0],
-    waypoint_index: routeSection.waypoint_index,
-    package_info: routeSection.package_info
-  }));
-
-  // Extract route points
-  const routePoints: Coordinate[] = currentZone.route.flatMap(route => 
-    route.route.map((point: [number, number]) => ({
-      latitude: point[1],
-      longitude: point[0],
-    }))
-  );
-
-  // Filter out delivered packages from locations
-  const activeLocations = locations.filter(
-    location => !deliveredPackages.has(location.package_info.packageID)
-  );
-
-  const initialRegion = {
+  const initialRegion = locations && locations.length > 0 ? {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  } : {
+    latitude: 42.692865, // Default to first package location from test data
+    longitude: 23.334036,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   };
@@ -171,7 +235,7 @@ export default function TruckerViewScreen() {
       <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
         <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text>
         <TouchableOpacity 
-          style={[styles.closeButton]} 
+          style={styles.closeButton} 
           onPress={() => drawerRef.current?.closeDrawer()}
         >
           <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
@@ -198,7 +262,7 @@ export default function TruckerViewScreen() {
             <View key={location.waypoint_index} style={styles.packageItem}>
               <View style={styles.packageHeader}>
                 <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
-                  <Text style={styles.indexText}>{location.waypoint_index + 1}</Text>
+                  <Text style={styles.indexText}>{location.waypoint_index}</Text>
                 </View>
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
@@ -229,6 +293,22 @@ export default function TruckerViewScreen() {
     </View>
   );
 
+  if (!isDrawerReady || isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={[styles.errorText, { color: '#FF4136' }]}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <DrawerLayout
       ref={drawerRef}
@@ -249,8 +329,6 @@ export default function TruckerViewScreen() {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           } : initialRegion}
-          onPanDrag={() => setIsTracking(false)}
-          onTouchStart={() => setIsTracking(false)}
         >
           <Polyline
             coordinates={routePoints}
@@ -260,15 +338,15 @@ export default function TruckerViewScreen() {
 
           {locations.map((location) => (
             <Marker
-              key={location.waypoint_index}
+              key={`marker-${location.package_info.packageID}`}
               coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude
               }}
             >
               <CustomMarker 
-                number={location.waypoint_index + 1} 
-                isDelivered={deliveredPackages.has(location.package_info.packageID)}
+                number={location.waypoint_index} 
+                isDelivered={location.package_info.status === 'delivered'}
               />
             </Marker>
           ))}
@@ -286,6 +364,13 @@ export default function TruckerViewScreen() {
             </Marker>
           )}
         </MapView>
+
+        <TouchableOpacity 
+          style={[styles.logoutButton, { backgroundColor: theme.color.darkPrimary }]} 
+          onPress={logout}
+        >
+          <MaterialIcons name="logout" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
@@ -483,6 +568,30 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 40,
     right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
     width: 50,
     height: 50,
     borderRadius: 25,

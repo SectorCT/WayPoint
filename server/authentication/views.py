@@ -4,6 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView    
 from rest_framework import status, views
+from .models import User
 
 class RegisterView(APIView):
     def post(self, request):
@@ -52,3 +53,21 @@ class LogoutView(APIView):
             return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class getAllUsers(APIView):
+    def get(self, request):
+        users = User.objects.all()
+        
+        serializer = UserSerializer(users, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class getUser(APIView):
+    def post(self, request):
+        user = User.objects.get(username = request.data.get("username"))
+        return Response({
+            'email': user.email,
+            'username': user.username,
+            'phoneNumber': user.phoneNumber,
+            'isManager': user.isManager
+        })
