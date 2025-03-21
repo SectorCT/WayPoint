@@ -34,6 +34,9 @@ export default function CurrentJourney({
           </Text>
         </View>
       </View>
+      <View style={styles.thirdColumn}>
+        <Text style={styles.trackText}>Track</Text>
+      </View>
     </View>
   );
 }
