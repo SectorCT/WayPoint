@@ -64,16 +64,13 @@ class deletePackage(APIView):
 
     def delete(self, request, id):
         try:
-            id = int(id)  # Ensure ID is an integer
-            package = Package.objects.get(id=id)
+            package = Package.objects.get(packageID=id)
             package.delete()
             return Response({"detail": f"Package with ID {id} deleted."}, status=status.HTTP_200_OK)
         except ValueError:
             return Response({"detail": "Invalid package ID format."}, status=status.HTTP_400_BAD_REQUEST)
         except Package.DoesNotExist:
             return Response({"detail": f"Package with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-# from .models import Truck, Driver  # Example imports if you have these models
 
 def get_packages_for_delivery(drivers):
     drivers_count = len(drivers)
@@ -85,7 +82,7 @@ def get_packages_for_delivery(drivers):
 
     delivers_count = min(drivers_count, trucks_count)
 
-    max_packages = delivers_count * 10 # will have to change that
+    max_packages = delivers_count * 10
     packages_qs = Package.objects.filter(deliveryDate__in=[today, tomorrow])[:max_packages]
 
 
@@ -109,3 +106,17 @@ def get_packages_for_delivery(drivers):
     }
 
     return data
+
+class MarkAsDelivered(APIView):
+    def post(self, request):
+        package_id = request.data.get('packageID')
+        if not package_id:
+            return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            package = Package.objects.get(packageID=package_id)
+        except Package.DoesNotExist:
+            return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        package.status = 'delivered'
+        package.save()
+        return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
