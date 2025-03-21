@@ -1,3 +1,4 @@
+from .serializers import RouteAssignmentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .clusterLocations import cluster_locations
@@ -134,21 +135,6 @@ def get_packages_for_delivery(drivers):
 
     return data
 
-class MarkAsDelivered(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
-    def post(self, request):
-        package_id = request.data.get('packageID')
-        if not package_id:
-            return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            package = Package.objects.get(packageID=package_id)
-        except Package.DoesNotExist:
-            return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        package.status = 'delivered'
-        package.save()
-        return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
 
 class RoutePlannerView(APIView):
     # authentication_classes = [JWTAuthentication]
@@ -166,7 +152,11 @@ class RoutePlannerView(APIView):
 
         create_routes_from_json(final_routes)
 
-        return Response(final_routes)
+        today = timezone.now().date()
+        routes_today = RouteAssignment.objects.filter(dateOfCreation=today)
+
+        serializer = RouteAssignmentSerializer(routes_today, many=True)
+        return Response(serializer.data)
     
 class getRoutingBasedOnDriver(APIView):
     # authentication_classes = [JWTAuthentication]

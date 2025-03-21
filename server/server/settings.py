@@ -65,6 +65,7 @@ DATABASES = {
 }
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'server.utils.custom_exception_handler',
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
