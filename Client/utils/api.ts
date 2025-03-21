@@ -17,6 +17,7 @@ export const makeAuthenticatedRequest = async <T = any>(
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers: {
+        "Content-Type": "application/json",
         ...options.headers,
         Authorization: `Bearer ${accessToken}`,
       },

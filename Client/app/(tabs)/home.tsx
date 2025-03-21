@@ -16,6 +16,7 @@ import PackageModule from "@components/listModule/packageModule/packageModule";
 import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
+import { useAuth } from "@/context/AuthContext";
 
 interface PastEntryType {
   date: string;
@@ -58,29 +59,20 @@ const pastEntries: PastEntryType[] = [
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const [packages, setPackages] = useState<Package[]>([]);
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const styles = useStyles();
 
-  // useEffect(() => {
-  //   fetchPackages();
-  // }, []);
+  const [journeyStarted, setJourneyStarted] = useState(false);
 
-  // const fetchPackages = async () => {
-  //   try {
-  //     const response = await makeAuthenticatedRequest("/delivery/packages/", {
-  //       method: "GET",
-  //     });
-  //     const data = await response.json();
-  //     setPackages(data);
-  //   } catch (error) {
-  //     console.error("Error fetching packages:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const [journeyStarted, setJourneyStarted] = useState(true);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   const renderPastEntry = ({ item }: { item: PastEntryType }) => (
     <PastEntry
@@ -99,6 +91,9 @@ export default function HomeScreen() {
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Journeys</Text>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
           </View>
 
           {loading ? (

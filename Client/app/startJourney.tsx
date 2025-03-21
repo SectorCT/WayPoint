@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@context/ThemeContext';
-import { testDriverData } from '../testDriverData';
+import { getAvailableTrucks, getPackages, getEmployees, startJourney } from '../utils/journeyApi';
+import moment from 'moment';
+import { router } from 'expo-router';
 
 interface DriverItemProps {
   driver: User;
@@ -10,6 +12,7 @@ interface DriverItemProps {
   onSelect: () => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  isDisabled: boolean;
 }
 
 const DriverItem: React.FC<DriverItemProps> = ({
@@ -18,6 +21,7 @@ const DriverItem: React.FC<DriverItemProps> = ({
   onSelect,
   isExpanded,
   onToggleExpand,
+  isDisabled,
 }) => {
   const { theme } = useTheme();
   const [animation] = useState(new Animated.Value(0));
@@ -43,20 +47,25 @@ const DriverItem: React.FC<DriverItemProps> = ({
           maxHeight,
           backgroundColor: theme.color.white,
           borderColor: isSelected ? theme.color.darkPrimary : theme.color.lightGrey,
+          opacity: isDisabled ? 0.5 : 1,
         }
       ]}
     >
       <TouchableOpacity 
         style={styles.driverHeader} 
         onPress={onToggleExpand}
+        disabled={isDisabled}
       >
         <View style={styles.driverInfo}>
           <MaterialIcons 
             name="person" 
             size={24} 
-            color={theme.color.darkPrimary} 
+            color={isDisabled ? theme.color.lightGrey : theme.color.darkPrimary} 
           />
-          <Text style={[styles.driverName, { color: theme.color.black }]}>
+          <Text style={[
+            styles.driverName, 
+            { color: isDisabled ? theme.color.lightGrey : theme.color.black }
+          ]}>
             {driver.username}
           </Text>
         </View>
@@ -64,14 +73,18 @@ const DriverItem: React.FC<DriverItemProps> = ({
           <TouchableOpacity 
             style={[
               styles.selectButton,
-              { backgroundColor: isSelected ? theme.color.darkPrimary : 'transparent' }
+              { 
+                backgroundColor: isSelected ? theme.color.darkPrimary : 'transparent',
+                opacity: isDisabled ? 0.5 : 1,
+              }
             ]}
             onPress={onSelect}
+            disabled={isDisabled}
           >
             <MaterialIcons 
               name={isSelected ? "check" : "add"} 
               size={20} 
-              color={isSelected ? "#FFF" : theme.color.darkPrimary} 
+              color={isSelected ? "#FFF" : (isDisabled ? theme.color.lightGrey : theme.color.darkPrimary)} 
             />
           </TouchableOpacity>
           <MaterialIcons 
@@ -107,17 +120,53 @@ export default function StartJourneyScreen() {
   const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
   const [expandedDrivers, setExpandedDrivers] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [availableTrucks, setAvailableTrucks] = useState<Truck[]>([]);
+  const [todaysPackages, setTodaysPackages] = useState<Package[]>([]);
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredDrivers = testDriverData.filter(driver =>
+  // Calculate recommended number of trucks and employees
+  const recommendedCount = Math.ceil(todaysPackages.length / 30);
+
+  const filteredDrivers = employees.filter(driver =>
     driver.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [trucks, packages, employeesData] = await Promise.all([
+          getAvailableTrucks(),
+          getPackages(),
+          getEmployees()
+        ]);
+        //filter packages for today and everything older than today
+        const filteredPackages = packages.filter((pkg: Package) => {
+          const deliveryDate = moment(pkg.deliveryDate);
+          return deliveryDate.isSame(moment(), 'day') || deliveryDate.isBefore(moment(), 'day');
+        });
+        setAvailableTrucks(trucks);
+        setTodaysPackages(filteredPackages);
+        setEmployees(employeesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const toggleDriverSelection = (username: string) => {
     const newSelected = new Set(selectedDrivers);
     if (newSelected.has(username)) {
       newSelected.delete(username);
     } else {
-      newSelected.add(username);
+      // Only allow selection if we haven't reached the truck limit
+      if (newSelected.size < availableTrucks.length) {
+        newSelected.add(username);
+      }
     }
     setSelectedDrivers(newSelected);
   };
@@ -132,17 +181,46 @@ export default function StartJourneyScreen() {
     setExpandedDrivers(newExpanded);
   };
 
-  const handleStartJourney = () => {
-    console.log('Starting journey with drivers:', Array.from(selectedDrivers));
+  const handleStartJourney = async () => {
+    try {
+      const data = await startJourney(Array.from(selectedDrivers));
+      router.push({
+        pathname: '/(tabs)/adminTruckTracker',
+        params: { routes: JSON.stringify(data) }
+      });
+    } catch (error) {
+      console.error('Error starting journey:', error);
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.color.white }]}>
-      <View style={[styles.header, { backgroundColor: theme.color.white }]}>
-        <Text style={[styles.title, { color: theme.color.black }]}>Start New Journey</Text>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.color.black }]}>Start Journey</Text>
         <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
-          Select drivers to begin their routes
+          Select up to {availableTrucks.length} drivers
         </Text>
+      </View>
+
+      <View style={styles.statsContainer}>
+        <View style={styles.mainStats}>
+          <View style={[styles.statCard, { backgroundColor: theme.color.white }]}>
+            <MaterialIcons name="local-shipping" size={24} color={theme.color.mediumPrimary} />
+            <Text style={[styles.statNumber, { color: theme.color.black }]}>{availableTrucks.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.color.black }]}>Available Trucks</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.color.white }]}>
+            <MaterialIcons name="inventory" size={24} color={theme.color.mediumPrimary} />
+            <Text style={[styles.statNumber, { color: theme.color.black }]}>{todaysPackages.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.color.black }]}>Today's Packages</Text>
+          </View>
+        </View>
+        <View style={[styles.recommendedCard, { backgroundColor: theme.color.white }]}>
+          <MaterialIcons name="recommend" size={20} color={theme.color.mediumPrimary} />
+          <Text style={[styles.recommendedText, { color: theme.color.black }]}>
+            Recommended number of trucks and employees: {recommendedCount}
+          </Text>
+        </View>
       </View>
 
       <View style={[styles.searchContainer, { backgroundColor: theme.color.white }]}>
@@ -173,6 +251,7 @@ export default function StartJourneyScreen() {
             onSelect={() => toggleDriverSelection(driver.username)}
             isExpanded={expandedDrivers.has(driver.username)}
             onToggleExpand={() => toggleDriverExpansion(driver.username)}
+            isDisabled={!selectedDrivers.has(driver.username) && selectedDrivers.size >= availableTrucks.length}
           />
         ))}
       </ScrollView>
@@ -311,5 +390,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 0,
     marginLeft: 8,
+  },
+  statsContainer: {
+    padding: 16,
+  },
+  mainStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  recommendedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  recommendedText: {
+    fontSize: 14,
+    flex: 1,
   },
 }); 

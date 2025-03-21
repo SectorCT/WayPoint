@@ -7,7 +7,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest } from "../../utils/api";
+import { getPackages } from "../../utils/journeyApi";
 import useStyles from "./styles/packageStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
@@ -26,10 +26,7 @@ export default function PackagesScreen() {
 
   const fetchPackages = async () => {
     try {
-      const response = await makeAuthenticatedRequest("/delivery/packages/", {
-        method: "GET",
-      });
-      const data = await response.json();
+      const data = await getPackages();
       setPackages(data);
     } catch (error) {
       console.error("Error fetching packages:", error);
