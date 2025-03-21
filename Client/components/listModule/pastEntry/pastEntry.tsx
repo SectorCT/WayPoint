@@ -42,21 +42,21 @@ export default function PastEntry({
           Icon={Cubes}
           value={numPackages}
           label="packages"
-          gradientColors={["#FBE8FF", "#F5D6FF"]}
+          gradientColor={"#F5D8FC"}
         />
 
         <InfoEntryPast
           Icon={Truck}
           value={numTrucks}
           label="trucks"
-          gradientColors={["#E8F1FF", "#D6E4FF"]}
+          gradientColor={"#D9E2FC"}
         />
 
         <InfoEntryPast
           Icon={Weight}
           value={kilos}
           label="kilos of packages"
-          gradientColors={["#FFE8E8", "#FFD6D6"]}
+          gradientColor={"#FCD9D9"}
           iconSize={20}
           marginTop={-3}
         />
