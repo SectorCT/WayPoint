@@ -106,11 +106,12 @@ class Truck(models.Model):
         return f"Truck {self.licensePlate} - Capacity: {self.kilogramCapacity} kg"
 
 class RouteManager(models.Manager):
-    def create_route(self, driver, package_sequence, map_route):
+    def create_route(self, driver, package_sequence, map_route, truck):
         route = self.model(
             driver=driver,
             packageSequence=package_sequence,
-            mapRoute=map_route
+            mapRoute=map_route,
+            truck=truck
         )
         route.save(using=self._db)
         return route
@@ -145,6 +146,10 @@ class RouteAssignment(models.Model):
     mapRoute = models.JSONField(
         default=list,
         help_text="A map drawing of the route"
+    )
+
+    truck = models.ForeignKey(
+        Truck, on_delete=models.CASCADE, related_name='route_assignments'
     )
 
     dateOfCreation = models.DateField(auto_now_add=True)

@@ -16,6 +16,8 @@ urlpatterns = [
     path('trucks/create/', createTruck.as_view(), name='create-truck'),
     path('trucks/<str:licensePlate>/', deleteTruck.as_view(), name='delete-truck'),
 
+    
+
     path('route/getByDriver/', getRoutingBasedOnDriver.as_view(), name='get-routing-based-on-driver'),
     path('route/', RoutePlannerView.as_view(), name = 'route')
 ]
