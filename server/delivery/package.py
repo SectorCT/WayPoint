@@ -1,13 +1,11 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Package, Truck
+from .models import Package
 from .serializers import PackageSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
-from datetime import timedelta
-from django.utils import timezone
 
 class createPackage(APIView):
     authentication_classes = [JWTAuthentication]
@@ -22,8 +20,8 @@ class createPackage(APIView):
         return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class bulkCreatePackages(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):
         packages_data = request.data.get('packages', [])
@@ -59,8 +57,8 @@ class getAllPackages(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class deletePackage(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
 
     def delete(self, request, id):
         try:
@@ -71,41 +69,6 @@ class deletePackage(APIView):
             return Response({"detail": "Invalid package ID format."}, status=status.HTTP_400_BAD_REQUEST)
         except Package.DoesNotExist:
             return Response({"detail": f"Package with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-def get_packages_for_delivery(drivers):
-    drivers_count = len(drivers)
-
-    trucks_count = Truck.objects.count()
-
-    today = timezone.now().date()
-    tomorrow = today + timedelta(days=1)
-
-    delivers_count = min(drivers_count, trucks_count)
-
-    max_packages = delivers_count * 10
-    packages_qs = Package.objects.filter(deliveryDate__in=[today, tomorrow])[:max_packages]
-
-
-    packages_data = []
-    for pkg in packages_qs:
-        packages_data.append({
-            "packageID": pkg.packageID,
-            "address": pkg.address,
-            "latitude": float(pkg.latitude),
-            "longitude": float(pkg.longitude),
-            "recipient": pkg.recipient,
-            "recipientPhoneNumber": pkg.recipientPhoneNumber,
-            "deliveryDate": pkg.deliveryDate.isoformat(),
-            "weight": float(pkg.weight),
-            "status": pkg.status
-        })
-
-    data = {
-        "packages": packages_data,
-        "drivers": drivers
-    }
-
-    return data
 
 class MarkAsDelivered(APIView):
     def post(self, request):
