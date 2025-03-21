@@ -13,7 +13,6 @@ interface PastEntryProps {
   numPackages: number;
   numTrucks: number;
   kilos: number;
-  onDelete?: () => void;
   duration: string;
 }
 
@@ -23,7 +22,6 @@ export default function PastEntry({
   numTrucks,
   kilos,
   duration,
-  onDelete,
 }: PastEntryProps) {
   const styles = useStyles();
   const { theme } = useTheme();
@@ -61,12 +59,6 @@ export default function PastEntry({
           marginTop={-3}
         />
       </View>
-
-      {onDelete && (
-        <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
-          <MaterialIcons name="delete-outline" size={24} color="#999" />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
