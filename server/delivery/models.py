@@ -99,7 +99,7 @@ class TruckManager(models.Manager):
 class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True)
     kilogramCapacity = models.DecimalField(max_digits=7, decimal_places=2)
-
+    isUsed = models.BooleanField(default=False)
     objects = TruckManager()
 
     def __str__(self):
