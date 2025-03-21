@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 from datetime import timedelta
 from django.db import models
 import secrets
@@ -107,13 +108,20 @@ class Truck(models.Model):
         return f"Truck {self.licensePlate} - Capacity: {self.kilogramCapacity} kg"
 
 class RouteManager(models.Manager):
-    def create_route(self, driver, package_sequence, map_route, truck):
-        route = self.model(
-            driver=driver,
-            packageSequence=package_sequence,
-            mapRoute=map_route,
-            truck=truck
-        )
+    def create_route(self, **kwargs):
+        driver = kwargs.get("driver")
+
+        if not driver:
+            raise ValueError("Driver must be provided.")
+
+        # Check if there's already an active route for this driver
+        if self.model.objects.filter(driver=driver, isActive=True).exists():
+            raise serializers.ValidationError(
+                f"Driver '{driver.username}' already has an active route."
+            )
+
+        # Use the standard object creation method
+        route = self.model(**kwargs)
         route.save(using=self._db)
         return route
 
@@ -135,6 +143,12 @@ class RouteManager(models.Manager):
         return route
 
 class RouteAssignment(models.Model):
+    routeID = models.CharField(
+        max_length=12,
+        unique=True,
+        default=generate_package_id,
+        editable=False  
+    )
     driver = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='route_assignments'
     )
