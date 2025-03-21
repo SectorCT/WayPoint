@@ -70,6 +70,8 @@ export default function useStyles() {
       alignItems: "center",
       padding: 15,
       borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
     },
     trackText: {
       fontFamily: theme.font.semibold,
@@ -80,19 +82,21 @@ export default function useStyles() {
       height: 33,
       backgroundColor: theme.color.lightPrimary,
       borderRadius: 10,
+      overflow: "hidden",
     },
     containerInner: {
       flexDirection: "row",
     },
     filledUpPartProgress: {
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
+      height: "100%",
+      backgroundColor: theme.color.mediumPrimary,
       alignItems: "center",
       justifyContent: "center",
     },
+    percentageText: {
+      color: theme.color.white,
+      fontFamily: theme.font.medium,
+      fontSize: theme.fontSize.medium,
+    },
   });
 }
-
