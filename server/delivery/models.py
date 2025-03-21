@@ -7,7 +7,7 @@ import secrets
 User = get_user_model()
 
 def generate_package_id():
-    return secrets.token_hex(12)
+    return secrets.token_hex(6)
 
 class PackageManager(models.Manager):
     def pending_packages(self):
@@ -39,7 +39,7 @@ class PackageManager(models.Manager):
 
 class Package(models.Model):
     packageID = models.CharField(
-        max_length=24,
+        max_length=12,
         unique=True,
         default=generate_package_id,
         editable=False  
