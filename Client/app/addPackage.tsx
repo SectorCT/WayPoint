@@ -116,7 +116,6 @@ export default function AddPackageScreen() {
       console.log(response);
 
       if (response.ok) {
-        Alert.alert("Success", "Package added successfully");
         router.replace("/(tabs)/packages");
       } else {
         const errorData = await response.json();
@@ -215,7 +214,12 @@ export default function AddPackageScreen() {
         <FormField
           label="Weight (kg)"
           value={formState.weight}
-          onChangeText={(text) => setFormState({ ...formState, weight: text })}
+          onChangeText={(text) => {
+            // Only allow numbers and one decimal point
+            if (/^\d*\.?\d*$/.test(text)) {
+              setFormState({ ...formState, weight: text });
+            }
+          }}
           placeholder="Enter package weight"
           icon="fitness-center"
           keyboardType="numeric"

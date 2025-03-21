@@ -31,12 +31,7 @@ export default function PackagesScreen() {
         method: "GET",
       });
       const data = await response.json();
-      // Ensure each package has a unique ID
-      const packagesWithIds = data.map((pkg: Omit<Package, 'id'> & { id?: string }) => ({
-        ...pkg,
-        id: pkg.packageID
-      }));
-      setPackages(packagesWithIds);
+      setPackages(data);
     } catch (error) {
       console.error("Error fetching packages:", error);
     } finally {
@@ -153,13 +148,18 @@ export default function PackagesScreen() {
                         id={item.packageID}
                         location={item.address}
                         phoneNumber={item.recipientPhoneNumber}
+                        recipient={item.recipient}
+                        onDelete={() => {
+                          // Refresh the packages list after deletion
+                          fetchPackages();
+                        }}
                       />
                     )}
                     contentContainerStyle={{ paddingBottom: 10 }}
                   />
                 </>
               )}
-              contentContainerStyle={{ paddingBottom: 100, gap: 12 }}
+              contentContainerStyle={{ paddingBottom: 100, gap: 12, paddingTop: 16 }}
               style={{ paddingHorizontal: 20, height: "100%" }}
             />
           )}
