@@ -53,8 +53,16 @@ export default function HomeScreen() {
           ) : (
             <FlatList
               data={[{ id: "1" }]}
-              renderItem={() => <CurrentJourney />}
+              renderItem={() => (
+                <CurrentJourney packagesDelivered={13} totalPackages={20} />
+              )}
               keyExtractor={(item) => item.id}
+              contentContainerStyle={{
+                paddingBottom: 100,
+                gap: 12,
+                paddingTop: 16,
+              }}
+              style={{ paddingHorizontal: 20, height: "100%" }}
             />
           )}
         </View>
