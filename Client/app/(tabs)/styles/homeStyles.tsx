@@ -88,5 +88,13 @@ export default function useStyles() {
       fontFamily: theme.font.semibold,
       color: theme.color.white,
     },
+    pastHistory: {
+      marginTop: 20,
+    },
+    titlepasthistory: {
+      fontFamily: theme.font.semibold,
+      fontSize: theme.fontSize.large,
+      marginBottom: 10,
+    },
   });
 }
