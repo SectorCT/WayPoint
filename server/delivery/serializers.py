@@ -5,10 +5,21 @@ from .models import Package
 from datetime import date
 
 class PackageSerializer(serializers.ModelSerializer):
+    packageID = serializers.ReadOnlyField()
+
     class Meta:
         model = Package
-        fields = ('address', 'latitude', 'longitude', 'recipient',
-                  'recipientPhoneNumber', 'deliveryDate', 'weight', 'status')
+        fields = [
+            'packageID',
+            'address',
+            'latitude',
+            'longitude',
+            'recipient',
+            'recipientPhoneNumber',
+            'deliveryDate',
+            'weight',
+            'status'
+        ]
 
     def validate_latitude(self, value):
         if value < -90 or value > 90:
