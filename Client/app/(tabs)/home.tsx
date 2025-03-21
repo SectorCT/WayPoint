@@ -111,10 +111,7 @@ export default function HomeScreen() {
                   {journeyStarted ? (
                     <CurrentJourney packagesDelivered={13} totalPackages={20} />
                   ) : (
-                    <TouchableOpacity
-                      style={styles.startNewButton}
-                      onPress={() => setJourneyStarted(true)}
-                    >
+                    <TouchableOpacity style={styles.startNewButton} onPress={() => router.push("/startJourney")}>
                       <Text style={styles.startNewButtonText}>
                         Start new journey
                       </Text>
