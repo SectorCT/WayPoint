@@ -93,7 +93,7 @@ def create_routes_from_json(json_data):
         # Create a RouteAssignment instance.
         # If you have a custom manager method (e.g., create_route),
         # ensure that it does not further alter package_sequence.
-        route_instance = RouteAssignment.objects.create(
+        route_instance = RouteAssignment.objects.create_route(
             driver=driver,
             packageSequence=package_sequence,  # This now holds the full package info dicts.
             mapRoute=map_route,
@@ -286,3 +286,10 @@ class getAllRoutings(APIView):
         serializer = RouteAssignmentSerializer(routes_today, many=True)
         return Response(serializer.data)
     
+class finishRoute(APIView):
+    def post(self, request):
+        driver = User.objects.get(username = request.data.get('username'))
+        route = RouteAssignment.objects.get(driver = driver)
+
+        route.isActive = False
+        return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)

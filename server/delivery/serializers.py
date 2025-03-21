@@ -11,7 +11,21 @@ class RouteAssignmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = RouteAssignment
-        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', ]
+        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'routeID']
+    
+    def validate(self, data):
+        request = self.context.get('request')
+        user = request.user
+        qs = RouteAssignment.objects.filter(driver=user, isActive=True)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                "Only one active route assignment is allowed for the same user."
+            )
+        return data
+
+
 
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
