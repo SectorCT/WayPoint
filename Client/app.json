@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Client",
-    "slug": "Client",
+    "name": "Waypoint",
+    "slug": "Waypoint",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "waypoint",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -15,12 +15,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
