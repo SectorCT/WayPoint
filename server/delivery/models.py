@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from datetime import timedelta
 from django.db import models
-from django.core.validators import RegexValidator
 import secrets
 
 User = get_user_model()

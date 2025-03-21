@@ -5,7 +5,7 @@ from .routing import RoutePlannerView
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
     path('packages/create/', createPackage.as_view(), name='create-package'),
-    path('packages/<int:id>/', deletePackage.as_view(), name='delete-package'),
+    path('packages/<str:id>/', deletePackage.as_view(), name='delete-package'),
     path('packages/bulk-create/', bulkCreatePackages.as_view(), name='bulk-create-packages'),
     path('packages/mark/', MarkAsDelivered.as_view(), name='mark-as-delivered'),
 
