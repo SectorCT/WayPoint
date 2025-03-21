@@ -285,3 +285,4 @@ class getAllRoutings(APIView):
         routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive = True)
         serializer = RouteAssignmentSerializer(routes_today, many=True)
         return Response(serializer.data)
+    
