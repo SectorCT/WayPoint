@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
-import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { testRouteData } from "../../testRouteData";
 import { usePosition } from "@context/PositionContext";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -94,6 +94,29 @@ export default function TruckerViewScreen() {
   const routeColor = generateColorFromValue(currentZone.zone);
   const { position } = usePosition();
   const drawerRef = useRef<DrawerLayout>(null);
+  const mapRef = useRef<MapView>(null);
+  const [isTracking, setIsTracking] = useState(false);
+
+  const handleRecenter = () => {
+    if (mapRef.current && position.latitude && position.longitude) {
+      mapRef.current.animateCamera({
+        center: {
+          latitude: position.latitude,
+          longitude: position.longitude,
+        },
+        heading: position.heading || 0,
+        pitch: 0,
+        zoom: 17,
+      }, { duration: 200 });
+    }
+  };
+
+  useEffect(() => {
+    // Initial centering on user's position when it becomes available
+    if (position.latitude && position.longitude) {
+      handleRecenter();
+    }
+  }, []);
 
   const handleDelivery = async (packageId: string) => {
     try {
@@ -217,9 +240,17 @@ export default function TruckerViewScreen() {
     >
       <View style={styles.container}>
         <MapView
+          ref={mapRef}
           style={styles.map}
           provider={PROVIDER_GOOGLE}
-          initialRegion={initialRegion}
+          initialRegion={position.latitude && position.longitude ? {
+            latitude: position.latitude,
+            longitude: position.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          } : initialRegion}
+          onPanDrag={() => setIsTracking(false)}
+          onTouchStart={() => setIsTracking(false)}
         >
           <Polyline
             coordinates={routePoints}
@@ -260,7 +291,23 @@ export default function TruckerViewScreen() {
           style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
           onPress={() => drawerRef.current?.openDrawer()}
         >
-          <MaterialIcons name="menu" size={24} color="#FFFFFF" />
+          <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.recenterButton, 
+            { 
+              backgroundColor: theme.color.darkPrimary,
+            }
+          ]} 
+          onPress={handleRecenter}
+        >
+          <MaterialIcons 
+            name="my-location"
+            size={24} 
+            color="#FFFFFF" 
+          />
         </TouchableOpacity>
       </View>
     </DrawerLayout>
@@ -431,5 +478,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  recenterButton: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 }); 
