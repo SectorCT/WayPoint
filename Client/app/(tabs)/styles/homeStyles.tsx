@@ -96,5 +96,15 @@ export default function useStyles() {
       fontSize: theme.fontSize.large,
       marginBottom: 10,
     },
+    logoutButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: theme.color.lightGrey,
+    },
+    logoutButtonText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+    },
   });
 }

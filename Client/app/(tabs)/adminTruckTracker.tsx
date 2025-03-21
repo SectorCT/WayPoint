@@ -1,47 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { testRouteData } from "../../testRouteData";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
 import { usePosition } from "@context/PositionContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
+import { getAllRoutes } from "../../utils/journeyApi";
+import { useLocalSearchParams } from "expo-router";
 
-interface Coordinate {
-  latitude: number;
-  longitude: number;
-}
-
-interface RouteLocation extends Coordinate {
-  waypoint_index: number;
-  package_info: Package;
-}
-
-interface User {
-  email: string;
-  username: string;
-  phoneNumber: string;
-  isManager: boolean;
-}
-
-interface Package {
-  status: "pending" | "in_transit" | "delivered";
-  weight: number;
-  address: string;
-  latitude: number;
-  longitude: number;
-  packageID: string;
-  recipient: string;
-  deliveryDate: string;
-  recipientPhoneNumber: string;
-}
-
-interface RouteData {
-  driver: User;
-  packageSequence: Package[];
-  mapRoute: [number, number][];
-  dateOfCreation: string;
-}
 
 // Function to generate a color based on a value
 const generateColorFromValue = (value: string): string => {
@@ -85,6 +51,13 @@ const DRAWER_WIDTH = 300;
 const PADDING_MULTIPLIER = 1.5; // For padding around the route bounds
 
 const calculateRouteBounds = (routePoints: Coordinate[]) => {
+  if (!routePoints || routePoints.length === 0) {
+    return {
+      center: { latitude: 0, longitude: 0 },
+      span: { latitudeDelta: 0.0922, longitudeDelta: 0.0421 }
+    };
+  }
+
   let minLat = routePoints[0].latitude;
   let maxLat = routePoints[0].latitude;
   let minLng = routePoints[0].longitude;
@@ -114,23 +87,54 @@ export default function AdminTruckTrackerScreen() {
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [zoneLocations, setZoneLocations] = useState<Map<string, RouteLocation[]>>(new Map());
+  const [routeData, setRouteData] = useState<RouteData[]>([]);
+  const params = useLocalSearchParams<{ routes?: string }>();
 
   useEffect(() => {
-    // Initialize locations for all zones
-    const newZoneLocations = new Map<string, RouteLocation[]>();
-    
-    (testRouteData as unknown as RouteData[]).forEach((zoneData) => {
-      const locations = zoneData.packageSequence.map((packageInfo, index) => ({
-        latitude: packageInfo.latitude,
-        longitude: packageInfo.longitude,
-        waypoint_index: index,
-        package_info: packageInfo as Package
-      }));
-      newZoneLocations.set(zoneData.driver.username, locations);
-    });
+    const initializeRouteData = async () => {
+      try {
+        let routes: RouteData[];
+        
+        if (params.routes) {
+          // If routes are passed as params, parse them
+          console.log('Parsing routes from params:', params.routes);
+          routes = JSON.parse(params.routes as string);
+        } else {
+          // Otherwise fetch routes from the API
+          console.log('Fetching routes from API');
+          routes = await getAllRoutes();
+        }
 
-    setZoneLocations(newZoneLocations);
-  }, []);
+        console.log('Received routes:', routes);
+        setRouteData(routes);
+        
+        // Initialize locations for all zones
+        const newZoneLocations = new Map<string, RouteLocation[]>();
+        
+        routes.forEach((zoneData) => {
+          console.log('Processing zone data:', zoneData);
+          if (!zoneData.packageSequence) {
+            console.error('Invalid zone data - missing packageSequence:', zoneData);
+            return;
+          }
+          const locations = zoneData.packageSequence.map((packageInfo, index) => ({
+            latitude: packageInfo.latitude,
+            longitude: packageInfo.longitude,
+            waypoint_index: index,
+            package_info: packageInfo as Package
+          }));
+          // Use the driver string directly as the key
+          newZoneLocations.set(zoneData.driver.username, locations);
+        });
+
+        setZoneLocations(newZoneLocations);
+      } catch (error) {
+        console.error('Error initializing route data:', error);
+      }
+    };
+
+    initializeRouteData();
+  }, [params.routes]);
 
   useEffect(() => {
     // Center on user's position when it becomes available
@@ -147,6 +151,8 @@ export default function AdminTruckTrackerScreen() {
 
   // Calculate initial region based on all locations or device position
   const allLocations = Array.from(zoneLocations.values()).flat();
+  console.log(allLocations, "allLocations");
+  console.log(zoneLocations, "zoneLocations");
   const initialRegion = position.latitude && position.longitude ? {
     latitude: position.latitude,
     longitude: position.longitude,
@@ -173,13 +179,18 @@ export default function AdminTruckTrackerScreen() {
   };
 
   const handleRoutePress = (routeData: RouteData) => {
+    if (!routeData || !routeData.mapRoute || !routeData.packageSequence) {
+      console.error('Invalid route data:', routeData);
+      return;
+    }
+
     // Convert route points to coordinates
     const routePoints: Coordinate[] = [
-      ...routeData.mapRoute.map(point => ({
+      ...(routeData.mapRoute || []).map(point => ({
         latitude: point[1],
         longitude: point[0],
       })),
-      ...routeData.packageSequence.map(pkg => ({
+      ...(routeData.packageSequence || []).map(pkg => ({
         latitude: pkg.latitude,
         longitude: pkg.longitude,
       }))
@@ -219,7 +230,7 @@ export default function AdminTruckTrackerScreen() {
         contentContainerStyle={styles.routeListContent}
         showsVerticalScrollIndicator={true}
       >
-        {(testRouteData as unknown as RouteData[]).map((routeData) => {
+        {routeData.map((routeData) => {
           const progress = calculateRouteProgress(routeData);
           const routeColor = generateColorFromValue(routeData.driver.username);
           
@@ -297,7 +308,7 @@ export default function AdminTruckTrackerScreen() {
           provider={PROVIDER_GOOGLE}
           initialRegion={initialRegion}
         >
-          {(testRouteData as unknown as RouteData[]).map((zoneData) => {
+          {routeData.map((zoneData) => {
             const routePoints: Coordinate[] = zoneData.mapRoute.map((point) => ({
               latitude: point[1],
               longitude: point[0],
@@ -306,7 +317,7 @@ export default function AdminTruckTrackerScreen() {
             const routeColor = generateColorFromValue(zoneData.driver.username);
 
             return (
-              <React.Fragment key={`route-${zoneData.driver.username}-${zoneData.dateOfCreation}`}>
+              <React.Fragment key={`route-${zoneData.driver}-${zoneData.dateOfCreation}`}>
                 <Polyline
                   coordinates={routePoints}
                   strokeColor={routeColor}
@@ -314,7 +325,7 @@ export default function AdminTruckTrackerScreen() {
                 />
                 {zoneLocationsArray.map((location) => (
                   <Marker
-                    key={`marker-${zoneData.driver.username}-${location.package_info.packageID}`}
+                    key={`marker-${zoneData.driver}-${location.package_info.packageID}`}
                     coordinate={{
                       latitude: location.latitude,
                       longitude: location.longitude
