@@ -96,6 +96,15 @@ export default function TruckerViewScreen() {
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [isTracking, setIsTracking] = useState(false);
+  const [isDrawerReady, setIsDrawerReady] = useState(false);
+
+  useEffect(() => {
+    // Add a small delay to ensure the drawer is ready
+    const timer = setTimeout(() => {
+      setIsDrawerReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleRecenter = () => {
     if (mapRef.current && position.latitude && position.longitude) {
@@ -228,6 +237,24 @@ export default function TruckerViewScreen() {
       </ScrollView>
     </View>
   );
+
+  if (!isDrawerReady) {
+    return (
+      <View style={styles.container}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={position.latitude && position.longitude ? {
+            latitude: position.latitude,
+            longitude: position.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          } : initialRegion}
+        />
+      </View>
+    );
+  }
 
   return (
     <DrawerLayout
