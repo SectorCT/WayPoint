@@ -17,6 +17,45 @@ import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 
+interface PastEntryType {
+  date: string;
+  numPackages: number;
+  numTrucks: number;
+  kilos: number;
+  hours: string;
+}
+
+const pastEntries: PastEntryType[] = [
+  {
+    date: "20th March",
+    numPackages: 23,
+    numTrucks: 5,
+    kilos: 100,
+    hours: "3:50",
+  },
+  {
+    date: "19th March",
+    numPackages: 18,
+    numTrucks: 4,
+    kilos: 80,
+    hours: "4:12",
+  },
+  {
+    date: "18th March",
+    numPackages: 25,
+    numTrucks: 6,
+    kilos: 120,
+    hours: "3:15",
+  },
+  {
+    date: "17th March",
+    numPackages: 15,
+    numTrucks: 3,
+    kilos: 60,
+    hours: "5:15",
+  },
+];
+
 export default function HomeScreen() {
   const { theme } = useTheme();
   const [packages, setPackages] = useState<Package[]>([]);
@@ -41,7 +80,17 @@ export default function HomeScreen() {
   //   }
   // };
 
-  const [journeyStarted, setJourneyStarted] = useState(false);
+  const [journeyStarted, setJourneyStarted] = useState(true);
+
+  const renderPastEntry = ({ item }: { item: PastEntryType }) => (
+    <PastEntry
+      date={item.date}
+      numPackages={item.numPackages}
+      numTrucks={item.numTrucks}
+      kilos={item.kilos}
+      duration={item.hours}
+    />
+  );
 
   return (
     <View style={styles.outer}>
@@ -56,13 +105,16 @@ export default function HomeScreen() {
             <ActivityIndicator size="large" color={theme.color.mediumPrimary} />
           ) : (
             <FlatList
-              data={[{ id: "1" }]}
+              data={[{ id: "main" }]}
               renderItem={() => (
                 <View>
                   {journeyStarted ? (
                     <CurrentJourney packagesDelivered={13} totalPackages={20} />
                   ) : (
-                    <TouchableOpacity style={styles.startNewButton}>
+                    <TouchableOpacity
+                      style={styles.startNewButton}
+                      onPress={() => setJourneyStarted(true)}
+                    >
                       <Text style={styles.startNewButtonText}>
                         Start new journey
                       </Text>
@@ -70,12 +122,14 @@ export default function HomeScreen() {
                   )}
                   <View style={styles.pastHistory}>
                     <Text style={styles.titlepasthistory}>Past History</Text>
-                    <PastEntry
-                      duration="3:45"
-                      date="20th March"
-                      numPackages={23}
-                      numTrucks={5}
-                      kilos={100}
+                    <FlatList
+                      data={pastEntries}
+                      renderItem={renderPastEntry}
+                      keyExtractor={(item) => item.date}
+                      scrollEnabled={false}
+                      ItemSeparatorComponent={() => (
+                        <View style={{ height: 12 }} />
+                      )}
                     />
                   </View>
                 </View>
