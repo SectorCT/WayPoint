@@ -1,7 +1,7 @@
 from django.urls import path
 from .package import createPackage, deletePackage, createManyPackages, getAllPackages, MarkAsDelivered
 from .truck import createTruck, getAllTrucks, deleteTruck
-from .routing import RoutePlannerView, getRoutingBasedOnDriver
+from .routing import RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
@@ -16,8 +16,9 @@ urlpatterns = [
     path('trucks/create/', createTruck.as_view(), name='create-truck'),
     path('trucks/<str:licensePlate>/', deleteTruck.as_view(), name='delete-truck'),
 
-    
+
 
     path('route/getByDriver/', getRoutingBasedOnDriver.as_view(), name='get-routing-based-on-driver'),
-    path('route/', RoutePlannerView.as_view(), name = 'route')
+    path('route/', RoutePlannerView.as_view(), name = 'route'),
+    path('route/all/', getAllRoutings.as_view(), name = 'all-routes')
 ]

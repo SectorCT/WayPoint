@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
 import json
+from django.db.models import Case, When, IntegerField
 
 User = get_user_model()
 
@@ -193,14 +194,25 @@ def connect_routes_and_assignments(clustered_data):
     return final_routes
 
 class RoutePlannerView(APIView):
-    # Uncomment when authentication is set up.
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
     def post(self, request, *args, **kwargs):
-        today = timezone.now().date()
+        # Define today's date and tomorrow's date
+        today = timezone.localdate()
         tomorrow = today + timedelta(days=1)
 
-        packages_qs = Package.objects.filter(deliveryDate__in=[today, tomorrow])
+# Build the queryset:
+        packages_qs = Package.objects.filter(
+            status__in=["pending"],
+            deliveryDate__lte=tomorrow 
+        ).annotate(
+            priority=Case(
+                When(deliveryDate__lt=today, then=0),
+                When(deliveryDate=today, then=1),
+                When(deliveryDate=tomorrow, then=2),
+                output_field=IntegerField()
+            )
+        ).order_by('priority', 'deliveryDate')
         packages_data = [{
             "packageID": pkg.packageID,
             "address": pkg.address,
@@ -222,8 +234,17 @@ class RoutePlannerView(APIView):
             packages_data=packages_data,
             driverUsernames=drivers
         )
+        
         # return Response(clustered_data) debug
         clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers)
+        
+        missing_truck_zones = [zone.get("zone") for zone in clustered_data if not zone.get("truckLicensePlate")]
+        if missing_truck_zones:
+            return Response(
+                {"error": f"No available truck with sufficient capacity for zone(s): {missing_truck_zones}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         final_routes = connect_routes_and_assignments(clustered_data)
         # return Response(final_routes)
         # Handle any error that might be raised from create_routes_from_json.
@@ -233,7 +254,7 @@ class RoutePlannerView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         # Assuming the RouteAssignment model has a field `dateOfCreation`
-        routes_today = RouteAssignment.objects.filter(dateOfCreation=today)
+        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive = True)
         serializer = RouteAssignmentSerializer(routes_today, many=True)
         return Response(serializer.data)
     
@@ -257,3 +278,11 @@ class getRoutingBasedOnDriver(APIView):
             "packageSequence": route.packageSequence,
             "mapRoute": route.mapRoute
         }, status=status.HTTP_200_OK)
+
+class getAllRoutings(APIView):
+    def get(self, request):
+        today = timezone.localdate()
+        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive = True)
+        serializer = RouteAssignmentSerializer(routes_today, many=True)
+        return Response(serializer.data)
+    
