@@ -88,7 +88,7 @@ class MarkAsDelivsered(APIView):
     
 class MarkAsDelivered(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         package_id = request.data.get('packageID')
         if not package_id:
