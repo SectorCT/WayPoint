@@ -22,6 +22,8 @@ export default function useStyles() {
       backgroundColor: theme.color.white,
       paddingBottom: 20,
       opacity: 1,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.color.lightGrey,
     },
     title: {
       fontSize: theme.fontSize.extraExtraLarge,
@@ -56,6 +58,23 @@ export default function useStyles() {
     },
     overdueHeader: {
       color: "red", // Red color for overdue packages
+    },
+    emptyStateContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 20,
+    },
+    emptyStateText: {
+      fontSize: theme.fontSize.large,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+      marginBottom: 8,
+    },
+    emptyStateSubtext: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.regular,
+      color: theme.color.lightGrey,
     },
   });
 }

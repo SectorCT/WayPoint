@@ -12,86 +12,52 @@ import useStyles from "./styles/packageStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-interface Package {
-  address: string;
-  latitude: number;
-  longitude: number;
-  recipient: string;
-  recipientPhoneNumber: string;
-  deliveryDate: string;
-  weight: number;
-  status: "pending" | "in_transit" | "delivered";
-  id?: string;
-}
-
-const exampleData: Package[] = [
-  {
-    address: "221B Baker Street, London",
-    latitude: 51.5237,
-    longitude: -0.1585,
-    recipient: "Sherlock Holmes",
-    recipientPhoneNumber: "0777123456",
-    deliveryDate: "2025-04-01",
-    weight: 2.5,
-    status: "pending",
-    id: "BHASH12111U",
-  },
-  {
-    address: "1600 Pennsylvania Avenue NW, Washington, DC",
-    latitude: 38.8977,
-    longitude: -77.0365,
-    recipient: "Joe Biden",
-    recipientPhoneNumber: "2024561111",
-    deliveryDate: "2025-04-02",
-    weight: 3.2,
-    status: "in_transit",
-    id: "BHASH12111U",
-  },
-  {
-    address: "1 Infinite Loop, Cupertino, CA",
-    latitude: 37.3318,
-    longitude: -122.0312,
-    recipient: "Tim Cook",
-    recipientPhoneNumber: "4089961010",
-    deliveryDate: "2025-04-03",
-    weight: 1.8,
-    status: "delivered",
-    id: "BHASH12111U",
-  },
-];
 import moment from "moment";
+
 
 export default function PackagesScreen() {
   const { theme } = useTheme();
   const [packages, setPackages] = useState<Package[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const styles = useStyles();
 
-  // useEffect(() => {
-  //   fetchPackages();
-  // }, []);
+  useEffect(() => {
+    fetchPackages();
+  }, []);
 
-  // const fetchPackages = async () => {
-  //   try {
-  //     const response = await makeAuthenticatedRequest("/delivery/packages/", {
-  //       method: "GET",
-  //     });
-  //     const data = await response.json();
-  //     setPackages(data.packages); // Accessing "packages" array
-  //   } catch (error) {
-  //     console.error("Error fetching packages:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const fetchPackages = async () => {
+    try {
+      const response = await makeAuthenticatedRequest("/delivery/packages/", {
+        method: "GET",
+      });
+      const data = await response.json();
+      // Ensure each package has a unique ID
+      const packagesWithIds = data.map((pkg: Omit<Package, 'id'> & { id?: string }) => ({
+        ...pkg,
+        id: pkg.packageID
+      }));
+      setPackages(packagesWithIds);
+    } catch (error) {
+      console.error("Error fetching packages:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const groupPackagesByDate = (packages: Package[]) => {
+  const groupPackagesByDate = (packages: Package[]): Record<string, Package[]> => {
     const today = moment().format("YYYY-MM-DD");
     const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
 
-    // Initial empty groups
+    if (!packages?.length) {
+      return {};
+    }
+
+    const initialGroups: Record<string, Package[]> = {
+      Today: [],
+      Tomorrow: [],
+      Overdue: []
+    };
+
     const groupedPackages = packages.reduce(
       (acc, pkg) => {
         if (pkg.deliveryDate === today) {
@@ -107,16 +73,43 @@ export default function PackagesScreen() {
         }
         return acc;
       },
-      { Today: [], Tomorrow: [], Overdue: [] } as Record<string, Package[]>,
+      initialGroups
     );
 
-    // 🔹 Remove empty categories dynamically
+    // Remove empty categories
     return Object.fromEntries(
-      Object.entries(groupedPackages).filter(([_, value]) => value.length > 0),
-    );
+      Object.entries(groupedPackages).filter(([_, value]) => value.length > 0)
+    ) as Record<string, Package[]>;
   };
 
-  const groupedPackages = groupPackagesByDate(exampleData); // Replace with `packages` when fetching from API
+  const sortSections = (sections: [string, Package[]][]): [string, Package[]][] => {
+    const priorityOrder = {
+      Overdue: 0,
+      Today: 1,
+      Tomorrow: 2,
+    };
+
+    return sections.sort((a, b) => {
+      const [sectionA] = a;
+      const [sectionB] = b;
+
+      // Handle priority sections first
+      if (sectionA in priorityOrder && sectionB in priorityOrder) {
+        return priorityOrder[sectionA as keyof typeof priorityOrder] - 
+               priorityOrder[sectionB as keyof typeof priorityOrder];
+      }
+      if (sectionA in priorityOrder) return -1;
+      if (sectionB in priorityOrder) return 1;
+
+      // For other dates, sort chronologically
+      const dateA = moment(sectionA, "MMM D, YYYY");
+      const dateB = moment(sectionB, "MMM D, YYYY");
+      return dateA.valueOf() - dateB.valueOf();
+    });
+  };
+
+  const groupedPackages = groupPackagesByDate(packages);
+  const sections = sortSections(Object.entries(groupedPackages));
 
   return (
     <View style={styles.outer}>
@@ -133,26 +126,31 @@ export default function PackagesScreen() {
 
           {loading ? (
             <ActivityIndicator size="large" color={theme.color.mediumPrimary} />
+          ) : sections.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateText}>No packages to display</Text>
+              <Text style={styles.emptyStateSubtext}>Add a package to get started</Text>
+            </View>
           ) : (
             <FlatList
-              data={Object.keys(groupedPackages)}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
+              data={sections}
+              keyExtractor={([section]) => section}
+              renderItem={({ item: [section, sectionPackages] }) => (
                 <>
                   <Text
                     style={[
                       styles.sectionHeader,
-                      item === "Overdue" ? styles.overdueHeader : {},
+                      section === "Overdue" ? styles.overdueHeader : {},
                     ]}
                   >
-                    {item}
+                    {section}
                   </Text>
                   <FlatList
-                    data={groupedPackages[item]}
-                    keyExtractor={(pkg) => pkg.address}
+                    data={sectionPackages}
+                    keyExtractor={(pkg) => pkg.packageID}
                     renderItem={({ item }) => (
                       <PackageModule
-                        id={item.id ?? ""}
+                        id={item.packageID}
                         location={item.address}
                         phoneNumber={item.recipientPhoneNumber}
                       />
@@ -161,7 +159,7 @@ export default function PackagesScreen() {
                   />
                 </>
               )}
-              contentContainerStyle={{ paddingBottom: 20, gap: 12 }}
+              contentContainerStyle={{ paddingBottom: 100, gap: 12 }}
               style={{ paddingHorizontal: 20, height: "100%" }}
             />
           )}

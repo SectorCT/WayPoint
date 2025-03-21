@@ -2,14 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-export const makeAuthenticatedRequest = async (
+export const makeAuthenticatedRequest = async <T = any>(
   endpoint: string,
   options: RequestInit = {},
-) => {
+): Promise<Response> => {
   try {
     const accessToken = await AsyncStorage.getItem("accessToken");
     const refreshToken = await AsyncStorage.getItem("refreshToken");
-    console.log(`base url + endpoint ${BASE_URL}${endpoint}`);
 
     if (!accessToken || !refreshToken) {
       throw new Error("No authentication tokens found");
@@ -25,24 +24,24 @@ export const makeAuthenticatedRequest = async (
 
     if (response.status === 401) {
       // Token expired, try to refresh
-      const refreshResponse = await fetch(`${BASE_URL}/refresh-token`, {
+      const refreshResponse = await fetch(`${BASE_URL}/auth/token/refresh/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({ refresh : refreshToken }),
       });
 
       if (!refreshResponse.ok) {
+        console.log(refreshResponse);
         throw new Error("Failed to refresh token");
       }
 
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      const { access: newAccessToken } =
         await refreshResponse.json();
 
       // Store new tokens
       await AsyncStorage.setItem("accessToken", newAccessToken);
-      await AsyncStorage.setItem("refreshToken", newRefreshToken);
 
       // Retry the original request with new token
       return fetch(`${BASE_URL}${endpoint}`, {

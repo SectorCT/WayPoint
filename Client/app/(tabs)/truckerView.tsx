@@ -1,24 +1,35 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet, Dimensions, Text } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { testRouteData } from "../../testRouteData";
 import { usePosition } from "@context/PositionContext";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@context/ThemeContext";
+import { DrawerLayout } from 'react-native-gesture-handler';
 
 interface Coordinate {
   latitude: number;
   longitude: number;
 }
 
+interface RouteLocation extends Coordinate {
+  waypoint_index: number;
+  package_info: Package;
+}
+
 interface RouteData {
   zone: number;
-  routes: {
+  route: {
     waypoint_index: number;
+    package_info: Package;
     route: [number, number][];
     location: [number, number];
     duration: number;
   }[];
+  driverUsername: string;
 }
+
+const DRAWER_WIDTH = 300;
 
 // Function to generate a color based on a value
 const generateColorFromValue = (value: number): string => {
@@ -47,48 +58,84 @@ const generateColorFromValue = (value: number): string => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-const CustomMarker = ({ number }: { number: number }) => (
-  <View style={styles.markerContainer}>
-    <Text style={styles.markerText}>{number}</Text>
+const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
+  <View style={[
+    styles.markerContainer,
+    isDelivered && styles.markerContainerDelivered
+  ]}>
+    {isDelivered ? (
+      <MaterialIcons name="check" size={20} color="#4CAF50" />
+    ) : (
+      <Text style={styles.markerText}>{number}</Text>
+    )}
   </View>
 );
 
 const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
   <View style={styles.currentPositionContainer}>
-      <MaterialIcons 
-        name="navigation" 
-        size={35} 
-        color="#2196F3"
-        style={[
-          styles.navigationIcon,
-          heading !== null ? {
-            transform: [{ rotate: `${heading}deg` }]
-          } : undefined
-        ]}
-      />
+    <MaterialIcons 
+      name="navigation" 
+      size={35} 
+      color="#2196F3"
+      style={[
+        styles.navigationIcon,
+        heading !== null ? {
+          transform: [{ rotate: `${heading}deg` }]
+        } : undefined
+      ]}
+    />
   </View>
 );
 
 export default function TruckerViewScreen() {
+  const { theme } = useTheme();
+  const [deliveredPackages, setDeliveredPackages] = useState<Set<string>>(new Set());
   const currentZone = testRouteData[0] as RouteData;
   const routeColor = generateColorFromValue(currentZone.zone);
   const { position } = usePosition();
-  
-  // Extract locations from route data (using the location property from each route)
-  const locations: Coordinate[] = currentZone.routes.map((route) => ({
-    latitude: route.location[1],
-    longitude: route.location[0]
+  const drawerRef = useRef<DrawerLayout>(null);
+
+  const handleDelivery = async (packageId: string) => {
+    try {
+      // const response = await fetch(`/delivery/deliver/${packageId}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
+
+      // if (!response.ok) {
+      //   // throw new Error('Failed to mark package as delivered');
+      //   console.error('Failed to mark package as delivered:', response);
+      // }
+
+      await setDeliveredPackages(prev => new Set([...prev, packageId]));
+    } catch (error) {
+      console.error('Error marking package as delivered:', error);
+    }
+  };
+
+  // Extract locations from route data
+  const locations: RouteLocation[] = currentZone.route.map((routeSection) => ({
+    latitude: routeSection.location[1],
+    longitude: routeSection.location[0],
+    waypoint_index: routeSection.waypoint_index,
+    package_info: routeSection.package_info
   }));
 
-  // Extract route points from all routes
-  const routePoints: Coordinate[] = currentZone.routes.flatMap(route => 
+  // Extract route points
+  const routePoints: Coordinate[] = currentZone.route.flatMap(route => 
     route.route.map((point: [number, number]) => ({
       latitude: point[1],
-      longitude: point[0]
+      longitude: point[0],
     }))
   );
 
-  // Calculate initial region from first location
+  // Filter out delivered packages from locations
+  const activeLocations = locations.filter(
+    location => !deliveredPackages.has(location.package_info.packageID)
+  );
+
   const initialRegion = {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
@@ -96,48 +143,127 @@ export default function TruckerViewScreen() {
     longitudeDelta: 0.0421,
   };
 
-  return (
-    <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={initialRegion}
+  const renderDrawerContent = () => (
+    <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}>
+      <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
+        <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text>
+        <TouchableOpacity 
+          style={[styles.closeButton]} 
+          onPress={() => drawerRef.current?.closeDrawer()}
+        >
+          <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView 
+        style={styles.packageList}
+        contentContainerStyle={styles.packageListContent}
+        showsVerticalScrollIndicator={true}
       >
-        {/* Draw the route line */}
-        <Polyline
-          coordinates={routePoints}
-          strokeColor={routeColor}
-          strokeWidth={3}
-        />
-
-        {/* Mark each location */}
-        {currentZone.routes.map((route) => (
-          <Marker
-            key={route.waypoint_index}
-            coordinate={{
-              latitude: route.location[1],
-              longitude: route.location[0]
-            }}
-          >
-            <CustomMarker number={route.waypoint_index} />
-          </Marker>
-        ))}
-
-        {/* Show current position */}
-        {position.latitude && position.longitude && (
-          <Marker
-            coordinate={{
-              latitude: position.latitude,
-              longitude: position.longitude
-            }}
-            anchor={{ x: 0.5, y: 0.5 }}
-            flat={true}
-          >
-            <CurrentPositionMarker heading={position.heading} />
-          </Marker>
+        {activeLocations.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <MaterialIcons name="check-circle" size={64} color={theme.color.darkPrimary} />
+            <Text style={[styles.emptyStateTitle, { color: theme.color.black }]}>
+              All Deliveries Complete!
+            </Text>
+            <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
+              Great job! You've completed all your deliveries for today.
+            </Text>
+          </View>
+        ) : (
+          activeLocations.map((location) => (
+            <View key={location.waypoint_index} style={styles.packageItem}>
+              <View style={styles.packageHeader}>
+                <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
+                  <Text style={styles.indexText}>{location.waypoint_index + 1}</Text>
+                </View>
+                <Text style={[styles.recipientName, { color: theme.color.black }]}>
+                  {location.package_info.recipient}
+                </Text>
+              </View>
+              <View style={styles.addressRow}>
+                <Text style={styles.address}>{location.package_info.address}</Text>
+                <TouchableOpacity 
+                  style={[styles.callButton, { backgroundColor: theme.color.darkPrimary }]}
+                  onPress={() => Linking.openURL(`tel:${location.package_info.recipientPhoneNumber}`)}
+                >
+                  <MaterialIcons name="phone" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity 
+                style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]}
+                onPress={() => handleDelivery(location.package_info.packageID)}
+              >
+                <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
+                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>
+                  Mark as Delivered
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))
         )}
-      </MapView>
+      </ScrollView>
     </View>
+  );
+
+  return (
+    <DrawerLayout
+      ref={drawerRef}
+      drawerWidth={DRAWER_WIDTH}
+      drawerPosition="right"
+      drawerType="slide"
+      drawerBackgroundColor={theme.color.white}
+      renderNavigationView={renderDrawerContent}
+    >
+      <View style={styles.container}>
+        <MapView
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={initialRegion}
+        >
+          <Polyline
+            coordinates={routePoints}
+            strokeColor={routeColor}
+            strokeWidth={3}
+          />
+
+          {locations.map((location) => (
+            <Marker
+              key={location.waypoint_index}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index + 1} 
+                isDelivered={deliveredPackages.has(location.package_info.packageID)}
+              />
+            </Marker>
+          ))}
+
+          {position.latitude && position.longitude && (
+            <Marker
+              coordinate={{
+                latitude: position.latitude,
+                longitude: position.longitude
+              }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              flat={true}
+            >
+              <CurrentPositionMarker heading={position.heading} />
+            </Marker>
+          )}
+        </MapView>
+
+        <TouchableOpacity 
+          style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
+          onPress={() => drawerRef.current?.openDrawer()}
+        >
+          <MaterialIcons name="menu" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+    </DrawerLayout>
   );
 }
 
@@ -159,6 +285,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
   },
+  markerContainerDelivered: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
   markerText: {
     color: '#000',
     fontSize: 16,
@@ -175,5 +305,131 @@ const styles = StyleSheet.create({
   navigationIcon: {
     backfaceVisibility: 'hidden',
     position: 'absolute',
+  },
+  menuButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  drawerContainer: {
+    flex: 1,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.41,
+  },
+  drawerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  packageList: {
+    flex: 1,
+  },
+  packageListContent: {
+    padding: 20,
+  },
+  packageItem: {
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    marginBottom: 10,
+  },
+  packageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  indexBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  indexText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  recipientName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  address: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+    marginRight: 10,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  callButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+  },
+  completeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 }); 

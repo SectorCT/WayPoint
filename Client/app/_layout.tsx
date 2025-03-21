@@ -4,11 +4,11 @@ import { AuthProvider } from "../context/AuthContext";
 import { PositionProvider } from "../context/PositionContext";
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Redirect } from "expo-router";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { FONTS } from "@/constants/fonts";
 import { ThemeProvider } from "@context/ThemeContext";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const loadFonts = () => {
   return Font.loadAsync({
@@ -47,8 +47,7 @@ function RootLayoutNav() {
             <Stack.Screen name="(auth)/register" />
           </>
         ) : (
-          
-            <>
+          <>
             <Stack.Screen
               name="(tabs)"
               options={{
@@ -78,10 +77,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <PositionProvider>
-        <RootLayoutNav />
-      </PositionProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <PositionProvider>
+          <RootLayoutNav />
+        </PositionProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
