@@ -1,7 +1,7 @@
 FACTORY_ADDRESS = {
     "address": "123 Factory Street, City, Country",
-    "latitude": 42.0,
-    "longitude": 23.0,
+    "latitude": 42.6666,
+    "longitude": 23.3750,
     "package_info": {
         "address": "123 Factory Street, City, Country",
         "latitude": 42.6666,
