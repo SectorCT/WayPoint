@@ -19,11 +19,20 @@ export const getEmployees = async (): Promise<User[]> => {
   return data.filter((user: User) => user.isManager === false);
 };
 
+export const getUserByUsername = async (username: string): Promise<User> => {
+  const allEmployeesRes = await makeAuthenticatedRequest('/auth/all/');
+  const allEmployees = await allEmployeesRes.json();
+  const user = allEmployees.find((user: User) => user.username === username);
+  if (!user) {
+    throw new Error(`User with username ${username} not found`);
+  }
+  return user;
+};
+
 export const startJourney = async (drivers: string[]): Promise<void> => {
   const body = {
     drivers: drivers,
   }
-  console.log(body);
   const response = await makeAuthenticatedRequest('/delivery/route/', {
     method: "POST",
     body: JSON.stringify(body),
@@ -32,12 +41,36 @@ export const startJourney = async (drivers: string[]): Promise<void> => {
 };
 
 export const getAllRoutes = async (): Promise<RouteData[]> => {
-  const response = await makeAuthenticatedRequest('/delivery/routes/');
+  const response = await makeAuthenticatedRequest('/delivery/route/all/');
   if (!response.ok) {
     return [];
   }
   return response.json();
 };
 
+export const getRoute = async (driverID: string): Promise<RouteData> => {
+  const response = await makeAuthenticatedRequest(`/delivery/route/getByDriver/`, {
+    method: "POST",
+    body: JSON.stringify({
+      "username": driverID
+  }),
+  });
+  return response.json();
+};
+
+export const deleteTruck = async (licensePlate: string): Promise<Response> => {
+  return makeAuthenticatedRequest(`/delivery/trucks/${licensePlate}/`, {
+    method: "DELETE",
+  });
+};
+
+export const markPackageAsDelivered = async (packageID: string): Promise<Response> => {
+  return makeAuthenticatedRequest(`/delivery/packages_mark/`, {
+    method: "POST",
+    body: JSON.stringify({
+      "packageID": packageID
+    }),
+  });
+};
 
 

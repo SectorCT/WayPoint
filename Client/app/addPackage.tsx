@@ -12,7 +12,6 @@ import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router, useLocalSearchParams } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY;
@@ -83,7 +82,6 @@ export default function AddPackageScreen() {
     try {
       const dateParts = formState.deliveryDate.split("/");
       const formattedDate = `${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`;
-      console.log(formattedDate);
 
       // Format numeric values to 6 decimal places
       const formattedLatitude = parseFloat(formState.latitude || "0").toFixed(

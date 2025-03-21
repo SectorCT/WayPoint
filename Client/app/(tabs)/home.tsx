@@ -17,6 +17,8 @@ import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 import { useAuth } from "@/context/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialIcons } from "@expo/vector-icons";
 
 interface PastEntryType {
   date: string;
@@ -91,8 +93,15 @@ export default function HomeScreen() {
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Journeys</Text>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Text style={styles.logoutButtonText}>Logout</Text>
+            <TouchableOpacity onPress={handleLogout}>
+              <LinearGradient
+                colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.logoutButton}
+              >
+                <MaterialIcons name="logout" size={24} color="#FFFFFF" />
+              </LinearGradient>
             </TouchableOpacity>
           </View>
 

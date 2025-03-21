@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Stack } from "expo-router";
+import { Stack, Slot } from "expo-router";
 import { AuthProvider } from "../context/AuthContext";
 import { PositionProvider } from "../context/PositionContext";
 import { useEffect } from "react";
@@ -9,6 +9,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { FONTS } from "@/constants/fonts";
 import { ThemeProvider } from "@context/ThemeContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { router } from 'expo-router';
 
 const loadFonts = () => {
   return Font.loadAsync({
@@ -20,8 +21,9 @@ const loadFonts = () => {
 };
 
 function RootLayoutNav() {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  
   useEffect(() => {
     async function prepare() {
       try {
@@ -36,48 +38,23 @@ function RootLayoutNav() {
     prepare();
   }, []);
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      if (!user) {
+        router.replace('/(auth)/login');
+      } else if (user.isManager) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(trucker)');
+      }
+    }
+  }, [user, fontsLoaded]);
+
   if (!fontsLoaded) return null;
 
   return (
     <ThemeProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen name="(auth)/login" />
-            <Stack.Screen name="(auth)/register" />
-          </>
-        ) : (
-          <>
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="addPackage" 
-              options={{
-                headerShown: true,
-                title: "Add Package",
-              }}
-            />
-            <Stack.Screen 
-              name="addTruck" 
-              options={{
-                headerShown: true,
-                title: "Add Truck",
-              }}
-            />
-            <Stack.Screen 
-              name="startJourney" 
-              options={{
-                headerShown: true,
-                title: "Start Journey",
-              }}
-            />
-          </>
-        )}
-      </Stack>
+      <Slot />
     </ThemeProvider>
   );
 }

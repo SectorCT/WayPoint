@@ -97,9 +97,13 @@ export default function useStyles() {
       marginBottom: 10,
     },
     logoutButton: {
-      padding: 8,
-      borderRadius: 8,
-      backgroundColor: theme.color.lightGrey,
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      justifyContent: "center",
+      alignItems: "center",
+      overflow: "hidden",
+      ...theme.shadow,
     },
     logoutButtonText: {
       fontSize: theme.fontSize.medium,

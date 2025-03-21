@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
 import { usePosition } from "@context/PositionContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
-import { getAllRoutes } from "../../utils/journeyApi";
+import { getAllRoutes, getUserByUsername } from "../../utils/journeyApi";
 import { useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
+interface Coordinate {
+  latitude: number;
+  longitude: number;
+}
 
 // Function to generate a color based on a value
 const generateColorFromValue = (value: string): string => {
@@ -44,6 +49,16 @@ const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: bo
     ) : (
       <Text style={styles.markerText}>{number}</Text>
     )}
+  </View>
+);
+
+const EmptyState = ({ theme }: { theme: any }) => (
+  <View style={[styles.emptyContainer, { backgroundColor: theme.color.white }]}>
+    <MaterialIcons name="local-shipping" size={80} color={theme.color.darkPrimary} />
+    <Text style={[styles.emptyTitle, { color: theme.color.black }]}>No Routes Available</Text>
+    <Text style={[styles.emptyText, { color: theme.color.darkPrimary }]}>
+      There are no delivery routes to display at the moment.
+    </Text>
   </View>
 );
 
@@ -88,6 +103,7 @@ export default function AdminTruckTrackerScreen() {
   const mapRef = useRef<MapView>(null);
   const [zoneLocations, setZoneLocations] = useState<Map<string, RouteLocation[]>>(new Map());
   const [routeData, setRouteData] = useState<RouteData[]>([]);
+  const [userData, setUserData] = useState<Map<string, any>>(new Map());
   const params = useLocalSearchParams<{ routes?: string }>();
 
   useEffect(() => {
@@ -96,38 +112,63 @@ export default function AdminTruckTrackerScreen() {
         let routes: RouteData[];
         
         if (params.routes) {
-          // If routes are passed as params, parse them
-          console.log('Parsing routes from params:', params.routes);
           routes = JSON.parse(params.routes as string);
         } else {
-          // Otherwise fetch routes from the API
-          console.log('Fetching routes from API');
           routes = await getAllRoutes();
         }
 
-        console.log('Received routes:', routes);
-        setRouteData(routes);
+        // Deduplicate routes based on user and date
+        const uniqueRoutes = routes.reduce((acc, route) => {
+          const key = `${route.user}-${route.dateOfCreation}`;
+          if (!acc.has(key)) {
+            acc.set(key, route);
+          }
+          return acc;
+        }, new Map<string, RouteData>());
+
+        const deduplicatedRoutes = Array.from(uniqueRoutes.values());
+        setRouteData(deduplicatedRoutes);
         
         // Initialize locations for all zones
         const newZoneLocations = new Map<string, RouteLocation[]>();
+        const newUserData = new Map<string, any>();
+        const processedUsers = new Set<string>();
         
-        routes.forEach((zoneData) => {
-          console.log('Processing zone data:', zoneData);
+        // Fetch user data for each unique route
+        for (const zoneData of deduplicatedRoutes) {
           if (!zoneData.packageSequence) {
             console.error('Invalid zone data - missing packageSequence:', zoneData);
-            return;
+            continue;
           }
-          const locations = zoneData.packageSequence.map((packageInfo, index) => ({
-            latitude: packageInfo.latitude,
-            longitude: packageInfo.longitude,
-            waypoint_index: index,
-            package_info: packageInfo as Package
-          }));
-          // Use the driver string directly as the key
-          newZoneLocations.set(zoneData.driver.username, locations);
-        });
+
+          // Only process each user once
+          if (!processedUsers.has(zoneData.user)) {
+            try {
+              const user = await getUserByUsername(zoneData.user);
+              newUserData.set(zoneData.user, user);
+              processedUsers.add(zoneData.user);
+            } catch (error) {
+              console.error(`Error fetching user data for ${zoneData.user}:`, error);
+              continue;
+            }
+          }
+
+          // Create locations array and ensure it's properly ordered
+          const locations = zoneData.packageSequence
+            .map((packageInfo: Package, index: number) => ({
+              latitude: packageInfo.latitude,
+              longitude: packageInfo.longitude,
+              waypoint_index: index,
+              package_info: packageInfo
+            }))
+            .sort((a, b) => a.waypoint_index - b.waypoint_index); // Ensure proper ordering
+
+          
+          newZoneLocations.set(zoneData.user, locations); 
+        }
 
         setZoneLocations(newZoneLocations);
+        setUserData(newUserData);
       } catch (error) {
         console.error('Error initializing route data:', error);
       }
@@ -151,8 +192,6 @@ export default function AdminTruckTrackerScreen() {
 
   // Calculate initial region based on all locations or device position
   const allLocations = Array.from(zoneLocations.values()).flat();
-  console.log(allLocations, "allLocations");
-  console.log(zoneLocations, "zoneLocations");
   const initialRegion = position.latitude && position.longitude ? {
     latitude: position.latitude,
     longitude: position.longitude,
@@ -170,12 +209,10 @@ export default function AdminTruckTrackerScreen() {
     longitudeDelta: 0.0421,
   };
 
-  const calculateRouteProgress = (routeData: RouteData) => {
-    const totalPackages = routeData.packageSequence.length;
-    const deliveredPackages = routeData.packageSequence.filter(
-      pkg => pkg.status === 'delivered'
-    ).length;
-    return (deliveredPackages / totalPackages) * 100;
+  const calculateRouteProgress = (route: RouteData): number => {
+    if (!route.packageSequence || route.packageSequence.length === 0) return 0;
+    const deliveredCount = route.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length;
+    return (deliveredCount / route.packageSequence.length) * 100;
   };
 
   const handleRoutePress = (routeData: RouteData) => {
@@ -183,6 +220,10 @@ export default function AdminTruckTrackerScreen() {
       console.error('Invalid route data:', routeData);
       return;
     }
+
+    const deliveredCount = routeData.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length;
+    const totalCount = routeData.packageSequence.length;
+    const progress = (deliveredCount / totalCount) * 100;
 
     // Convert route points to coordinates
     const routePoints: Coordinate[] = [
@@ -213,84 +254,116 @@ export default function AdminTruckTrackerScreen() {
     drawerRef.current?.closeDrawer();
   };
 
-  const renderDrawerContent = () => (
-    <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}>
-      <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
-        <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Route Summary</Text>
-        <TouchableOpacity 
-          style={styles.closeButton} 
-          onPress={() => drawerRef.current?.closeDrawer()}
+  const renderDrawerContent = () => {
+    // Group routes by user
+    const routesByUser = routeData.reduce((acc, route) => {
+      if (!acc[route.user]) {
+        acc[route.user] = [];
+      }
+      acc[route.user].push(route);
+      return acc;
+    }, {} as Record<string, RouteData[]>);
+
+    return (
+      <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}>
+        <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
+          <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Route Summary</Text>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={() => drawerRef.current?.closeDrawer()}
+          >
+            <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          style={styles.routeList}
+          contentContainerStyle={styles.routeListContent}
+          showsVerticalScrollIndicator={true}
         >
-          <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
-        </TouchableOpacity>
+          {Object.entries(routesByUser).map(([username, userRoutes]) => {
+            const userInfo = userData.get(username);
+            const routeColor = generateColorFromValue(username);
+            
+            return (
+              <View key={`user-${username}`} style={styles.userSection}>
+                <View style={styles.routeHeader}>
+                  <View style={styles.driverInfo}>
+                    <View style={[styles.driverBadge, { backgroundColor: routeColor }]}>
+                      <MaterialIcons name="person" size={20} color="#FFFFFF" />
+                    </View>
+                    <Text style={[styles.driverText, { color: theme.color.black }]}>
+                      {userInfo?.username || username}
+                    </Text>
+                  </View>
+                  {userInfo?.phoneNumber && (
+                    <TouchableOpacity onPress={() => Linking.openURL(`tel:${userInfo.phoneNumber}`)}>
+                      <LinearGradient
+                        colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.callButton}
+                      >
+                        <MaterialIcons name="phone" size={20} color="#FFFFFF" />
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                {userRoutes.map((route, index) => {
+                  const progress = calculateRouteProgress(route);
+                  return (
+                    <TouchableOpacity
+                      key={`route-${username}-${route.dateOfCreation}-${index}`}
+                      style={styles.routeItem}
+                      onPress={() => handleRoutePress(route)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressBarBackground}>
+                          <View 
+                            style={[
+                              styles.progressBarFill, 
+                              { 
+                                width: `${progress}%`,
+                                backgroundColor: routeColor
+                              }
+                            ]} 
+                          />
+                        </View>
+                        <Text style={styles.progressText}>
+                          {Math.round(progress)}% Complete
+                        </Text>
+                      </View>
+
+                      <View style={styles.statsContainer}>
+                        <View style={styles.statItem}>
+                          <MaterialIcons name="local-shipping" size={20} color={theme.color.darkPrimary} />
+                          <Text style={styles.statText}>
+                            {route.packageSequence.length} Packages
+                          </Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <MaterialIcons 
+                            name="check-circle" 
+                            size={20} 
+                            color={theme.color.darkPrimary} 
+                          />
+                          <Text style={styles.statText}>
+                            {route.packageSequence.filter(pkg => pkg.status === 'delivered').length} Delivered
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            );
+          })}
+        </ScrollView>
       </View>
-
-      <ScrollView 
-        style={styles.routeList}
-        contentContainerStyle={styles.routeListContent}
-        showsVerticalScrollIndicator={true}
-      >
-        {routeData.map((routeData) => {
-          const progress = calculateRouteProgress(routeData);
-          const routeColor = generateColorFromValue(routeData.driver.username);
-          
-          return (
-            <TouchableOpacity
-              key={routeData.driver.username}
-              style={styles.routeItem}
-              onPress={() => handleRoutePress(routeData)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.routeHeader}>
-                <View style={[styles.driverBadge, { backgroundColor: routeColor }]}>
-                  <MaterialIcons name="person" size={20} color="#FFFFFF" />
-                </View>
-                <Text style={[styles.driverText, { color: theme.color.black }]}>
-                  {routeData.driver.username}
-                </Text>
-              </View>
-              
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBarBackground}>
-                  <View 
-                    style={[
-                      styles.progressBarFill, 
-                      { 
-                        width: `${progress}%`,
-                        backgroundColor: routeColor
-                      }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressText}>
-                  {Math.round(progress)}% Complete
-                </Text>
-              </View>
-
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <MaterialIcons name="local-shipping" size={20} color={theme.color.darkPrimary} />
-                  <Text style={styles.statText}>
-                    {routeData.packageSequence.length} Packages
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <MaterialIcons 
-                    name="check-circle" 
-                    size={20} 
-                    color={theme.color.darkPrimary} 
-                  />
-                  <Text style={styles.statText}>
-                    {routeData.packageSequence.filter(pkg => pkg.status === 'delivered').length} Delivered
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
+    );
+  };
 
   return (
     <DrawerLayout
@@ -302,52 +375,58 @@ export default function AdminTruckTrackerScreen() {
       renderNavigationView={renderDrawerContent}
     >
       <View style={styles.container}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={initialRegion}
-        >
-          {routeData.map((zoneData) => {
-            const routePoints: Coordinate[] = zoneData.mapRoute.map((point) => ({
-              latitude: point[1],
-              longitude: point[0],
-            }));
-            const zoneLocationsArray = zoneLocations.get(zoneData.driver.username) || [];
-            const routeColor = generateColorFromValue(zoneData.driver.username);
+        {routeData.length === 0 ? (
+          <EmptyState theme={theme} />
+        ) : (
+          <>
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              provider={PROVIDER_GOOGLE}
+              initialRegion={initialRegion}
+            >
+              {routeData.map((zoneData, index) => {
+                const routePoints: Coordinate[] = zoneData.mapRoute.map((point: [number, number]) => ({
+                  latitude: point[1],
+                  longitude: point[0],
+                }));
+                const zoneLocationsArray = zoneLocations.get(zoneData.user) || [];
+                const routeColor = generateColorFromValue(zoneData.user);
 
-            return (
-              <React.Fragment key={`route-${zoneData.driver}-${zoneData.dateOfCreation}`}>
-                <Polyline
-                  coordinates={routePoints}
-                  strokeColor={routeColor}
-                  strokeWidth={3}
-                />
-                {zoneLocationsArray.map((location) => (
-                  <Marker
-                    key={`marker-${zoneData.driver}-${location.package_info.packageID}`}
-                    coordinate={{
-                      latitude: location.latitude,
-                      longitude: location.longitude
-                    }}
-                  >
-                    <CustomMarker 
-                      number={location.waypoint_index + 1} 
-                      isDelivered={location.package_info.status === 'delivered'}
+                return (
+                  <React.Fragment key={`route-${zoneData.user}-${zoneData.dateOfCreation}-${index}`}>
+                    <Polyline
+                      coordinates={routePoints}
+                      strokeColor={routeColor}
+                      strokeWidth={3}
                     />
-                  </Marker>
-                ))}
-              </React.Fragment>
-            );
-          })}
-        </MapView>
+                    {zoneLocationsArray.map((location) => (
+                      <Marker
+                        key={`marker-${zoneData.user}-${location.waypoint_index}`}
+                        coordinate={{
+                          latitude: location.latitude,
+                          longitude: location.longitude
+                        }}
+                      >
+                        <CustomMarker 
+                          number={location.waypoint_index + 1} 
+                          isDelivered={location.package_info.status === 'delivered'}
+                        />
+                      </Marker>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </MapView>
 
-        <TouchableOpacity 
-          style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
-          onPress={() => drawerRef.current?.openDrawer()}
-        >
-          <MaterialIcons name="menu" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
+              onPress={() => drawerRef.current?.openDrawer()}
+            >
+              <MaterialIcons name="menu" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </DrawerLayout>
   );
@@ -436,6 +515,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    justifyContent: 'space-between',
+  },
+  driverInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   driverBadge: {
     width: 36,
@@ -448,6 +533,7 @@ const styles = StyleSheet.create({
   driverText: {
     fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
   },
   progressContainer: {
     marginBottom: 12,
@@ -479,5 +565,38 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  userSection: {
+    marginBottom: 20,
+  },
+  callButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
   },
 }); 
