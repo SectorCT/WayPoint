@@ -7,21 +7,55 @@ export default function useStyles() {
   return StyleSheet.create({
     container: {
       width: "100%",
-      minHeight: 90,
-      borderRadius: 10,
+      borderRadius: 16,
       backgroundColor: theme.color.white,
+      padding: 16,
       ...theme.shadow,
-      elevation: 5,
-      padding: 20,
-      borderColor: "#D3D3D3",
-      borderWidth: 0.2,
-      gap: 5,
+      elevation: 2,
+      gap: 16,
+    },
+    header: {
       flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    dateText: {
+      fontSize: theme.fontSize.large,
+      fontFamily: theme.font.semibold,
+      color: theme.color.black,
+    },
+    statusContainer: {
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 16,
+      backgroundColor: theme.color.lightGrey,
+    },
+    statusText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+    },
+    statsContainer: {
+      gap: 15,
+    },
+    deleteButton: {
+      position: "absolute",
+      bottom: 16,
+      right: 16,
+      padding: 8,
+    },
+    status: {
+      fontFamily: theme.font.regular,
+      fontSize: theme.fontSize.medium,
     },
     title: {
       fontSize: theme.fontSize.large,
       fontFamily: theme.font.semibold,
       flex: 1,
+    },
+    secondColumn: {
+      flex: 1,
+      justifyContent: "space-between",
     },
     firstRow: {
       flexDirection: "row",
@@ -30,43 +64,6 @@ export default function useStyles() {
       alignItems: "center",
       gap: 20,
       alignSelf: "flex-start",
-    },
-    phoneNumber: {
-      fontSize: theme.fontSize.medium,
-      fontFamily: theme.font.regular,
-    },
-    secondRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      gap: 20,
-    },
-    trashIcon: {
-      bottom: -5,
-    },
-    location: {
-      flex: 1,
-      fontSize: theme.fontSize.medium,
-      fontFamily: theme.font.regular,
-    },
-    trashOuter: {
-      justifyContent: "flex-end",
-    },
-    phoneNumberOuter: {
-      justifyContent: "flex-start",
-      height: "100%",
-    },
-    secondColumn: {
-      flex: 1,
-      justifyContent: "space-between",
-    },
-    firstColumn: {
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: 12,
-    },
-    status: {
-      fontFamily: theme.font.regular,
-      fontSize: theme.fontSize.medium,
     },
   });
 }
