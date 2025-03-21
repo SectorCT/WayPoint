@@ -1,8 +1,14 @@
 from rest_framework import serializers
 from .models import Package, Truck
 from rest_framework import serializers
-from .models import Package
+from .models import Package, RouteAssignment
 from datetime import date
+
+
+class RouteAssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RouteAssignment
+        fields = ['driver', 'packageSequence', 'mapRoute', 'dateOfCreation']
 
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()

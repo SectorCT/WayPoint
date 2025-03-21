@@ -99,11 +99,38 @@ class TruckManager(models.Manager):
 class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True)
     kilogramCapacity = models.DecimalField(max_digits=7, decimal_places=2)
-
+    isUsed = models.BooleanField(default=False)
     objects = TruckManager()
 
     def __str__(self):
         return f"Truck {self.licensePlate} - Capacity: {self.kilogramCapacity} kg"
+
+class RouteManager(models.Manager):
+    def create_route(self, driver, package_sequence, map_route):
+        route = self.model(
+            driver=driver,
+            packageSequence=package_sequence,
+            mapRoute=map_route
+        )
+        route.save(using=self._db)
+        return route
+
+    def routes_for_driver(self, driver):
+        return self.filter(driver=driver)
+
+    def update_route(self, route_id, package_sequence=None, map_route=None):
+        try:
+            route = self.get(pk=route_id)
+        except self.model.DoesNotExist:
+            return None
+
+        if package_sequence is not None:
+            route.packageSequence = package_sequence
+        if map_route is not None:
+            route.mapRoute = map_route
+
+        route.save(using=self._db)
+        return route
 
 class RouteAssignment(models.Model):
     driver = models.ForeignKey(
@@ -119,6 +146,10 @@ class RouteAssignment(models.Model):
         default=list,
         help_text="A map drawing of the route"
     )
+
+    dateOfCreation = models.DateField(auto_now_add=True)
+
+    objects = RouteManager()
 
     def __str__(self):
         return f"Route assigned to {self.driver.username}"
