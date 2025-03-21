@@ -20,7 +20,7 @@ urlpatterns = [
 
     path('route/getByDriver/', getRoutingBasedOnDriver.as_view(), name='get-routing-based-on-driver'),
     path('route/', RoutePlannerView.as_view(), name = 'route'),
-    path('  ', getAllRoutings.as_view(), name = 'all-routes'),
+    path('route/all/', getAllRoutings.as_view(), name = 'all-routes'),
     path('route/finish/', finishRoute.as_view(), name = 'finish-route'),
-    path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes')
+    path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes'),
 ]
