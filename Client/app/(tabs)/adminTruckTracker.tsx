@@ -413,7 +413,7 @@ export default function AdminTruckTrackerScreen() {
                         }}
                       >
                         <CustomMarker 
-                          number={location.waypoint_index + 1} 
+                          number={location.waypoint_index} 
                           isDelivered={location.package_info.status === 'delivered'}
                         />
                       </Marker>

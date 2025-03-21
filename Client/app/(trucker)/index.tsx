@@ -262,7 +262,7 @@ export default function TruckerViewScreen() {
             <View key={location.waypoint_index} style={styles.packageItem}>
               <View style={styles.packageHeader}>
                 <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
-                  <Text style={styles.indexText}>{location.waypoint_index + 1}</Text>
+                  <Text style={styles.indexText}>{location.waypoint_index}</Text>
                 </View>
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
