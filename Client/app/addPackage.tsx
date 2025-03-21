@@ -128,9 +128,13 @@ export default function AddPackageScreen() {
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === "ios");
+    setShowDatePicker(false);
     if (selectedDate) {
-      const formattedDate = selectedDate.toLocaleDateString();
+      const formattedDate = selectedDate.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
       setFormState((prev) => ({ ...prev, deliveryDate: formattedDate }));
     }
   };
