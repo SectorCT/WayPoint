@@ -4,6 +4,7 @@ import MapView, { Marker, MapPressEvent, Region } from "react-native-maps";
 import { useLocalSearchParams, router } from "expo-router";
 import * as Location from "expo-location";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface LocationState {
   latitude?: string;
@@ -70,8 +71,13 @@ export default function PickLocationScreen() {
             latitude: selectedLocation.latitude,
             longitude: selectedLocation.longitude,
           }}
-          pinColor="#F39358"
-        />
+        >
+          <View style={styles.markerContainer}>
+            <View style={styles.markerCircle}>
+              <MaterialIcons name="inventory" size={16} color="#FFFFFF" />
+            </View>
+          </View>
+        </Marker>
       </MapView>
       <View style={styles.buttonContainer}>
         <GradientButton title="Confirm Location" onPress={handleDone} />
@@ -99,6 +105,28 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     zIndex: 1, // Ensures button appears above the map
+  },
+  markerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerCircle: {
+    backgroundColor: '#F39358',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 
