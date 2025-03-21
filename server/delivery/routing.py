@@ -271,3 +271,9 @@ class finishRoute(APIView):
             return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
         route.save()
         return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)
+
+class dropAllRoutes(APIView):
+    def get(self, request):
+        count, _ = RouteAssignment.objects.all().delete()
+        package_count = Package.objects.all().update(status='pending')
+        return Response({"detail": f"{count} route assignments dropped."}, status=status.HTTP_200_OK)
