@@ -65,6 +65,17 @@ export default function useStyles() {
       alignItems: "center",
       marginRight: 12,
     },
+    thirdColumn: {
+      backgroundColor: "#D9D9D9",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 15,
+      borderRadius: 10,
+    },
+    trackText: {
+      fontFamily: theme.font.semibold,
+      fontSize: theme.fontSize.mediumLarge - 1,
+    },
   });
 }
 
