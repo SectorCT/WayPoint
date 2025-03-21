@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
 import useStyles from "./styles";
 import { useTheme } from "@context/ThemeContext";
 import Trash from "@assets/icons/trash.svg";
@@ -36,13 +37,20 @@ export default function CurrentJourney({
               </Text>
             </View>
           </View>
-          <View style={styles.thirdColumn}>
+          <TouchableOpacity style={styles.thirdColumn}>
             <Text style={styles.trackText}>Track</Text>
-          </View>
+          </TouchableOpacity>
         </View>
         <View style={styles.progressBar}>
-          <View style={styles.filledUpPartProgress}>
-            <Text>{(packagesDelivered / totalPackages) * 100}%</Text>
+          <View
+            style={[
+              styles.filledUpPartProgress,
+              { width: `${(packagesDelivered / totalPackages) * 100}%` },
+            ]}
+          >
+            <Text style={styles.percentageText}>
+              {(packagesDelivered / totalPackages) * 100}%
+            </Text>
           </View>
         </View>
       </View>
