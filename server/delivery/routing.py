@@ -1,5 +1,3 @@
-# Define a constant for the factory address.
-# This dictionary follows the same structure as the location dicts used by OSRM.
 FACTORY_ADDRESS = {
     "address": "123 Factory Street, City, Country",
     "latitude": 42.0,
@@ -8,9 +6,10 @@ FACTORY_ADDRESS = {
         "address": "123 Factory Street, City, Country",
         "latitude": 42.0,
         "longitude": 23.0,
+        "packageID": "ADMIN",
         "recipient": "Factory",
         "recipientPhoneNumber": "",
-        "deliveryDate": "2025-03-21",  # Use a fixed date or adjust as needed.
+        "deliveryDate": "2025-03-21",
         "weight": 0,
         "status": "factory"
     }
@@ -224,6 +223,11 @@ class RoutePlannerView(APIView):
             create_routes_from_json(final_routes)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        Package.objects.filter(
+            status="pending",
+            deliveryDate__lte=tomorrow
+        ).update(status="in_tranzit")
         
         routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
         serializer = RouteAssignmentSerializer(routes_today, many=True)
