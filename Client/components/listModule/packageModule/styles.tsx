@@ -17,6 +17,7 @@ export default function useStyles() {
       borderColor: "#D3D3D3",
       borderWidth: 0.2,
       gap: 5,
+      marginBottom: 15,
     },
     title: {
       fontSize: theme.fontSize.large,
@@ -34,6 +35,7 @@ export default function useStyles() {
     phoneNumber: {
       fontSize: theme.fontSize.medium,
       fontFamily: theme.font.regular,
+      marginLeft: 5,
     },
     secondRow: {
       flexDirection: "row",
@@ -51,9 +53,15 @@ export default function useStyles() {
     trashOuter: {
       justifyContent: "flex-end",
     },
-    phoneNumberOuter: {
-      justifyContent: "flex-start",
-      height: "100%",
+    phoneButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    phoneIcon: {
+      margin: 0,
     },
   });
 }

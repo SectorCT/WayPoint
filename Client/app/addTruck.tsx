@@ -42,15 +42,12 @@ export default function AddTruckScreen() {
       );
 
       if (response.ok) {
-        Alert.alert("Success", "Truck added successfully");
         router.replace("/(tabs)/home");
       } else {
-        const errorData = await response.json();
-        Alert.alert("Error", errorData.detail);
+        throw new Error("Failed to add truck");
       }
     } catch (error) {
       console.error("Error adding truck:", error);
-      Alert.alert("Error", "Failed to add truck");
     }
   };
 
@@ -82,10 +79,11 @@ export default function AddTruckScreen() {
           label="License Plate"
           value={formState.licensePlate}
           onChangeText={(text) =>
-            setFormState({ ...formState, licensePlate: text })
+            setFormState({ ...formState, licensePlate: text.toUpperCase() })
           }
           placeholder="Enter license plate"
           icon="directions-car"
+          autoCapitalize="characters"
         />
 
         <FormField
