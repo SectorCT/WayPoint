@@ -104,7 +104,6 @@ export default function TruckerViewScreen() {
   const { position } = usePosition();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
-  const [isTracking, setIsTracking] = useState(false);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
   const [locations, setLocations] = useState<RouteLocation[]>([]);
   const currentZone = (testRouteData[0] as unknown as RouteData);
@@ -303,8 +302,6 @@ export default function TruckerViewScreen() {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           } : initialRegion}
-          onPanDrag={() => setIsTracking(false)}
-          onTouchStart={() => setIsTracking(false)}
         >
           <Polyline
             coordinates={routePoints}
