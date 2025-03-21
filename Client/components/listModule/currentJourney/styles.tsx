@@ -15,8 +15,7 @@ export default function useStyles() {
       padding: 20,
       borderColor: "#D3D3D3",
       borderWidth: 0.2,
-      gap: 5,
-      flexDirection: "row",
+      gap: 19,
     },
     title: {
       fontSize: theme.fontSize.large,
@@ -75,6 +74,24 @@ export default function useStyles() {
     trackText: {
       fontFamily: theme.font.semibold,
       fontSize: theme.fontSize.mediumLarge - 1,
+    },
+    progressBar: {
+      width: "100%",
+      height: 33,
+      backgroundColor: theme.color.lightPrimary,
+      borderRadius: 10,
+    },
+    containerInner: {
+      flexDirection: "row",
+    },
+    filledUpPartProgress: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: "center",
+      justifyContent: "center",
     },
   });
 }

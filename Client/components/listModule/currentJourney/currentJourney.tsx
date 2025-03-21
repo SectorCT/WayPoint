@@ -16,27 +16,36 @@ export default function CurrentJourney({
   const ICON_SIZE = 27;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.firstColumn}>
-        <Truck
-          height={ICON_SIZE}
-          width={ICON_SIZE}
-          fill={theme.color.mediumPrimary}
-        />
-      </View>
-      <View style={styles.secondColumn}>
-        <View style={styles.firstRow}>
-          <Text style={styles.title}>Current Journey</Text>
+    <>
+      <View style={styles.container}>
+        <View style={styles.containerInner}>
+          <View style={styles.firstColumn}>
+            <Truck
+              height={ICON_SIZE}
+              width={ICON_SIZE}
+              fill={theme.color.mediumPrimary}
+            />
+          </View>
+          <View style={styles.secondColumn}>
+            <View style={styles.firstRow}>
+              <Text style={styles.title}>Current Journey</Text>
+            </View>
+            <View style={styles.secondRow}>
+              <Text style={styles.location}>
+                {packagesDelivered}/{totalPackages} packages
+              </Text>
+            </View>
+          </View>
+          <View style={styles.thirdColumn}>
+            <Text style={styles.trackText}>Track</Text>
+          </View>
         </View>
-        <View style={styles.secondRow}>
-          <Text style={styles.location}>
-            {packagesDelivered}/{totalPackages} packages
-          </Text>
+        <View style={styles.progressBar}>
+          <View style={styles.filledUpPartProgress}>
+            <Text>{(packagesDelivered / totalPackages) * 100}%</Text>
+          </View>
         </View>
       </View>
-      <View style={styles.thirdColumn}>
-        <Text style={styles.trackText}>Track</Text>
-      </View>
-    </View>
+    </>
   );
 }
