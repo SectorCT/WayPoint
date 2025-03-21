@@ -56,17 +56,22 @@ export default function HomeScreen() {
           ) : (
             <FlatList
               data={[{ id: "1" }]}
-              renderItem={() =>
-                journeyStarted ? (
-                  <CurrentJourney packagesDelivered={13} totalPackages={20} />
-                ) : (
-                  <TouchableOpacity style={styles.startNewButton}>
-                    <Text style={styles.startNewButtonText}>
-                      Start new journey
-                    </Text>
-                  </TouchableOpacity>
-                )
-              }
+              renderItem={() => (
+                <View>
+                  {journeyStarted ? (
+                    <CurrentJourney packagesDelivered={13} totalPackages={20} />
+                  ) : (
+                    <TouchableOpacity style={styles.startNewButton}>
+                      <Text style={styles.startNewButtonText}>
+                        Start new journey
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <View>
+                    <Text>Past History</Text>
+                  </View>
+                </View>
+              )}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{
                 paddingBottom: 100,
