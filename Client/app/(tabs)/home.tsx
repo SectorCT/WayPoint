@@ -73,9 +73,9 @@ export default function HomeScreen() {
                     <PastEntry
                       duration="3:45"
                       date="20th March"
-                      deliveredPackages={23}
-                      totalTrucks={5}
-                      kilosDelivered={100}
+                      numPackages={23}
+                      numTrucks={5}
+                      kilos={100}
                     />
                   </View>
                 </View>

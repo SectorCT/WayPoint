@@ -12,7 +12,7 @@ interface PastEntryProps {
   date: string;
   numPackages: number;
   numTrucks: number;
-  capacity: number;
+  kilos: number;
   onDelete?: () => void;
   duration: string;
 }
@@ -21,7 +21,7 @@ export default function PastEntry({
   date,
   numPackages,
   numTrucks,
-  capacity,
+  kilos,
   duration,
   onDelete,
 }: PastEntryProps) {
@@ -54,9 +54,11 @@ export default function PastEntry({
 
         <InfoEntryPast
           Icon={Weight}
-          value={capacity}
-          label="kilos of capacity"
+          value={kilos}
+          label="kilos of packages"
           gradientColors={["#FFE8E8", "#FFD6D6"]}
+          iconSize={20}
+          marginTop={-3}
         />
       </View>
 

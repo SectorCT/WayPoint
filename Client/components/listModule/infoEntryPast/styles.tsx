@@ -18,6 +18,8 @@ export default function useStyles() {
     firstColumn: {
       justifyContent: "center",
       alignItems: "center",
+      height: 24,
+      width: 24,
     },
     secondColumn: {
       flex: 1,
@@ -25,7 +27,7 @@ export default function useStyles() {
     },
     value: {
       fontSize: theme.fontSize.large,
-      fontFamily: theme.font.semibold,
+      fontFamily: theme.font.medium,
       color: theme.color.black,
     },
   });

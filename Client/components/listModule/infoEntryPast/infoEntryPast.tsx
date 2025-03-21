@@ -10,6 +10,8 @@ interface InfoEntryPastProps {
   value: number;
   label: string;
   gradientColors: [string, string];
+  iconSize?: number;
+  marginTop?: number;
 }
 
 export default function InfoEntryPast({
@@ -17,25 +19,25 @@ export default function InfoEntryPast({
   value,
   label,
   gradientColors,
+  iconSize = 24,
+  marginTop = 0,
 }: InfoEntryPastProps) {
   const styles = useStyles();
   const { theme } = useTheme();
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      style={styles.container}
-    >
+    <LinearGradient colors={gradientColors} style={styles.container}>
       <View style={styles.containerInner}>
-        <View style={styles.firstColumn}>
-          <Icon width={24} height={24} fill="black" />
+        <View style={[styles.firstColumn, { marginTop }]}>
+          <Icon width={iconSize} height={iconSize} fill="black" />
         </View>
         <View style={styles.secondColumn}>
-          <Text style={styles.value}>
+          <Text style={[styles.value]}>
             {value} {label}
           </Text>
         </View>
       </View>
     </LinearGradient>
   );
-} 
+}
+
