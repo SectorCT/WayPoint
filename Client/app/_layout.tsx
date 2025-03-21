@@ -68,6 +68,13 @@ function RootLayoutNav() {
                 title: "Add Truck",
               }}
             />
+            <Stack.Screen 
+              name="startJourney" 
+              options={{
+                headerShown: true,
+                title: "Start Journey",
+              }}
+            />
           </>
         )}
       </Stack>
