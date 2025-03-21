@@ -14,6 +14,7 @@ interface Truck {
     kilogramCapacity: number;
     licensePlate: string;
 }
+
 interface Coordinate {
   latitude: number;
   longitude: number;
@@ -25,9 +26,10 @@ interface RouteLocation extends Coordinate {
 }
 
 interface RouteData {
-  driver: User;
+  user: string;
   packageSequence: Package[];
   mapRoute: [number, number][];
   dateOfCreation: string;
   truck?: string;
+  _id?: string;
 }

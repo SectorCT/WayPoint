@@ -13,7 +13,7 @@ export const makeAuthenticatedRequest = async <T = any>(
     if (!accessToken || !refreshToken) {
       throw new Error("No authentication tokens found");
     }
-
+    console.log(`${BASE_URL}${endpoint}`);
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers: {
@@ -33,10 +33,9 @@ export const makeAuthenticatedRequest = async <T = any>(
         body: JSON.stringify({ refresh : refreshToken }),
       });
 
-      // if (!refreshResponse.ok) {
-      //   console.log(refreshResponse);
-      //   throw new Error("Failed to refresh token");
-      // }
+      if (!refreshResponse.ok) {
+        throw new Error("Failed to refresh token");
+      }
 
       const data = await refreshResponse.json();
       const { access: newAccessToken, refresh: newRefreshToken } = data;
@@ -56,6 +55,7 @@ export const makeAuthenticatedRequest = async <T = any>(
 
     return response;
   } catch (error) {
+    
     console.error("API request error:", error);
     throw error;
   }

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { testRouteData } from "../../testRouteData";
+import { getRoute, markPackageAsDelivered } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
+import { useAuth } from "@context/AuthContext";
+import { makeAuthenticatedRequest } from "@/utils/api";
 
 interface Coordinate {
   latitude: number;
@@ -37,10 +39,12 @@ interface Package {
 }
 
 interface RouteData {
-  driver: User;
+  user: string;
   packageSequence: Package[];
   mapRoute: [number, number][];
   dateOfCreation: string;
+  truck?: string;
+  _id?: string;
 }
 
 const DRAWER_WIDTH = 300;
@@ -100,14 +104,66 @@ const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
 );
 
 export default function TruckerViewScreen() {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const { position } = usePosition();
+  const { logout } = useAuth();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
   const [locations, setLocations] = useState<RouteLocation[]>([]);
-  const currentZone = (testRouteData[0] as unknown as RouteData);
-  const routeColor = generateColorFromValue(currentZone.driver.username);
+  const [currentZone, setCurrentZone] = useState<RouteData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const routeColor = generateColorFromValue(currentZone?.user || '');
+  
+  useEffect(() => {
+    const fetchRoute = async () => {
+      try {
+        if (!user) {
+          throw new Error('User not found');
+        }
+        setIsLoading(true);
+        setError(null);
+        const data = await getRoute(user.username);
+        setCurrentZone(data);
+      } catch (err) {
+        setError('Failed to load route data');
+        console.error('Error loading route:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRoute();
+  }, []);
+  
+  useEffect(() => {
+    if (!currentZone?.packageSequence) {
+      return;
+    }
+    
+    const newLocations = currentZone.packageSequence.map((packageInfo, index) => ({
+      latitude: packageInfo.latitude,
+      longitude: packageInfo.longitude,
+      waypoint_index: index,
+      package_info: {
+        ...packageInfo,
+        // Automatically mark ADMIN packages as delivered
+        status: packageInfo.packageID === "ADMIN" ? "delivered" : packageInfo.status
+      }
+    }));
+    setLocations(newLocations);
+  }, [currentZone]);
+
+  const routePoints: Coordinate[] = currentZone?.mapRoute?.map((point) => ({
+    latitude: point[1],
+    longitude: point[0],
+  })) || [];
+
+  const activeLocations = locations.filter(
+    location => location.package_info.status !== 'delivered' && location.package_info.packageID !== "ADMIN"
+  );
 
   useEffect(() => {
     // Set drawer ready after initial render
@@ -135,29 +191,13 @@ export default function TruckerViewScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    // Initialize locations from package sequence
-    const newLocations = currentZone.packageSequence.map((packageInfo, index) => ({
-      latitude: packageInfo.latitude,
-      longitude: packageInfo.longitude,
-      waypoint_index: index,
-      package_info: packageInfo as Package
-    }));
-    setLocations(newLocations);
-  }, [currentZone]);
-
   const handleDelivery = async (packageId: string) => {
     try {
-      // const response = await fetch(`/delivery/deliver/${packageId}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
+      const response = await markPackageAsDelivered(packageId);
 
-      // if (!response.ok) {
-      //   console.error('Failed to mark package as delivered:', response);
-      // }
+      if (!response.ok) {
+        console.error('Failed to mark package as delivered:', response);
+      }
 
       // Update the status of the package in locations
       const updatedLocations = locations.map(location => 
@@ -178,25 +218,14 @@ export default function TruckerViewScreen() {
     }
   };
 
-  // Extract route points
-  const routePoints: Coordinate[] = currentZone.mapRoute.map((point) => ({
-    latitude: point[1],
-    longitude: point[0],
-  }));
-
-  // Filter out delivered packages from locations based on status
-  const activeLocations = locations.filter(
-    location => location.package_info.status !== 'delivered'
-  );
-
-  const initialRegion = locations.length > 0 ? {
+  const initialRegion = locations && locations.length > 0 ? {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   } : {
-    latitude: 0,
-    longitude: 0,
+    latitude: 42.692865, // Default to first package location from test data
+    longitude: 23.334036,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   };
@@ -264,20 +293,18 @@ export default function TruckerViewScreen() {
     </View>
   );
 
-  if (!isDrawerReady) {
+  if (!isDrawerReady || isLoading) {
     return (
-      <View style={styles.container}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={position.latitude && position.longitude ? {
-            latitude: position.latitude,
-            longitude: position.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          } : initialRegion}
-        />
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={[styles.errorText, { color: '#FF4136' }]}>{error}</Text>
       </View>
     );
   }
@@ -318,7 +345,7 @@ export default function TruckerViewScreen() {
               }}
             >
               <CustomMarker 
-                number={location.waypoint_index + 1} 
+                number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
               />
             </Marker>
@@ -337,6 +364,13 @@ export default function TruckerViewScreen() {
             </Marker>
           )}
         </MapView>
+
+        <TouchableOpacity 
+          style={[styles.logoutButton, { backgroundColor: theme.color.darkPrimary }]} 
+          onPress={logout}
+        >
+          <MaterialIcons name="logout" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
@@ -534,6 +568,30 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 40,
     right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
     width: 50,
     height: 50,
     borderRadius: 25,

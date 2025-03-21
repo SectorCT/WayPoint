@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../config/env';
-import { User } from '../types/user';
 import { AuthResponse, AuthError, LoginRequest, RegisterRequest } from '../types/api';
 
 interface AuthContextType {
@@ -67,7 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(authResponse.user);
       
       setIsAuthenticated(true);
-      router.replace('/home');
+      
+      // Redirect based on user role
+      if (authResponse.user.isManager) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(trucker)');
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -92,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(registerRequest),
       });
 
-      console.log(response);
 
       const data: AuthResponse | AuthError = await response.json();
 
@@ -124,9 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await AsyncStorage.removeItem('user');
       setUser(null);
       setIsAuthenticated(false);
-      router.replace('/login');
+      router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
+      throw error;
     }
   };
 
