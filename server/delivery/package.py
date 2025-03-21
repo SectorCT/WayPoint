@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Package
+from .models import Package, RouteAssignment
 from .serializers import PackageSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -99,6 +99,25 @@ def mark_delivered(request):
     except Package.DoesNotExist:
         return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
     
+    if package.status == 'delivered':
+        return Response({"error": "Package already delivered"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Маркираме пратката като доставена
     package.status = 'delivered'
     package.save()
+
+    # Намираме всички активни route assignments, в които се съдържа тази пратка,
+    # и актуализираме статуса ѝ в packageSequence
+    route_assignments = RouteAssignment.objects.filter(isActive=True)
+    for route in route_assignments:
+        updated = False
+        sequence = route.packageSequence  # Списък от речници
+        for item in sequence:
+            if item.get('packageID') == package_id:
+                item['status'] = 'delivered'
+                updated = True
+        if updated:
+            route.packageSequence = sequence
+            route.save()
+
     return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
