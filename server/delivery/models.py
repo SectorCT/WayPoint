@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 from datetime import timedelta
 from django.db import models
 import secrets
@@ -70,6 +71,7 @@ class Package(models.Model):
     )
 
     STATUS_CHOICES = [
+        # ('canceled', 'Canceled'),
         ('pending', 'Pending'),
         ('in_transit', 'In Transit'),
         ('delivered', 'Delivered'),
@@ -99,13 +101,54 @@ class TruckManager(models.Manager):
 class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True)
     kilogramCapacity = models.DecimalField(max_digits=7, decimal_places=2)
-
+    isUsed = models.BooleanField(default=False)
     objects = TruckManager()
 
     def __str__(self):
         return f"Truck {self.licensePlate} - Capacity: {self.kilogramCapacity} kg"
 
+class RouteManager(models.Manager):
+    def create_route(self, **kwargs):
+        driver = kwargs.get("driver")
+
+        if not driver:
+            raise ValueError("Driver must be provided.")
+
+        # Check if there's already an active route for this driver
+        if self.model.objects.filter(driver=driver, isActive=True).exists():
+            raise serializers.ValidationError(
+                f"Driver '{driver.username}' already has an active route."
+            )
+
+        # Use the standard object creation method
+        route = self.model(**kwargs)
+        route.save(using=self._db)
+        return route
+
+    def routes_for_driver(self, driver):
+        return self.filter(driver=driver)
+
+    def update_route(self, route_id, package_sequence=None, map_route=None):
+        try:
+            route = self.get(pk=route_id)
+        except self.model.DoesNotExist:
+            return None
+
+        if package_sequence is not None:
+            route.packageSequence = package_sequence
+        if map_route is not None:
+            route.mapRoute = map_route
+
+        route.save(using=self._db)
+        return route
+
 class RouteAssignment(models.Model):
+    routeID = models.CharField(
+        max_length=12,
+        unique=True,
+        default=generate_package_id,
+        editable=False  
+    )
     driver = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='route_assignments'
     )
@@ -119,6 +162,16 @@ class RouteAssignment(models.Model):
         default=list,
         help_text="A map drawing of the route"
     )
+
+    truck = models.ForeignKey(
+        Truck, on_delete=models.CASCADE, related_name='route_assignments'
+    )
+    
+    isActive = models.BooleanField(default=True)
+
+    dateOfCreation = models.DateField(auto_now_add=True)
+
+    objects = RouteManager()
 
     def __str__(self):
         return f"Route assigned to {self.driver.username}"

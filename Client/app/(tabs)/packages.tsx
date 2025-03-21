@@ -7,13 +7,12 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest } from "../../utils/api";
+import { getPackages } from "../../utils/journeyApi";
 import useStyles from "./styles/packageStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";
 import moment from "moment";
-
 
 export default function PackagesScreen() {
   const { theme } = useTheme();
@@ -27,10 +26,7 @@ export default function PackagesScreen() {
 
   const fetchPackages = async () => {
     try {
-      const response = await makeAuthenticatedRequest("/delivery/packages/", {
-        method: "GET",
-      });
-      const data = await response.json();
+      const data = await getPackages();
       setPackages(data);
     } catch (error) {
       console.error("Error fetching packages:", error);
@@ -39,7 +35,9 @@ export default function PackagesScreen() {
     }
   };
 
-  const groupPackagesByDate = (packages: Package[]): Record<string, Package[]> => {
+  const groupPackagesByDate = (
+    packages: Package[],
+  ): Record<string, Package[]> => {
     const today = moment().format("YYYY-MM-DD");
     const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
 
@@ -50,34 +48,33 @@ export default function PackagesScreen() {
     const initialGroups: Record<string, Package[]> = {
       Today: [],
       Tomorrow: [],
-      Overdue: []
+      Overdue: [],
     };
 
-    const groupedPackages = packages.reduce(
-      (acc, pkg) => {
-        if (pkg.deliveryDate === today) {
-          acc.Today.push(pkg);
-        } else if (pkg.deliveryDate === tomorrow) {
-          acc.Tomorrow.push(pkg);
-        } else if (moment(pkg.deliveryDate).isBefore(today)) {
-          acc.Overdue.push(pkg);
-        } else {
-          const formattedDate = moment(pkg.deliveryDate).format("MMM D, YYYY");
-          if (!acc[formattedDate]) acc[formattedDate] = [];
-          acc[formattedDate].push(pkg);
-        }
-        return acc;
-      },
-      initialGroups
-    );
+    const groupedPackages = packages.reduce((acc, pkg) => {
+      if (pkg.deliveryDate === today) {
+        acc.Today.push(pkg);
+      } else if (pkg.deliveryDate === tomorrow) {
+        acc.Tomorrow.push(pkg);
+      } else if (moment(pkg.deliveryDate).isBefore(today)) {
+        acc.Overdue.push(pkg);
+      } else {
+        const formattedDate = moment(pkg.deliveryDate).format("MMM D, YYYY");
+        if (!acc[formattedDate]) acc[formattedDate] = [];
+        acc[formattedDate].push(pkg);
+      }
+      return acc;
+    }, initialGroups);
 
     // Remove empty categories
     return Object.fromEntries(
-      Object.entries(groupedPackages).filter(([_, value]) => value.length > 0)
+      Object.entries(groupedPackages).filter(([_, value]) => value.length > 0),
     ) as Record<string, Package[]>;
   };
 
-  const sortSections = (sections: [string, Package[]][]): [string, Package[]][] => {
+  const sortSections = (
+    sections: [string, Package[]][],
+  ): [string, Package[]][] => {
     const priorityOrder = {
       Overdue: 0,
       Today: 1,
@@ -90,8 +87,10 @@ export default function PackagesScreen() {
 
       // Handle priority sections first
       if (sectionA in priorityOrder && sectionB in priorityOrder) {
-        return priorityOrder[sectionA as keyof typeof priorityOrder] - 
-               priorityOrder[sectionB as keyof typeof priorityOrder];
+        return (
+          priorityOrder[sectionA as keyof typeof priorityOrder] -
+          priorityOrder[sectionB as keyof typeof priorityOrder]
+        );
       }
       if (sectionA in priorityOrder) return -1;
       if (sectionB in priorityOrder) return 1;
@@ -112,7 +111,7 @@ export default function PackagesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>All packages</Text>
+            <Text style={styles.title}>Add your packages</Text>
             <AddButton
               onPress={() => router.navigate("/addPackage")}
               style={{ marginRight: 0 }}
@@ -124,7 +123,9 @@ export default function PackagesScreen() {
           ) : sections.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateText}>No packages to display</Text>
-              <Text style={styles.emptyStateSubtext}>Add a package to get started</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Add a package to get started
+              </Text>
             </View>
           ) : (
             <FlatList
@@ -159,7 +160,11 @@ export default function PackagesScreen() {
                   />
                 </>
               )}
-              contentContainerStyle={{ paddingBottom: 100, gap: 12, paddingTop: 16 }}
+              contentContainerStyle={{
+                paddingBottom: 100,
+                gap: 12,
+                paddingTop: 16,
+              }}
               style={{ paddingHorizontal: 20, height: "100%" }}
             />
           )}

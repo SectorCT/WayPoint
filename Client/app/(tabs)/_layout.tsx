@@ -61,6 +61,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="adminTruckTracker"
+        options={{
+          title: "Admin",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="person" size={24} color={color} />
+          ),
+        }}
+      />
 
       <Tabs.Screen name="styles/homeStyles" options={{ href: null }} />
       <Tabs.Screen name="styles/packageStyles" options={{ href: null }} />

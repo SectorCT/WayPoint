@@ -7,15 +7,11 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest } from "../../utils/api";
+import { getAvailableTrucks } from "../../utils/journeyApi";
 import useStyles from "./styles/trucksStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import { generateColorFromString } from "@/utils/colors";
-interface Truck {
-  kilogramCapacity: number;
-  licensePlate: string;
-}
 
 import TruckModule from "@/components/listModule/truckModule/truckModule";
 
@@ -31,11 +27,8 @@ export default function TrucksScreen() {
 
   const fetchPackages = async () => {
     try {
-      const response = await makeAuthenticatedRequest("/delivery/trucks/", {
-        method: "GET",
-      });
-      const data = await response.json();
-      setPackages(data); // Accessing "packages" array
+      const data = await getAvailableTrucks();
+      setPackages(data);
     } catch (error) {
       console.error("Error fetching packages:", error);
     } finally {
@@ -66,6 +59,10 @@ export default function TrucksScreen() {
                   licensePlate={item.licensePlate}
                   color={generateColorFromString(item.licensePlate)}
                   capacity={item.kilogramCapacity}
+                  onDelete={() => {
+                    // Refresh the trucks list after deletion
+                    fetchPackages();
+                  }}
                 />
               )}
               contentContainerStyle={{

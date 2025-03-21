@@ -12,7 +12,6 @@ import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router, useLocalSearchParams } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY;
@@ -83,7 +82,6 @@ export default function AddPackageScreen() {
     try {
       const dateParts = formState.deliveryDate.split("/");
       const formattedDate = `${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`;
-      console.log(formattedDate);
 
       // Format numeric values to 6 decimal places
       const formattedLatitude = parseFloat(formState.latitude || "0").toFixed(
@@ -130,10 +128,10 @@ export default function AddPackageScreen() {
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const formattedDate = selectedDate.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
+      const formattedDate = selectedDate.toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
       });
       setFormState((prev) => ({ ...prev, deliveryDate: formattedDate }));
     }
@@ -146,18 +144,6 @@ export default function AddPackageScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.color.lightPrimary },
-          ]}
-        >
-          <MaterialIcons
-            name="local-shipping"
-            size={32}
-            color={theme.color.darkPrimary}
-          />
-        </View>
         <Text style={[styles.headerTitle, { color: theme.color.black }]}>
           Add New Package
         </Text>
@@ -232,11 +218,15 @@ export default function AddPackageScreen() {
         {showDatePicker && (
           <DateTimePicker
             testID="datePicker"
-            value={
-              formState.deliveryDate
-                ? new Date(formState.deliveryDate)
-                : new Date()
-            }
+            value={(() => {
+              if (!formState.deliveryDate) return new Date();
+              try {
+                const [month, day, year] = formState.deliveryDate.split('/');
+                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              } catch (e) {
+                return new Date();
+              }
+            })()}
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={onDateChange}
@@ -259,7 +249,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   headerContainer: {
-    marginTop: 20,
+    marginTop: 60,
     marginBottom: 32,
   },
   headerTitle: {
