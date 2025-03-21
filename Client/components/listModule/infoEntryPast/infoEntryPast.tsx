@@ -9,7 +9,7 @@ interface InfoEntryPastProps {
   Icon: React.FC<SvgProps>;
   value: number;
   label: string;
-  gradientColors: [string, string];
+  gradientColor: string;
   iconSize?: number;
   marginTop?: number;
 }
@@ -18,7 +18,7 @@ export default function InfoEntryPast({
   Icon,
   value,
   label,
-  gradientColors,
+  gradientColor,
   iconSize = 24,
   marginTop = 0,
 }: InfoEntryPastProps) {
@@ -26,7 +26,12 @@ export default function InfoEntryPast({
   const { theme } = useTheme();
 
   return (
-    <LinearGradient colors={gradientColors} style={styles.container}>
+    <LinearGradient
+      colors={[gradientColor, "#FFFFFF"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.container}
+    >
       <View style={styles.containerInner}>
         <View style={[styles.firstColumn, { marginTop }]}>
           <Icon width={iconSize} height={iconSize} fill="black" />
@@ -40,4 +45,3 @@ export default function InfoEntryPast({
     </LinearGradient>
   );
 }
-

@@ -9,6 +9,7 @@ export default function useStyles() {
       width: "100%",
       borderRadius: 12,
       padding: 12,
+      paddingVertical: 15,
     },
     containerInner: {
       flexDirection: "row",
