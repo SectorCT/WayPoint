@@ -117,7 +117,7 @@ export default function PackagesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Add your packages</Text>
+            <Text style={styles.title}>All packages</Text>
             <AddButton
               onPress={() => router.navigate("/addPackage")}
               style={{ marginRight: 0 }}
