@@ -4,6 +4,7 @@ import useStyles from "./styles";
 import { useTheme } from "@context/ThemeContext";
 import Trash from "@assets/icons/trash.svg";
 import Truck from "@assets/icons/truck.svg";
+import { router } from "expo-router";
 
 export default function CurrentJourney({
   packagesDelivered,
@@ -37,7 +38,7 @@ export default function CurrentJourney({
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.thirdColumn}>
+          <TouchableOpacity style={styles.thirdColumn} onPress={() => router.push("/(tabs)/adminTruckTracker")}>
             <Text style={styles.trackText}>Track</Text>
           </TouchableOpacity>
         </View>
