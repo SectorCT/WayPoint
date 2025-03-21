@@ -215,7 +215,7 @@ export default function AdminTruckTrackerScreen() {
 
   const calculateRouteProgress = (route: RouteData): number => {
     if (!route.packageSequence || route.packageSequence.length === 0) return 0;
-    const deliveredCount = route.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length;
+    const deliveredCount = route.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length + 1;
     return (deliveredCount / route.packageSequence.length) * 100;
   };
 
