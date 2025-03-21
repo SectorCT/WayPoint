@@ -31,21 +31,29 @@ _Add screenshots of the application here_
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/waypoint.git
-   cd waypoint
+   git clone https://github.com/SectorCT/WayPoint.git
+   cd WayPoint
+   cd client
    ```
 2. Install dependencies:
    ```bash
-   npm install  # or pip install -r requirements.txt
+   npm install
    ```
 3. Configure environment variables:
    ```bash
    cp .env.example .env
-   # Add your API keys and database credentials
+   # EXPO_PUBLIC_API_BASE_URL=
+   # EXPO_PUBLIC_GEOAPIFY_API_KEY=
    ```
 4. Run the application:
    ```bash
-   npm start  # or python app.py
+   npm start
+   ```
+4. Run the application:
+   ```bash
+   cd ..
+   cd server
+   docker compose up -d
    ```
 
 ## 🏗️ Tech Stack
