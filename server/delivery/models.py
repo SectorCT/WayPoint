@@ -147,6 +147,8 @@ class RouteAssignment(models.Model):
         help_text="A map drawing of the route"
     )
 
+    dateOfCreation = models.DateField(auto_now_add=True)
+
     objects = RouteManager()
 
     def __str__(self):
