@@ -1,7 +1,7 @@
 FACTORY_ADDRESS = {
     "address": "123 Factory Street, City, Country",
-    "latitude": 42.0,
-    "longitude": 23.0,
+    "latitude": 42.6666,
+    "longitude": 23.3750,
     "package_info": {
         "address": "123 Factory Street, City, Country",
         "latitude": 42.6666,
@@ -273,7 +273,7 @@ class finishRoute(APIView):
         return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)
 
 class dropAllRoutes(APIView):
-    def get(self, request):
+    def delete(self, request):
         count, _ = RouteAssignment.objects.all().delete()
         package_count = Package.objects.all().update(status='pending')
         return Response({"detail": f"{count} route assignments dropped."}, status=status.HTTP_200_OK)
