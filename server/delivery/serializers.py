@@ -64,6 +64,19 @@ class PackageSerializer(serializers.ModelSerializer):
         except Exception as e:
             raise serializers.ValidationError(f"Error creating package: {str(e)}")
 
+    def update(self, instance, validated_data):
+        instance.address = validated_data.get('address', instance.address)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.recipient = validated_data.get('recipient', instance.recipient)
+        instance.recipientPhoneNumber = validated_data.get('recipientPhoneNumber', instance.recipientPhoneNumber)
+        instance.deliveryDate = validated_data.get('deliveryDate', instance.deliveryDate)
+        instance.weight = validated_data.get('weight', instance.weight)
+        instance.status = validated_data.get('status', instance.status)
+        instance.save()
+        return instance
+
+
 class TruckSerializer(serializers.ModelSerializer):
     class Meta:
         model = Truck
