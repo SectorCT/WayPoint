@@ -70,6 +70,7 @@ class Package(models.Model):
     )
 
     STATUS_CHOICES = [
+        # ('canceled', 'Canceled'),
         ('pending', 'Pending'),
         ('in_transit', 'In Transit'),
         ('delivered', 'Delivered'),
@@ -151,6 +152,8 @@ class RouteAssignment(models.Model):
     truck = models.ForeignKey(
         Truck, on_delete=models.CASCADE, related_name='route_assignments'
     )
+    
+    isActive = models.BooleanField(default=True)
 
     dateOfCreation = models.DateField(auto_now_add=True)
 
