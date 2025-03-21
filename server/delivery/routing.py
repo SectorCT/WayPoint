@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .clusterLocations import cluster_locations
 from .createRoutes import create_routes
-from .models import Package, Truck
+from .models import Package, Truck, RouteAssignment
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework import status
@@ -29,7 +29,13 @@ def create_routes_from_json(json_data):
             "route": [
                 {
                     "waypoint_index": 0,
-                    "package_info": { "packageID": "2258ec638a67d6fa712151ff", ... },
+                    "package_info": {
+                        "packageID": "2258ec638a67d6fa712151ff",
+                        "address": "...",
+                        "latitude": 42.123,
+                        "longitude": 23.456,
+                        ...
+                    },
                     "route": [[23.301454, 42.725443]],
                     ...
                 },
@@ -39,9 +45,7 @@ def create_routes_from_json(json_data):
         {
             "zone": 1,
             "driverUsername": "driver_2",
-            "route": [
-                ...
-            ]
+            "route": [...]
         }
     ]
     """
@@ -61,26 +65,30 @@ def create_routes_from_json(json_data):
         try:
             driver = User.objects.get(username=driver_username)
         except User.DoesNotExist:
-            # Return a Response with a dict instead of keyword args
-            return Response({"detail": "Route invalid due to unassigned driver for it."})
+            # Return a Response with a dict to indicate the error
+            return Response({"detail": f"Driver '{driver_username}' does not exist."}, status=400)
         
         # Sort the waypoints by 'waypoint_index' to ensure correct order
         sorted_waypoints = sorted(waypoints, key=lambda w: w.get("waypoint_index", 0))
         
-        # Extract the package IDs and map route coordinates
+        # Instead of just storing packageID, we'll store the entire package info
         package_sequence = []
         map_route = []
+        
         for wp in sorted_waypoints:
             pkg_info = wp.get("package_info", {})
-            package_id = pkg_info.get("packageID")
-            if package_id:
-                package_sequence.append(package_id)
-            # Add the coordinates from the "route" key (if present)
+            # If you want to ensure certain keys exist, do validation here
+            if pkg_info:
+                # Append the entire package info dict
+                package_sequence.append(pkg_info)
+
+            # Add the coordinates from the "route" key (if present) into mapRoute
             wp_route = wp.get("route", [])
             if isinstance(wp_route, list):
+                # Extend map_route with all coordinate pairs in wp_route
                 map_route.extend(wp_route)
         
-        # Create the RouteAssignment instance
+        # Create the RouteAssignment instance with the full package info
         route_instance = RouteAssignment.objects.create(
             driver=driver,
             packageSequence=package_sequence,
@@ -89,6 +97,7 @@ def create_routes_from_json(json_data):
         created_routes.append(route_instance)
     
     return created_routes
+
 
 def get_packages_for_delivery(drivers):
     drivers_count = len(drivers)
@@ -142,8 +151,8 @@ class MarkAsDelivered(APIView):
         return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
 
 class RoutePlannerView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
     def post(self, request, *args, **kwargs):
         drivers = request.data.get('drivers')
         input_data = get_packages_for_delivery(drivers)
@@ -159,8 +168,23 @@ class RoutePlannerView(APIView):
 
         return Response(final_routes)
     
-# class getRoutingBasedOnDriver(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated, IsManager]
-#     def post(self, request):
-#         driver = 
+class getRoutingBasedOnDriver(APIView):
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
+
+    def post(self, request):
+        try:
+            driver = User.objects.get(username=request.data['username'])
+        except User.DoesNotExist:
+            return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            route = RouteAssignment.objects.get(driver=driver)
+        except RouteAssignment.DoesNotExist:
+            return Response({"error": "No route assignment found for this driver"}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({
+            "driver": driver.username,
+            "packageSequence": route.packageSequence,
+            "mapRoute": route.mapRoute
+        }, status=status.HTTP_200_OK)
