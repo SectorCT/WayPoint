@@ -86,13 +86,19 @@ const styles = StyleSheet.create({
   },
   map: {
     width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height - 100,
+    height: Dimensions.get("window").height,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   buttonContainer: {
     position: "absolute",
     bottom: 20,
     left: 20,
     right: 20,
+    zIndex: 1, // Ensures button appears above the map
   },
 });
 
