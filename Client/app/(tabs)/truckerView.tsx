@@ -17,45 +17,57 @@ interface RouteLocation extends Coordinate {
   package_info: Package;
 }
 
+interface User {
+  email: string;
+  username: string;
+  phoneNumber: string;
+  isManager: boolean;
+}
+
+interface Package {
+  status: "pending" | "in_transit" | "delivered";
+  weight: number;
+  address: string;
+  latitude: number;
+  longitude: number;
+  packageID: string;
+  recipient: string;
+  deliveryDate: string;
+  recipientPhoneNumber: string;
+}
+
 interface RouteData {
-  zone: number;
-  route: {
-    waypoint_index: number;
-    package_info: Package;
-    route: [number, number][];
-    location: [number, number];
-    duration: number;
-  }[];
-  driverUsername: string;
+  driver: User;
+  packageSequence: Package[];
+  mapRoute: [number, number][];
+  dateOfCreation: string;
 }
 
 const DRAWER_WIDTH = 300;
 
 // Function to generate a color based on a value
-const generateColorFromValue = (value: number): string => {
-  // Multiply by a larger number to create more variation
-  // Using prime numbers for better distribution
-  const hue = ((value * 47) % 360);  // 47 is prime, gives good distribution over 1-20
-  
-  // Lower saturation and value ranges for more muted colors
-  const s = 0.4 + (value % 3) * 0.15;  // Saturation varies between 0.4 and 0.85
-  const v = 0.5 + (value % 2) * 0.15;  // Value varies between 0.5 and 0.65
+const generateColorFromValue = (value: string): string => {
+  // Predefined distinct colors that are bright and easily distinguishable
+  const colors = [
+    '#FF4136', // Red
+    '#2ECC40', // Green
+    '#0074D9', // Blue
+    '#FF851B', // Orange
+    '#B10DC9', // Purple
+    '#01FF70', // Neon Green
+    '#F012BE', // Magenta
+    '#7FDBFF', // Light Blue
+    '#FFD700', // Gold
+    '#39CCCC', // Teal
+  ];
 
-  const c = v * s;
-  const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
-  const m = v - c;
+  // Simple hash function to get a consistent index for each username
+  let total = 0;
+  for (let i = 0; i < value.length; i++) {
+    total = (total + value.charCodeAt(i) * (i + 1)) % colors.length;
+  }
 
-  let r, g, b;
-  if (hue < 60) { r = c; g = x; b = 0; }
-  else if (hue < 120) { r = x; g = c; b = 0; }
-  else if (hue < 180) { r = 0; g = c; b = x; }
-  else if (hue < 240) { r = 0; g = x; b = c; }
-  else if (hue < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-
-  // Convert to hex
-  const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return colors[Math.abs(total)];
 };
 
 const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
@@ -89,21 +101,18 @@ const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
 
 export default function TruckerViewScreen() {
   const { theme } = useTheme();
-  const [deliveredPackages, setDeliveredPackages] = useState<Set<string>>(new Set());
-  const currentZone = testRouteData[0] as RouteData;
-  const routeColor = generateColorFromValue(currentZone.zone);
   const { position } = usePosition();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
+  const [locations, setLocations] = useState<RouteLocation[]>([]);
+  const currentZone = (testRouteData[0] as unknown as RouteData);
+  const routeColor = generateColorFromValue(currentZone.driver.username);
 
   useEffect(() => {
-    // Add a small delay to ensure the drawer is ready
-    const timer = setTimeout(() => {
-      setIsDrawerReady(true);
-    }, 100);
-    return () => clearTimeout(timer);
+    // Set drawer ready after initial render
+    setIsDrawerReady(true);
   }, []);
 
   const handleRecenter = () => {
@@ -127,6 +136,17 @@ export default function TruckerViewScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    // Initialize locations from package sequence
+    const newLocations = currentZone.packageSequence.map((packageInfo, index) => ({
+      latitude: packageInfo.latitude,
+      longitude: packageInfo.longitude,
+      waypoint_index: index,
+      package_info: packageInfo as Package
+    }));
+    setLocations(newLocations);
+  }, [currentZone]);
+
   const handleDelivery = async (packageId: string) => {
     try {
       // const response = await fetch(`/delivery/deliver/${packageId}`, {
@@ -137,40 +157,47 @@ export default function TruckerViewScreen() {
       // });
 
       // if (!response.ok) {
-      //   // throw new Error('Failed to mark package as delivered');
       //   console.error('Failed to mark package as delivered:', response);
       // }
 
-      await setDeliveredPackages(prev => new Set([...prev, packageId]));
+      // Update the status of the package in locations
+      const updatedLocations = locations.map(location => 
+        location.package_info.packageID === packageId 
+          ? { 
+              ...location, 
+              package_info: { 
+                ...location.package_info, 
+                status: 'delivered' as const 
+              } 
+            }
+          : location
+      );
+      setLocations(updatedLocations);
+      
     } catch (error) {
       console.error('Error marking package as delivered:', error);
     }
   };
 
-  // Extract locations from route data
-  const locations: RouteLocation[] = currentZone.route.map((routeSection) => ({
-    latitude: routeSection.location[1],
-    longitude: routeSection.location[0],
-    waypoint_index: routeSection.waypoint_index,
-    package_info: routeSection.package_info
+  // Extract route points
+  const routePoints: Coordinate[] = currentZone.mapRoute.map((point) => ({
+    latitude: point[1],
+    longitude: point[0],
   }));
 
-  // Extract route points
-  const routePoints: Coordinate[] = currentZone.route.flatMap(route => 
-    route.route.map((point: [number, number]) => ({
-      latitude: point[1],
-      longitude: point[0],
-    }))
-  );
-
-  // Filter out delivered packages from locations
+  // Filter out delivered packages from locations based on status
   const activeLocations = locations.filter(
-    location => !deliveredPackages.has(location.package_info.packageID)
+    location => location.package_info.status !== 'delivered'
   );
 
-  const initialRegion = {
+  const initialRegion = locations.length > 0 ? {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  } : {
+    latitude: 0,
+    longitude: 0,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   };
@@ -180,7 +207,7 @@ export default function TruckerViewScreen() {
       <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
         <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text>
         <TouchableOpacity 
-          style={[styles.closeButton]} 
+          style={styles.closeButton} 
           onPress={() => drawerRef.current?.closeDrawer()}
         >
           <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
@@ -287,7 +314,7 @@ export default function TruckerViewScreen() {
 
           {locations.map((location) => (
             <Marker
-              key={location.waypoint_index}
+              key={`marker-${location.package_info.packageID}`}
               coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude
@@ -295,7 +322,7 @@ export default function TruckerViewScreen() {
             >
               <CustomMarker 
                 number={location.waypoint_index + 1} 
-                isDelivered={deliveredPackages.has(location.package_info.packageID)}
+                isDelivered={location.package_info.status === 'delivered'}
               />
             </Marker>
           ))}
