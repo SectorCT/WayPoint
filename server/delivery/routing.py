@@ -224,18 +224,17 @@ class RoutePlannerView(APIView):
             "weight": float(pkg.weight),
             "status": pkg.status
         } for pkg in packages_qs]
-
+        # -----------
         drivers = request.data.get('drivers')
         if not isinstance(drivers, list) or not drivers:
             return Response({"error": "No valid drivers provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # cluster_locations should return a list (or dict) of zones.
         clustered_data = cluster_locations(
             packages_data=packages_data,
             driverUsernames=drivers
         )
         
-        # return Response(clustered_data) debug
+
         clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers)
         
         missing_truck_zones = [zone.get("zone") for zone in clustered_data if not zone.get("truckLicensePlate")]
@@ -246,14 +245,12 @@ class RoutePlannerView(APIView):
             )
 
         final_routes = connect_routes_and_assignments(clustered_data)
-        # return Response(final_routes)
-        # Handle any error that might be raised from create_routes_from_json.
+
         try:
             create_routes_from_json(final_routes)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Assuming the RouteAssignment model has a field `dateOfCreation`
+
         routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive = True)
         serializer = RouteAssignmentSerializer(routes_today, many=True)
         return Response(serializer.data)
@@ -290,6 +287,9 @@ class finishRoute(APIView):
     def post(self, request):
         driver = User.objects.get(username = request.data.get('username'))
         route = RouteAssignment.objects.get(driver = driver)
-
-        route.isActive = False
+        if route.isActive == True:
+            route.isActive = False
+        else:
+            return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
+        route.save()
         return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)
