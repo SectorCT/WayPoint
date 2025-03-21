@@ -76,5 +76,17 @@ export default function useStyles() {
       fontFamily: theme.font.regular,
       color: theme.color.lightGrey,
     },
+    startNewButton: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.color.mediumPrimary,
+      height: 55,
+      borderRadius: 10,
+    },
+    startNewButtonText: {
+      fontSize: theme.fontSize.large,
+      fontFamily: theme.font.semibold,
+      color: theme.color.white,
+    },
   });
 }

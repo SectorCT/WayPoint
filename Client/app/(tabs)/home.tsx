@@ -5,10 +5,11 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { makeAuthenticatedRequest } from "../../utils/api";
-import useStyles from "./styles/packageStyles";
+import useStyles from "./styles/homeStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";
@@ -39,6 +40,8 @@ export default function HomeScreen() {
   //   }
   // };
 
+  const [journeyStarted, setJourneyStarted] = useState(false);
+
   return (
     <View style={styles.outer}>
       <View style={styles.topFill} />
@@ -53,9 +56,17 @@ export default function HomeScreen() {
           ) : (
             <FlatList
               data={[{ id: "1" }]}
-              renderItem={() => (
-                <CurrentJourney packagesDelivered={13} totalPackages={20} />
-              )}
+              renderItem={() =>
+                journeyStarted ? (
+                  <CurrentJourney packagesDelivered={13} totalPackages={20} />
+                ) : (
+                  <TouchableOpacity style={styles.startNewButton}>
+                    <Text style={styles.startNewButtonText}>
+                      Start new journey
+                    </Text>
+                  </TouchableOpacity>
+                )
+              }
               keyExtractor={(item) => item.id}
               contentContainerStyle={{
                 paddingBottom: 100,
