@@ -15,6 +15,7 @@ import AddButton from "@/components/basic/addButton/addButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";
 import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
+import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 
 export default function HomeScreen() {
   const { theme } = useTheme();
@@ -67,8 +68,15 @@ export default function HomeScreen() {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  <View>
-                    <Text>Past History</Text>
+                  <View style={styles.pastHistory}>
+                    <Text style={styles.titlepasthistory}>Past History</Text>
+                    <PastEntry
+                      duration="3:45"
+                      date="20th March"
+                      deliveredPackages={23}
+                      totalTrucks={5}
+                      kilosDelivered={100}
+                    />
                   </View>
                 </View>
               )}
