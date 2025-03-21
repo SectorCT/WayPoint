@@ -6,6 +6,7 @@ from .serializers import PackageSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
+from rest_framework.decorators import api_view
 
 class createPackage(APIView):
     # authentication_classes = [JWTAuthentication]
@@ -86,19 +87,18 @@ class MarkAsDelivsered(APIView):
         package.save()
         return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
     
-class MarkAsDelivered(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    def post(self, request):
-        package_id = request.data.get('packageID')
-        if not package_id:
-            return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            package = Package.objects.get(packageID=package_id)
-        except Package.DoesNotExist:
-            return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        package.status = 'delivered'
-        package.save()
-        return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def mark_delivered(request):
+    package_id = request.data.get('packageID')
+    if not package_id:
+        return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
     
+    try:
+        package = Package.objects.get(packageID=package_id)
+    except Package.DoesNotExist:
+        return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    package.status = 'delivered'
+    package.save()
+    return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
