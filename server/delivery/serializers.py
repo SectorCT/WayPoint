@@ -1,69 +1,69 @@
 from rest_framework import serializers
 from .models import Package, Truck
+from rest_framework import serializers
+from .models import Package
+from datetime import date
 
 class PackageSerializer(serializers.ModelSerializer):
+    packageID = serializers.ReadOnlyField()
+
     class Meta:
         model = Package
-        fields = ('address', 'latitude', 'longitude', 'recipient', 
-                  'recipientPhoneNumber', 'deliveryDate', 'weight')
+        fields = [
+            'packageID',
+            'address',
+            'latitude',
+            'longitude',
+            'recipient',
+            'recipientPhoneNumber',
+            'deliveryDate',
+            'weight',
+            'status'
+        ]
 
-    def validate(self, data):
-        errors = {}
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError('Latitude must be between -90 and 90 degrees.')
+        return value
 
-        # Validate address
-        if not data.get('address'):
-            errors['address'] = 'Address is required.'
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError('Longitude must be between -180 and 180 degrees.')
+        return value
 
-        # Validate latitude and longitude
-        latitude = data.get('latitude')
-        longitude = data.get('longitude')
-        if latitude is not None and (latitude < -90 or latitude > 90):
-            errors['latitude'] = 'Latitude must be between -90 and 90 degrees.'
-        if longitude is not None and (longitude < -180 or longitude > 180):
-            errors['longitude'] = 'Longitude must be between -180 and 180 degrees.'
+    def validate_recipientPhoneNumber(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError('Phone number must contain only digits.')
+        if len(value) < 7 or len(value) > 15:
+            raise serializers.ValidationError('Phone number must be between 7 and 15 digits.')
+        return value
 
-        # Validate recipient
-        if not data.get('recipient'):
-            errors['recipient'] = 'Recipient is required.'
+    def validate_deliveryDate(self, value):
+        if value < date.today():
+            raise serializers.ValidationError('Delivery date cannot be in the past.')
+        return value
 
-        # Validate recipient phone number
-        recipient_phone = data.get('recipientPhoneNumber')
-        if not recipient_phone:
-            errors['recipientPhoneNumber'] = 'Recipient phone number is required.'
-        elif len(recipient_phone) < 7:
-            errors['recipientPhoneNumber'] = 'Phone number must be at least 7 digits.'
-
-        # Validate deliveryDate
-        if data.get('deliveryDate') is None:
-            errors['deliveryDate'] = 'Delivery date is required.'
-
-        # Validate weight
-        weight = data.get('weight')
-        if weight is None:
-            errors['weight'] = 'Weight is required.'
-        elif weight <= 0:
-            errors['weight'] = 'Weight must be a positive number.'
-
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        return data
+    def validate_weight(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Weight must be a positive number.')
+        return value
 
     def create(self, validated_data):
         try:
             package = Package.objects.create_package(
                 address=validated_data['address'],
-                latitude=validated_data.get('latitude'),
-                longitude=validated_data.get('longitude'),
+                latitude=validated_data['latitude'],
+                longitude=validated_data['longitude'],
                 recipient=validated_data['recipient'],
                 recipientPhoneNumber=validated_data['recipientPhoneNumber'],
                 deliveryDate=validated_data['deliveryDate'],
                 weight=validated_data['weight'],
+                status=validated_data.get('status', 'pending')
             )
             return package
         except Exception as e:
             raise serializers.ValidationError(f"Error creating package: {str(e)}")
-    
+
 class TruckSerializer(serializers.ModelSerializer):
     class Meta:
         model = Truck
