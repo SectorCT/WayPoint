@@ -61,3 +61,13 @@ class getAllUsers(APIView):
         serializer = UserSerializer(users, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class getUser(APIView):
+    def post(self, request):
+        user = User.objects.get(username = request.data.get("username"))
+        return Response({
+            'email': user.email,
+            'username': user.username,
+            'phoneNumber': user.phoneNumber,
+            'isManager': user.isManager
+        })
