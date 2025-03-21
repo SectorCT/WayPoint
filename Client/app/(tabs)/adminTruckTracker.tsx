@@ -159,7 +159,11 @@ export default function AdminTruckTrackerScreen() {
               latitude: packageInfo.latitude,
               longitude: packageInfo.longitude,
               waypoint_index: index,
-              package_info: packageInfo
+              package_info: {
+                ...packageInfo,
+                // Automatically mark ADMIN packages as delivered
+                status: packageInfo.packageID === "ADMIN" ? "delivered" : packageInfo.status
+              }
             }))
             .sort((a, b) => a.waypoint_index - b.waypoint_index); // Ensure proper ordering
 
