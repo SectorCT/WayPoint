@@ -32,17 +32,17 @@ export const makeAuthenticatedRequest = async <T = any>(
         body: JSON.stringify({ refresh : refreshToken }),
       });
 
-      if (!refreshResponse.ok) {
-        console.log(refreshResponse);
-        throw new Error("Failed to refresh token");
-      }
+      // if (!refreshResponse.ok) {
+      //   console.log(refreshResponse);
+      //   throw new Error("Failed to refresh token");
+      // }
 
-      const { access: newAccessToken } =
-        await refreshResponse.json();
+      const data = await refreshResponse.json();
+      const { access: newAccessToken, refresh: newRefreshToken } = data;
 
       // Store new tokens
       await AsyncStorage.setItem("accessToken", newAccessToken);
-
+      await AsyncStorage.setItem("refreshToken", newRefreshToken);
       // Retry the original request with new token
       return fetch(`${BASE_URL}${endpoint}`, {
         ...options,
