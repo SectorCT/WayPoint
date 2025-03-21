@@ -8,8 +8,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
 
 class createPackage(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):
         serializer = PackageSerializer(data=request.data)
@@ -19,11 +19,13 @@ class createPackage(APIView):
 
         return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class bulkCreatePackages(APIView):
+class createManyPackages(APIView):
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
 
+
     def post(self, request):
+        
         packages_data = request.data.get('packages', [])
         if not isinstance(packages_data, list):
             return Response({"detail": "Invalid data format. Expecting a list of packages."}, status=status.HTTP_400_BAD_REQUEST)
@@ -70,7 +72,7 @@ class deletePackage(APIView):
         except Package.DoesNotExist:
             return Response({"detail": f"Package with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class MarkAsDelivered(APIView):
+class MarkAsDelivsered(APIView):
     def post(self, request):
         package_id = request.data.get('packageID')
         if not package_id:
@@ -83,3 +85,20 @@ class MarkAsDelivered(APIView):
         package.status = 'delivered'
         package.save()
         return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
+    
+class MarkAsDelivered(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
+    def post(self, request):
+        package_id = request.data.get('packageID')
+        if not package_id:
+            return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            package = Package.objects.get(packageID=package_id)
+        except Package.DoesNotExist:
+            return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        package.status = 'delivered'
+        package.save()
+        return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
+    

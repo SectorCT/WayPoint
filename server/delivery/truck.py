@@ -8,8 +8,8 @@ from rest_framework import status
 from .models import Truck
 
 class createTruck(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
     
     def post(self, request, *args, **kwargs):
         serializer = TruckSerializer(data=request.data)
@@ -30,13 +30,13 @@ class getAllTrucks(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class deleteTruck(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsManager]
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
     
-    def delete(self, request, id, *args, **kwargs):
+    def delete(self, request, licensePlate, *args, **kwargs):
         try:
-            truck = Truck.objects.get(id=id)
+            truck = Truck.objects.get(licensePlate=licensePlate)
             truck.delete()
-            return Response({"detail": f"Truck with ID {id} deleted."}, status=status.HTTP_200_OK)
+            return Response({"detail": f"Truck with ID {licensePlate} deleted."}, status=status.HTTP_200_OK)
         except Truck.DoesNotExist:
-            return Response({"detail": f"Truck with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": f"Truck with ID {licensePlate} not found."}, status=status.HTTP_404_NOT_FOUND)
