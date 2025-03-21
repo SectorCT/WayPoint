@@ -11,7 +11,7 @@ class RouteAssignmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = RouteAssignment
-        fields = ['driver', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation']
+        fields = ['driver', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'isActive']
 
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
