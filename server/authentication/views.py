@@ -1,5 +1,6 @@
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView    
@@ -71,4 +72,5 @@ class GetUserView(APIView):
             'isManager': user.isManager
         })
     
-# class refreshAccessToken()
+class RefreshAccessTokenView(TokenRefreshView):
+    serializer_class = TokenRefreshSerializer
