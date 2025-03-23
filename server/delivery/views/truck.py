@@ -2,14 +2,14 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import TruckSerializer
-from .permissions import IsManager
 from rest_framework import status
-from .models import Truck
+from ..serializers import TruckSerializer
+from ..permissions import IsManager
+from ..models import Truck
 
-class createTruck(APIView):
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+class CreateTruckView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     
     def post(self, request, *args, **kwargs):
         serializer = TruckSerializer(data=request.data)
@@ -17,10 +17,10 @@ class createTruck(APIView):
             serializer.save()
             return Response({"detail": "Truck created successfully."}, status=status.HTTP_201_CREATED)
         
-        error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
-        return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
+        errorMessages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
+        return Response({"detail": errorMessages}, status=status.HTTP_400_BAD_REQUEST)
 
-class getAllTrucks(APIView):
+class GetAllTrucksView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
     
@@ -29,14 +29,14 @@ class getAllTrucks(APIView):
         serializer = TruckSerializer(trucks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class deleteTruck(APIView):
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+class DeleteTruckView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
     
     def delete(self, request, licensePlate, *args, **kwargs):
         try:
             truck = Truck.objects.get(licensePlate=licensePlate)
             truck.delete()
-            return Response({"detail": f"Truck with ID {licensePlate} deleted."}, status=status.HTTP_200_OK)
+            return Response({"detail": f"Truck with license plate {licensePlate} deleted."}, status=status.HTTP_200_OK)
         except Truck.DoesNotExist:
-            return Response({"detail": f"Truck with ID {licensePlate} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": f"Truck with license plate {licensePlate} not found."}, status=status.HTTP_404_NOT_FOUND)
