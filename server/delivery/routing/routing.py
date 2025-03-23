@@ -15,21 +15,21 @@ FACTORY_ADDRESS = {
     }
 }
 
-from ..serializers import RouteAssignmentSerializer
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .clusterLocations import clusterLocations
-from .createRoutes import createRoutes
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Case, When, IntegerField
 from ..models import Package, Truck, RouteAssignment
-from datetime import timedelta
+from ..serializers import RouteAssignmentSerializer
+from django.contrib.auth import get_user_model
+from .clusterLocations import clusterLocations
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .createRoutes import createRoutes
+from ..permissions import IsManager
 from django.utils import timezone
 from rest_framework import status
-from django.contrib.auth import get_user_model
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from ..permissions import IsManager
+from datetime import timedelta
 import json
-from django.db.models import Case, When, IntegerField
 
 User = get_user_model()
 

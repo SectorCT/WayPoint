@@ -1,6 +1,6 @@
-import numpy as np
 from sklearn.cluster import DBSCAN, KMeans
 from ..models import Truck
+import numpy as np
 
 def clusterLocations(packagesData, driverUsernames):
     if not isinstance(packagesData, list) or not isinstance(driverUsernames, list):
