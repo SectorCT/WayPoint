@@ -1,3 +1,19 @@
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Case, When, IntegerField
+from ..models import Package, Truck, RouteAssignment
+from ..serializers import RouteAssignmentSerializer
+from django.contrib.auth import get_user_model
+from .clusterLocations import clusterLocations
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .createRoutes import createRoutes
+from ..permissions import IsManager
+from django.utils import timezone
+from rest_framework import status
+from datetime import timedelta
+import json
+
 FACTORY_ADDRESS = {
     "address": "123 Factory Street, City, Country",
     "latitude": 42.6666,
@@ -14,22 +30,6 @@ FACTORY_ADDRESS = {
         "status": "factory"
     }
 }
-
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Case, When, IntegerField
-from ..models import Package, Truck, RouteAssignment
-from ..serializers import RouteAssignmentSerializer
-from django.contrib.auth import get_user_model
-from .clusterLocations import clusterLocations
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from .createRoutes import createRoutes
-from ..permissions import IsManager
-from django.utils import timezone
-from rest_framework import status
-from datetime import timedelta
-import json
 
 User = get_user_model()
 
