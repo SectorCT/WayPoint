@@ -19,6 +19,7 @@ FACTORY_ADDRESS = {
     "latitude": 42.6666,
     "longitude": 23.3750,
     "package_info": {
+        "order": -1,
         "address": "123 Factory Street, City, Country",
         "latitude": 42.6666,
         "longitude": 23.3750,
@@ -62,11 +63,11 @@ def createRoutesFromJson(jsonData):
         packageSequence = []
         mapRoute = []
 
-        for wp in sortedWaypoints:
+        for i, wp in enumerate(sortedWaypoints):
             pkgInfo = wp.get("package_info")
-            
+            pkgInfo["order"] = i
             # Properly assigns each package with status in_tranzit
-            if pkgInfo and pkgInfo.get('packageID'):
+            if pkgInfo and pkgInfo.get('packageID') != 'ADMIN':
                 try:
                     package = Package.objects.get(packageID=pkgInfo['packageID'])
                     package.status = 'in_tranzit'
@@ -181,7 +182,7 @@ class RoutePlannerView(APIView):
         ).order_by('priority', 'deliveryDate')
 
         packagesData = [{
-            "order": i + 1,
+            "order": 0,
             "packageID": pkg.packageID,
             "address": pkg.address,
             "latitude": float(pkg.latitude),
@@ -191,7 +192,7 @@ class RoutePlannerView(APIView):
             "deliveryDate": pkg.deliveryDate.isoformat(),
             "weight": float(pkg.weight),
             "status": pkg.status
-        } for i, pkg in enumerate(packagesQuerySet)]
+        } for pkg in packagesQuerySet]
 
         drivers = request.data.get('drivers')
         if not isinstance(drivers, list) or not drivers:
@@ -199,7 +200,7 @@ class RoutePlannerView(APIView):
 
         clusteredData = clusterLocations(packagesData, driverUsernames=drivers)
         clusteredData = updateClusteredDataWithTruckAndDriver(clusteredData, drivers)
-
+        # return Response(clusteredData) debug
         missingTruckZones = [zone.get("zone") for zone in clusteredData if not zone.get("truckLicensePlate")]
         if missingTruckZones:
             return Response(
@@ -208,7 +209,7 @@ class RoutePlannerView(APIView):
             )
 
         finalRoutes = connectRoutesAndAssignments(clusteredData)
-
+        
         try:
             createRoutesFromJson(finalRoutes)
         except ValueError as e:

@@ -1,22 +1,6 @@
 import requests
 
 def createRoutes(zones):
-    """
-    Expects `zones` to be a list of dicts:
-    {
-        "zone": ...,
-        "driverUsername": ...,
-        "locations": [
-            {
-                "address": "...",
-                "latitude": ...,
-                "longitude": ...,
-                "package_info": ... (optional)
-            }
-        ]
-    }
-    Returns a list of dicts with an added "route" field for each zone.
-    """
     if not isinstance(zones, list):
         raise ValueError("Expected a list of zones.")
 
@@ -73,10 +57,6 @@ def _getTripService(data):
 
 
 def _extractLegRoutes(osrmResponse, inputLocations):
-    """
-    Maps OSRM 'legs' and 'waypoints' back to original input locations,
-    and builds an ordered list of route segments.
-    """
     if "trips" not in osrmResponse or not osrmResponse["trips"]:
         return None
 
