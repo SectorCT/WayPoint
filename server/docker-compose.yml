@@ -20,6 +20,7 @@ services:
       - db
     environment:
       DJANGO_SECRET_KEY: 'django-insecure-4$$96vkmn3@flse_=1zec=ma=o&j0en_c0rutj7*$1r)$59b)t'
+      GEOAPIFY_KEY: fddd4e88b0c94c09ab0dae3c2037b462
       ALLOWED_HOSTS: '*'
       DB_NAME: myprojectdb
       DB_USER: myprojectuser

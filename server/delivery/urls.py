@@ -22,7 +22,8 @@ from .routing.routing import (
     GetRoutingBasedOnDriverView,
     GetAllRoutingsView,
     FinishRouteView,
-    DropAllRoutesView
+    DropAllRoutesView,
+    FetchAddressView
 )
 
 
@@ -42,4 +43,6 @@ urlpatterns = [
     path('routes/all/', GetAllRoutingsView.as_view(), name='getAllRoutes'),
     path('routes/finish/', FinishRouteView.as_view(), name='finishRoute'),
     path('routes/drop-all/', DropAllRoutesView.as_view(), name='dropAllRoutes'),
+
+    path('address/', FetchAddressView.as_view(), name='fetch_address'),
 ]

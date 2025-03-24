@@ -1,18 +1,22 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Case, When, IntegerField
-from ..models import Package, Truck, RouteAssignment
-from ..serializers import RouteAssignmentSerializer
 from django.contrib.auth import get_user_model
-from .clusterLocations import clusterLocations
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .createRoutes import createRoutes
 from ..permissions import IsManager
 from django.utils import timezone
 from rest_framework import status
 from datetime import timedelta
 import json
+
+
+from ..models import Package, Truck, RouteAssignment
+from ..serializers import RouteAssignmentSerializer
+
+from .clusterLocations import clusterLocations
+from .createRoutes import createRoutes
+from .fetchAddress import getAddressByCoordinates
 
 FACTORY_ADDRESS = {
     "address": "123 Factory Street, City, Country",
@@ -263,3 +267,33 @@ class DropAllRoutesView(APIView):
         routeCount, _ = RouteAssignment.objects.all().delete()
         Package.objects.all().update(status='pending')
         return Response({"detail": f"{routeCount} route assignments dropped."}, status=status.HTTP_200_OK)
+
+class FetchAddressView(APIView):
+    def post(self, request):
+        lat = request.data.get("lat")
+        lon = request.data.get("lon")
+
+        if lat is None or lon is None:
+            return Response(
+                {"error": "Latitude and longitude are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            lat = float(lat)
+            lon = float(lon)
+        except ValueError:
+            return Response(
+                {"error": "Latitude and longitude must be valid numbers."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        address = getAddressByCoordinates(lat, lon)
+
+        if address:
+            return Response({"address": address}, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"error": "Could not fetch address from coordinates."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
