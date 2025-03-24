@@ -64,6 +64,16 @@ def createRoutesFromJson(jsonData):
 
         for wp in sortedWaypoints:
             pkgInfo = wp.get("package_info")
+            
+            # Properly assigns each package with status in_tranzit
+            if pkgInfo and pkgInfo.get('packageID'):
+                try:
+                    package = Package.objects.get(packageID=pkgInfo['packageID'])
+                    package.status = 'in_tranzit'
+                    package.save()
+                except Package.DoesNotExist:
+                    raise ValueError(f"Package with ID '{pkgInfo['packageID']}' does not exist.")
+            
             if pkgInfo:
                 packageSequence.append(pkgInfo)
             wpRoute = wp.get("route", [])
@@ -203,11 +213,6 @@ class RoutePlannerView(APIView):
             createRoutesFromJson(finalRoutes)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        Package.objects.filter(
-            status="pending",
-            deliveryDate__lte=tomorrow
-        ).update(status="in_tranzit")
 
         routesToday = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
         serializer = RouteAssignmentSerializer(routesToday, many=True)

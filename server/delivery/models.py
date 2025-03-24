@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django.utils.timezone import now
 from datetime import timedelta
 from django.db import models
 import secrets
@@ -19,8 +20,7 @@ class PackageManager(models.Manager):
     def delivered_packages(self):
         return self.filter(status='delivered')
 
-    def recent_deliveries(self, days=7):
-        from django.utils.timezone import now
+    def recent_deliveries(self, days=7):        
         return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
     
     def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending'):
