@@ -23,16 +23,13 @@ FACTORY_ADDRESS = {
     "latitude": 42.6666,
     "longitude": 23.3750,
     "package_info": {
-        "order": -1,
+        "order": 0,
         "address": "123 Factory Street, City, Country",
         "latitude": 42.6666,
         "longitude": 23.3750,
         "packageID": "ADMIN",
         "recipient": "Factory",
-        "recipientPhoneNumber": "",
-        "deliveryDate": "2025-03-21",
-        "weight": 0,
-        "status": "factory"
+        "recipientPhoneNumber": "0894854663",
     }
 }
 
@@ -70,9 +67,11 @@ def createRoutesFromJson(jsonData):
         for i, wp in enumerate(sortedWaypoints):
             pkgInfo = wp.get("package_info")
             pkgInfo["order"] = i
+            
             # Properly assigns each package with status in_tranzit
             if pkgInfo and pkgInfo.get('packageID') != 'ADMIN':
                 try:
+                    pkgInfo["duration"] = wp.get("duration", 0)
                     package = Package.objects.get(packageID=pkgInfo['packageID'])
                     package.status = 'in_tranzit'
                     package.save()
@@ -85,12 +84,15 @@ def createRoutesFromJson(jsonData):
             if isinstance(wpRoute, list):
                 mapRoute.extend(wpRoute)
 
+        totalDuration = sum(pkg.get("duration", 0) for pkg in packageSequence)
+
         routeInstance = RouteAssignment.objects.create_route(
-            driver=driver,
-            packageSequence=packageSequence,
-            mapRoute=mapRoute,
-            truck=truck,
-            dateOfCreation=timezone.now().date()
+            driver = driver,
+            packageSequence = packageSequence,
+            mapRoute = mapRoute,
+            truck = truck,
+            dateOfCreation = timezone.now().date(),
+            totalDuration = totalDuration
         )
         createdRoutes.append(routeInstance)
 
@@ -265,7 +267,7 @@ class FinishRouteView(APIView):
 class DropAllRoutesView(APIView):
     def delete(self, request):
         routeCount, _ = RouteAssignment.objects.all().delete()
-        Package.objects.all().update(status='pending')
+        Package.objects.filter(status = 'in_tranzit').update(status='pending')
         return Response({"detail": f"{routeCount} route assignments dropped."}, status=status.HTTP_200_OK)
 
 class FetchAddressView(APIView):

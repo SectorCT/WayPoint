@@ -171,6 +171,8 @@ class RouteAssignment(models.Model):
 
     dateOfCreation = models.DateField(auto_now_add=True)
 
+    totalDuration = models.FloatField(default = 0.0)
+
     objects = RouteManager()
 
     def __str__(self):
