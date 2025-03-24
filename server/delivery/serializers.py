@@ -2,6 +2,7 @@ from rest_framework import serializers
 from datetime import date
 
 from .models import Package, Truck, RouteAssignment
+from .routing.fetchAddress import getAddressByCoordinates
 
 # ---------------------- Route Assignment Serializer ----------------------
 
@@ -69,16 +70,22 @@ class PackageSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         try:
-            return Package.objects.create_package(
+            lat = validated_data.get('latitude')
+            lon = validated_data.get('longitude')
+            if lat and lon:
+                validated_data['address'] = getAddressByCoordinates(lat, lon) or validated_data.get('address')
+
+            package = Package.objects.create_package(
                 address=validated_data['address'],
-                latitude=validated_data['latitude'],
-                longitude=validated_data['longitude'],
+                latitude=lat,
+                longitude=lon,
                 recipient=validated_data['recipient'],
                 recipientPhoneNumber=validated_data['recipientPhoneNumber'],
                 deliveryDate=validated_data['deliveryDate'],
                 weight=validated_data['weight'],
                 status=validated_data.get('status', 'pending')
             )
+            return package
         except Exception as e:
             raise serializers.ValidationError(f"Error creating package: {str(e)}")
 

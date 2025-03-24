@@ -20,6 +20,7 @@ services:
       - db
     environment:
       DJANGO_SECRET_KEY: 'REMOVED_DJANGO_SECRET'
+      GEOAPIFY_KEY: fddd4e88b0c94c09ab0dae3c2037b462
       ALLOWED_HOSTS: '*'
       DB_NAME: myprojectdb
       DB_USER: myprojectuser
