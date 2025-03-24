@@ -4,7 +4,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
     <meta name="robots" content="NONE,NOARCHIVE">
-    <title>AssertionError
+    <title>ValueError
         at /delivery/routes/plan/</title>
     <style>
         html * {
@@ -321,10 +321,12 @@
 
 <body>
     <header id="summary">
-        <h1>AssertionError
+        <h1>ValueError
             at /delivery/routes/plan/</h1>
         <pre
-            class="exception_value">Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `&lt;class &#x27;list&#x27;&gt;`</pre>
+            class="exception_value">Expected 2D array, got 1D array instead:
+array=[].
+Reshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.</pre>
         <table class="meta">
 
             <tr>
@@ -343,22 +345,24 @@
 
             <tr>
                 <th scope="row">Exception Type:</th>
-                <td>AssertionError</td>
+                <td>ValueError</td>
             </tr>
 
 
             <tr>
                 <th scope="row">Exception Value:</th>
                 <td>
-                    <pre>Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `&lt;class &#x27;list&#x27;&gt;`</pre>
+                    <pre>Expected 2D array, got 1D array instead:
+array=[].
+Reshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.</pre>
                 </td>
             </tr>
 
 
             <tr>
                 <th scope="row">Exception Location:</th>
-                <td><span class="fname">/usr/local/lib/python3.10/site-packages/rest_framework/views.py</span>, line
-                    423, in finalize_response</td>
+                <td><span class="fname">/usr/local/lib/python3.10/site-packages/sklearn/utils/validation.py</span>, line
+                    1093, in check_array</td>
             </tr>
 
 
@@ -387,7 +391,7 @@
             </tr>
             <tr>
                 <th scope="row">Server time:</th>
-                <td>Mon, 24 Mar 2025 09:48:13 +0000</td>
+                <td>Mon, 24 Mar 2025 12:53:09 +0000</td>
             </tr>
         </table>
     </header>
@@ -412,69 +416,69 @@
 
 
 
-                        <div class="context" id="c140290957327296">
+                        <div class="context" id="c139900806106112">
 
-                            <ol start="48" class="pre-context" id="pre140290957327296">
+                            <ol start="48" class="pre-context" id="pre139900806106112">
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>        return inner</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>    else:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>        @wraps(get_response)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>        def inner(request):</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>            try:</pre>
                                 </li>
 
                             </ol>
 
                             <ol start="55" class="context-line">
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>                response = get_response(request)</pre> <span>…</span>
                                 </li>
                             </ol>
 
-                            <ol start='56' class="post-context" id="post140290957327296">
+                            <ol start='56' class="post-context" id="post139900806106112">
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>            except Exception as exc:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>                response = response_for_exception(request, exc)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>            return response</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre>        return inner</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957327296', 'post140290957327296')">
+                                <li onclick="toggle('pre139900806106112', 'post139900806106112')">
                                     <pre></pre>
                                 </li>
 
@@ -488,7 +492,7 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290957327296">
+                            <table class="vars" id="v139900806106112">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -500,14 +504,14 @@
                                     <tr>
                                         <td>exc</td>
                                         <td class="code">
-                                            <pre>AssertionError(&quot;Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `&lt;class &#x27;list&#x27;&gt;`&quot;)</pre>
+                                            <pre>ValueError(&#x27;Expected 2D array, got 1D array instead:\narray=[].\nReshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.&#x27;)</pre>
                                         </td>
                                     </tr>
 
                                     <tr>
                                         <td>get_response</td>
                                         <td class="code">
-                                            <pre>&lt;bound method BaseHandler._get_response of &lt;django.core.handlers.wsgi.WSGIHandler object at 0x7f98376bf3d0&gt;&gt;</pre>
+                                            <pre>&lt;bound method BaseHandler._get_response of &lt;django.core.handlers.wsgi.WSGIHandler object at 0x7f3d6012b400&gt;&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -532,70 +536,70 @@
 
 
 
-                        <div class="context" id="c140290957644160">
+                        <div class="context" id="c139900806107584">
 
-                            <ol start="190" class="pre-context" id="pre140290957644160">
+                            <ol start="190" class="pre-context" id="pre139900806107584">
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>        if response is None:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>            wrapped_callback = self.make_view_atomic(callback)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>            # If it is an asynchronous view, run it in a subthread.</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>            if iscoroutinefunction(wrapped_callback):</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>                wrapped_callback = async_to_sync(wrapped_callback)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>            try:</pre>
                                 </li>
 
                             </ol>
 
                             <ol start="197" class="context-line">
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>                response = wrapped_callback(request, *callback_args, **callback_kwargs)</pre>
                                     <span>…</span>
                                 </li>
                             </ol>
 
-                            <ol start='198' class="post-context" id="post140290957644160">
+                            <ol start='198' class="post-context" id="post139900806107584">
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>            except Exception as e:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>                response = self.process_exception_by_middleware(e, request)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>                if response is None:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>                    raise</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957644160', 'post140290957644160')">
+                                <li onclick="toggle('pre139900806107584', 'post139900806107584')">
                                     <pre>        # Complain if the view returned None (a common error).</pre>
                                 </li>
 
@@ -609,7 +613,7 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290957644160">
+                            <table class="vars" id="v139900806107584">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -621,7 +625,7 @@
                                     <tr>
                                         <td>callback</td>
                                         <td class="code">
-                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f98096337f0&gt;</pre>
+                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f3d320ab880&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -663,14 +667,14 @@
                                     <tr>
                                         <td>self</td>
                                         <td class="code">
-                                            <pre>&lt;django.core.handlers.wsgi.WSGIHandler object at 0x7f98376bf3d0&gt;</pre>
+                                            <pre>&lt;django.core.handlers.wsgi.WSGIHandler object at 0x7f3d6012b400&gt;</pre>
                                         </td>
                                     </tr>
 
                                     <tr>
                                         <td>wrapped_callback</td>
                                         <td class="code">
-                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f98096337f0&gt;</pre>
+                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f3d320ab880&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -688,61 +692,61 @@
 
 
 
-                        <div class="context" id="c140290956176320">
+                        <div class="context" id="c139900806107392">
 
-                            <ol start="58" class="pre-context" id="pre140290956176320">
+                            <ol start="58" class="pre-context" id="pre139900806107392">
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>        async def _view_wrapper(request, *args, **kwargs):</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>            return await view_func(request, *args, **kwargs)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>    else:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>        def _view_wrapper(request, *args, **kwargs):</pre>
                                 </li>
 
                             </ol>
 
                             <ol start="65" class="context-line">
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>            return view_func(request, *args, **kwargs)</pre> <span>…</span>
                                 </li>
                             </ol>
 
-                            <ol start='66' class="post-context" id="post140290956176320">
+                            <ol start='66' class="post-context" id="post139900806107392">
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>    _view_wrapper.csrf_exempt = True</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956176320', 'post140290956176320')">
+                                <li onclick="toggle('pre139900806107392', 'post139900806107392')">
                                     <pre>    return wraps(view_func)(_view_wrapper)</pre>
                                 </li>
 
@@ -756,7 +760,7 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290956176320">
+                            <table class="vars" id="v139900806107392">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -789,7 +793,7 @@
                                     <tr>
                                         <td>view_func</td>
                                         <td class="code">
-                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f9809633760&gt;</pre>
+                                            <pre>&lt;function View.as_view.&lt;locals&gt;.view at 0x7f3d320ab7f0&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -807,69 +811,69 @@
 
 
 
-                        <div class="context" id="c140290957699648">
+                        <div class="context" id="c139900805807872">
 
-                            <ol start="97" class="pre-context" id="pre140290957699648">
+                            <ol start="97" class="pre-context" id="pre139900805807872">
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>            self = cls(**initkwargs)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>            self.setup(request, *args, **kwargs)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>            if not hasattr(self, &quot;request&quot;):</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>                raise AttributeError(</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>                    &quot;%s instance has no &#x27;request&#x27; attribute. Did you override &quot;</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>                    &quot;setup() and forget to call super()?&quot; % cls.__name__</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>                )</pre>
                                 </li>
 
                             </ol>
 
                             <ol start="104" class="context-line">
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>            return self.dispatch(request, *args, **kwargs)</pre> <span>…</span>
                                 </li>
                             </ol>
 
-                            <ol start='105' class="post-context" id="post140290957699648">
+                            <ol start='105' class="post-context" id="post139900805807872">
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>        view.view_class = cls</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>        view.view_initkwargs = initkwargs</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>        # __name__ and __qualname__ are intentionally left unchanged as</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290957699648', 'post140290957699648')">
+                                <li onclick="toggle('pre139900805807872', 'post139900805807872')">
                                     <pre>        # view_class should be used to robustly determine the name of the view</pre>
                                 </li>
 
@@ -883,7 +887,7 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290957699648">
+                            <table class="vars" id="v139900805807872">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -930,7 +934,7 @@
                                     <tr>
                                         <td>self</td>
                                         <td class="code">
-                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f98093efdc0&gt;</pre>
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -944,74 +948,73 @@
                     <li class="frame user">
 
                         <code class="fname">/usr/local/lib/python3.10/site-packages/rest_framework/views.py</code>, line
-                        511, in dispatch
+                        509, in dispatch
 
 
 
-                        <div class="context" id="c140290956152640">
+                        <div class="context" id="c139900806107456">
 
-                            <ol start="504" class="pre-context" id="pre140290956152640">
+                            <ol start="502" class="pre-context" id="pre139900806107456">
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
+                                    <pre>                                  self.http_method_not_allowed)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
+                                    <pre>            else:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>                handler = self.http_method_not_allowed</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>            response = handler(request, *args, **kwargs)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>        except Exception as exc:</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
-                                    <pre>            response = self.handle_exception(exc)</pre>
-                                </li>
+                            </ol>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                            <ol start="509" class="context-line">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
+                                    <pre>            response = self.handle_exception(exc)</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='510' class="post-context" id="post139900806107456">
+
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre></pre>
                                 </li>
 
-                            </ol>
-
-                            <ol start="511" class="context-line">
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>        self.response = self.finalize_response(request, response, *args, **kwargs)</pre>
-                                    <span>…</span>
                                 </li>
-                            </ol>
 
-                            <ol start='512' class="post-context" id="post140290956152640">
-
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>        return self.response</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>    def options(self, request, *args, **kwargs):</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
-                                    <pre>        &quot;&quot;&quot;</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
-                                    <pre>        Handler method for HTTP &#x27;OPTIONS&#x27; request.</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956152640', 'post140290956152640')">
+                                <li onclick="toggle('pre139900806107456', 'post139900806107456')">
                                     <pre>        &quot;&quot;&quot;</pre>
                                 </li>
 
@@ -1025,7 +1028,7 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290956152640">
+                            <table class="vars" id="v139900806107456">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -1044,7 +1047,7 @@
                                     <tr>
                                         <td>handler</td>
                                         <td class="code">
-                                            <pre>&lt;bound method RoutePlannerView.post of &lt;delivery.routing.routing.RoutePlannerView object at 0x7f98093efdc0&gt;&gt;</pre>
+                                            <pre>&lt;bound method RoutePlannerView.post of &lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -1063,117 +1066,9 @@
                                     </tr>
 
                                     <tr>
-                                        <td>response</td>
-                                        <td class="code">
-                                            <pre>[{&#x27;driverUsername&#x27;: &#x27;user2&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ulitsa Hristo Silyanov 50, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7403,
-                &#x27;longitude&#x27;: 23.2933,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;b76bfddf7e7d&#x27;,
-                &#x27;recipient&#x27;: &#x27;John Doe&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;123456789&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 5.0},
-               {&#x27;address&#x27;: &#x27;ulitsa Mara Buneva 12, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7304,
-                &#x27;longitude&#x27;: 23.2956,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;e507f51a1e2c&#x27;,
-                &#x27;recipient&#x27;: &#x27;Toni Montana&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;444555666&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;bul. Lomsko Shose 150, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7355,
-                &#x27;longitude&#x27;: 23.297,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;3f93e9cbaf56&#x27;,
-                &#x27;recipient&#x27;: &#x27;Jane Smith&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;987654321&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0}],
-  &#x27;totalWeight&#x27;: 10.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasfasd&#x27;,
-  &#x27;zone&#x27;: 0},
- {&#x27;driverUsername&#x27;: &#x27;user1&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ulitsa Andrey Lyapchev 70, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6578,
-                &#x27;longitude&#x27;: 23.3813,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;56091d317f3f&#x27;,
-                &#x27;recipient&#x27;: &#x27;Alice Brown&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;555111222&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;bul. Andrey Saharov 15, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6466,
-                &#x27;longitude&#x27;: 23.3805,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;2a4f63400b2d&#x27;,
-                &#x27;recipient&#x27;: &#x27;Charlie Black&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;777999555&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0},
-               {&#x27;address&#x27;: &#x27;bul. Aleksandar Malinov 31, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6487,
-                &#x27;longitude&#x27;: 23.3817,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;48801cafd1b4&#x27;,
-                &#x27;recipient&#x27;: &#x27;Bob White&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;666222333&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 4.0}],
-  &#x27;totalWeight&#x27;: 9.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasasfasd&#x27;,
-  &#x27;zone&#x27;: 1},
- {&#x27;driverUsername&#x27;: &#x27;user3&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6833,
-                &#x27;longitude&#x27;: 23.2975,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;094a7f2891ba&#x27;,
-                &#x27;recipient&#x27;: &#x27;Alice Brown&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;555111222&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6761,
-                &#x27;longitude&#x27;: 23.3,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;8a72fe94a53c&#x27;,
-                &#x27;recipient&#x27;: &#x27;Charlie Black&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;777999555&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0},
-               {&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.68,
-                &#x27;longitude&#x27;: 23.2938,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;80c599c3bca7&#x27;,
-                &#x27;recipient&#x27;: &#x27;Bob White&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;666222333&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 4.0}],
-  &#x27;totalWeight&#x27;: 9.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasaasfasd&#x27;,
-  &#x27;zone… &lt;trimmed 4102 bytes string&gt;</pre>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
                                         <td>self</td>
                                         <td class="code">
-                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f98093efdc0&gt;</pre>
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -1187,74 +1082,74 @@
                     <li class="frame user">
 
                         <code class="fname">/usr/local/lib/python3.10/site-packages/rest_framework/views.py</code>, line
-                        423, in finalize_response
+                        469, in handle_exception
 
 
 
-                        <div class="context" id="c140290956169216">
+                        <div class="context" id="c139900806106496">
 
-                            <ol start="416" class="pre-context" id="pre140290956169216">
+                            <ol start="462" class="pre-context" id="pre139900806106496">
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        self.check_throttles(request)</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>    def finalize_response(self, request, response, *args, **kwargs):</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        exception_handler = self.get_exception_handler()</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        &quot;&quot;&quot;</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        Returns the final response object.</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        context = self.get_exception_handler_context()</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        &quot;&quot;&quot;</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        response = exception_handler(exc, context)</pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        # Make the error obvious if a proper response is not returned</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        if response is None:</pre>
                                 </li>
 
                             </ol>
 
-                            <ol start="423" class="context-line">
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        assert isinstance(response, HttpResponseBase), (</pre> <span>…</span>
+                            <ol start="469" class="context-line">
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>            self.raise_uncaught_exception(exc)</pre> <span>…</span>
                                 </li>
                             </ol>
 
-                            <ol start='424' class="post-context" id="post140290956169216">
+                            <ol start='470' class="post-context" id="post139900806106496">
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>            &#x27;Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` &#x27;</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>            &#x27;to be returned from the view, but received a `%s`&#x27;</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>            % type(response)</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        )</pre>
-                                </li>
-
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
                                     <pre></pre>
                                 </li>
 
-                                <li onclick="toggle('pre140290956169216', 'post140290956169216')">
-                                    <pre>        if isinstance(response, Response):</pre>
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        response.exception = True</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        return response</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>    def raise_uncaught_exception(self, exc):</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106496', 'post139900806106496')">
+                                    <pre>        if settings.DEBUG:</pre>
                                 </li>
 
                             </ol>
@@ -1267,7 +1162,278 @@
                         <details>
                             <summary class="commands">Local vars</summary>
 
-                            <table class="vars" id="v140290956169216">
+                            <table class="vars" id="v139900806106496">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>context</td>
+                                        <td class="code">
+                                            <pre>{&#x27;args&#x27;: (),
+ &#x27;kwargs&#x27;: {},
+ &#x27;request&#x27;: &lt;rest_framework.request.Request: POST &#x27;/delivery/routes/plan/&#x27;&gt;,
+ &#x27;view&#x27;: &lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;}</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>exc</td>
+                                        <td class="code">
+                                            <pre>ValueError(&#x27;Expected 2D array, got 1D array instead:\narray=[].\nReshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.&#x27;)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>exception_handler</td>
+                                        <td class="code">
+                                            <pre>&lt;function custom_exception_handler at 0x7f3d31d3f010&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>response</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>self</td>
+                                        <td class="code">
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/rest_framework/views.py</code>, line
+                        480, in raise_uncaught_exception
+
+
+
+                        <div class="context" id="c139900806104768">
+
+                            <ol start="473" class="pre-context" id="pre139900806104768">
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>    def raise_uncaught_exception(self, exc):</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>        if settings.DEBUG:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>            request = self.request</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>            renderer_format = getattr(request.accepted_renderer, &#x27;format&#x27;)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>            use_plaintext_traceback = renderer_format not in (&#x27;html&#x27;, &#x27;api&#x27;, &#x27;admin&#x27;)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>            request.force_plaintext_errors(use_plaintext_traceback)</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="480" class="context-line">
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>        raise exc</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='481' class="post-context" id="post139900806104768">
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>    # Note: Views are made CSRF exempt from within `as_view` as to prevent</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>    # accidental removal of this exemption in cases where `dispatch` needs to</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>    # be overridden.</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>    def dispatch(self, request, *args, **kwargs):</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104768', 'post139900806104768')">
+                                    <pre>        &quot;&quot;&quot;</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806104768">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>exc</td>
+                                        <td class="code">
+                                            <pre>ValueError(&#x27;Expected 2D array, got 1D array instead:\narray=[].\nReshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.&#x27;)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>renderer_format</td>
+                                        <td class="code">
+                                            <pre>&#x27;json&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>request</td>
+                                        <td class="code">
+                                            <pre>&lt;rest_framework.request.Request: POST &#x27;/delivery/routes/plan/&#x27;&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>self</td>
+                                        <td class="code">
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>use_plaintext_traceback</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/rest_framework/views.py</code>, line
+                        506, in dispatch
+
+
+
+                        <div class="context" id="c139900806104512">
+
+                            <ol start="499" class="pre-context" id="pre139900806104512">
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>            # Get the appropriate handler method</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>            if request.method.lower() in self.http_method_names:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>                handler = getattr(self, request.method.lower(),</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>                                  self.http_method_not_allowed)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>            else:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>                handler = self.http_method_not_allowed</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre></pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="506" class="context-line">
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>            response = handler(request, *args, **kwargs)</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='507' class="post-context" id="post139900806104512">
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>        except Exception as exc:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>            response = self.handle_exception(exc)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>        self.response = self.finalize_response(request, response, *args, **kwargs)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104512', 'post139900806104512')">
+                                    <pre>        return self.response</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806104512">
                                 <thead>
                                     <tr>
                                         <th scope="col">Variable</th>
@@ -1284,6 +1450,13 @@
                                     </tr>
 
                                     <tr>
+                                        <td>handler</td>
+                                        <td class="code">
+                                            <pre>&lt;bound method RoutePlannerView.post of &lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
                                         <td>kwargs</td>
                                         <td class="code">
                                             <pre>{}</pre>
@@ -1298,117 +1471,1229 @@
                                     </tr>
 
                                     <tr>
-                                        <td>response</td>
+                                        <td>self</td>
                                         <td class="code">
-                                            <pre>[{&#x27;driverUsername&#x27;: &#x27;user2&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ulitsa Hristo Silyanov 50, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7403,
-                &#x27;longitude&#x27;: 23.2933,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;b76bfddf7e7d&#x27;,
-                &#x27;recipient&#x27;: &#x27;John Doe&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;123456789&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 5.0},
-               {&#x27;address&#x27;: &#x27;ulitsa Mara Buneva 12, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7304,
-                &#x27;longitude&#x27;: 23.2956,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;e507f51a1e2c&#x27;,
-                &#x27;recipient&#x27;: &#x27;Toni Montana&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;444555666&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;bul. Lomsko Shose 150, Nadezhda, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.7355,
-                &#x27;longitude&#x27;: 23.297,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;3f93e9cbaf56&#x27;,
-                &#x27;recipient&#x27;: &#x27;Jane Smith&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;987654321&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0}],
-  &#x27;totalWeight&#x27;: 10.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasfasd&#x27;,
-  &#x27;zone&#x27;: 0},
- {&#x27;driverUsername&#x27;: &#x27;user1&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ulitsa Andrey Lyapchev 70, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6578,
-                &#x27;longitude&#x27;: 23.3813,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;56091d317f3f&#x27;,
-                &#x27;recipient&#x27;: &#x27;Alice Brown&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;555111222&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;bul. Andrey Saharov 15, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6466,
-                &#x27;longitude&#x27;: 23.3805,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;2a4f63400b2d&#x27;,
-                &#x27;recipient&#x27;: &#x27;Charlie Black&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;777999555&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0},
-               {&#x27;address&#x27;: &#x27;bul. Aleksandar Malinov 31, Mladost, Sofia&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6487,
-                &#x27;longitude&#x27;: 23.3817,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;48801cafd1b4&#x27;,
-                &#x27;recipient&#x27;: &#x27;Bob White&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;666222333&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 4.0}],
-  &#x27;totalWeight&#x27;: 9.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasasfasd&#x27;,
-  &#x27;zone&#x27;: 1},
- {&#x27;driverUsername&#x27;: &#x27;user3&#x27;,
-  &#x27;packages&#x27;: [{&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6833,
-                &#x27;longitude&#x27;: 23.2975,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;094a7f2891ba&#x27;,
-                &#x27;recipient&#x27;: &#x27;Alice Brown&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;555111222&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 2.0},
-               {&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.6761,
-                &#x27;longitude&#x27;: 23.3,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;8a72fe94a53c&#x27;,
-                &#x27;recipient&#x27;: &#x27;Charlie Black&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;777999555&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 3.0},
-               {&#x27;address&#x27;: &#x27;ZH.K HIPODRUMA&#x27;,
-                &#x27;deliveryDate&#x27;: &#x27;2025-03-24&#x27;,
-                &#x27;latitude&#x27;: 42.68,
-                &#x27;longitude&#x27;: 23.2938,
-                &#x27;order&#x27;: 0,
-                &#x27;packageID&#x27;: &#x27;80c599c3bca7&#x27;,
-                &#x27;recipient&#x27;: &#x27;Bob White&#x27;,
-                &#x27;recipientPhoneNumber&#x27;: &#x27;666222333&#x27;,
-                &#x27;status&#x27;: &#x27;pending&#x27;,
-                &#x27;weight&#x27;: 4.0}],
-  &#x27;totalWeight&#x27;: 9.0,
-  &#x27;truckLicensePlate&#x27;: &#x27;fGdasaasfasd&#x27;,
-  &#x27;zone… &lt;trimmed 4102 bytes string&gt;</pre>
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/home/app/delivery/routing/routing.py</code>, line 209, in post
+
+
+
+                        <div class="context" id="c139900806106752">
+
+                            <ol start="202" class="pre-context" id="pre139900806106752">
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>            &quot;status&quot;: pkg.status</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        } for pkg in packagesQuerySet]</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        drivers = request.data.get(&#x27;drivers&#x27;)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        if not isinstance(drivers, list) or not drivers:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>            return Response({&quot;error&quot;: &quot;No valid drivers provided.&quot;}, status=status.HTTP_400_BAD_REQUEST)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre></pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="209" class="context-line">
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        clusteredData = clusterLocations(packagesData, driverUsernames=drivers)</pre>
+                                    <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='210' class="post-context" id="post139900806106752">
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        clusteredData = updateClusteredDataWithTruckAndDriver(clusteredData, drivers)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        # return Response(clusteredData) debug</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        missingTruckZones = [zone.get(&quot;zone&quot;) for zone in clusteredData if not zone.get(&quot;truckLicensePlate&quot;)]</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>        if missingTruckZones:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>            return Response(</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806106752', 'post139900806106752')">
+                                    <pre>                {&quot;error&quot;: f&quot;No available truck with sufficient capacity for zone(s): {missingTruckZones}.&quot;},</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806106752">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>args</td>
+                                        <td class="code">
+                                            <pre>()</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>drivers</td>
+                                        <td class="code">
+                                            <pre>[&#x27;user2&#x27;, &#x27;user1&#x27;, &#x27;user3&#x27;]</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>kwargs</td>
+                                        <td class="code">
+                                            <pre>{}</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>packagesData</td>
+                                        <td class="code">
+                                            <pre>[]</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>packagesQuerySet</td>
+                                        <td class="code">
+                                            <pre>&lt;QuerySet []&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>request</td>
+                                        <td class="code">
+                                            <pre>&lt;rest_framework.request.Request: POST &#x27;/delivery/routes/plan/&#x27;&gt;</pre>
                                         </td>
                                     </tr>
 
                                     <tr>
                                         <td>self</td>
                                         <td class="code">
-                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f98093efdc0&gt;</pre>
+                                            <pre>&lt;delivery.routing.routing.RoutePlannerView object at 0x7f3d5e7e9660&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>today</td>
+                                        <td class="code">
+                                            <pre>datetime.date(2025, 3, 24)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>tomorrow</td>
+                                        <td class="code">
+                                            <pre>datetime.date(2025, 3, 25)</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/home/app/delivery/routing/clusterLocations.py</code>, line 21, in
+                        clusterLocations
+
+
+
+                        <div class="context" id="c139900806105728">
+
+                            <ol start="14" class="pre-context" id="pre139900806105728">
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    coordinatesRad = np.radians(coordinates)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    earthRadius = 6371.0  # in kilometers</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    epsKm = 1.5</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    eps = epsKm / earthRadius  # convert radius to radians</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    # Step 2: Use DBSCAN for initial spatial clustering</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    dbscan = DBSCAN(eps=eps, min_samples=1, metric=&#x27;haversine&#x27;)</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="21" class="context-line">
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    dbscanLabels = dbscan.fit_predict(coordinatesRad)</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='22' class="post-context" id="post139900806105728">
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    clusters = {}</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    for label, pkg in zip(dbscanLabels, packagesData):</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>        clusters.setdefault(int(label), []).append(pkg)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806105728', 'post139900806105728')">
+                                    <pre>    zones = [{&quot;zone&quot;: zoneLabel, &quot;driverUsername&quot;: &quot;&quot;, &quot;locations&quot;: locations}</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806105728">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>coordinates</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>coordinatesRad</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>dbscan</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>driverUsernames</td>
+                                        <td class="code">
+                                            <pre>[&#x27;user2&#x27;, &#x27;user1&#x27;, &#x27;user3&#x27;]</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>earthRadius</td>
+                                        <td class="code">
+                                            <pre>6371.0</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>eps</td>
+                                        <td class="code">
+                                            <pre>0.00023544184586407157</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>epsKm</td>
+                                        <td class="code">
+                                            <pre>1.5</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>numOfDrivers</td>
+                                        <td class="code">
+                                            <pre>3</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>numOfTrucks</td>
+                                        <td class="code">
+                                            <pre>3</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>packagesData</td>
+                                        <td class="code">
+                                            <pre>[]</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/sklearn/cluster/_dbscan.py</code>,
+                        line 470, in fit_predict
+
+
+
+                        <div class="context" id="c139900825915008">
+
+                            <ol start="463" class="pre-context" id="pre139900825915008">
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>            Note that weights are absolute, and default to 1.</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        Returns</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        -------</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        labels : ndarray of shape (n_samples,)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>            Cluster labels. Noisy samples are given the label -1.</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        &quot;&quot;&quot;</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="470" class="context-line">
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        self.fit(X, sample_weight=sample_weight)</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='471' class="post-context" id="post139900825915008">
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        return self.labels_</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>    def __sklearn_tags__(self):</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        tags = super().__sklearn_tags__()</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        tags.input_tags.pairwise = self.metric == &quot;precomputed&quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900825915008', 'post139900825915008')">
+                                    <pre>        tags.input_tags.sparse = True</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900825915008">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>X</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>sample_weight</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>self</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>y</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/sklearn/base.py</code>, line 1389,
+                        in wrapper
+
+
+
+                        <div class="context" id="c139900806107136">
+
+                            <ol start="1382" class="pre-context" id="pre139900806107136">
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>                estimator._validate_params()</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>            with config_context(</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>                skip_parameter_validation=(</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>                    prefer_skip_nested_validation or global_skip_validation</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>                )</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>            ):</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="1389" class="context-line">
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>                return fit_method(estimator, *args, **kwargs)</pre>
+                                    <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='1390' class="post-context" id="post139900806107136">
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>        return wrapper</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806107136', 'post139900806107136')">
+                                    <pre>    return decorator</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806107136">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>args</td>
+                                        <td class="code">
+                                            <pre>(array([], dtype=float64),)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>estimator</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>fit_method</td>
+                                        <td class="code">
+                                            <pre>&lt;function DBSCAN.fit at 0x7f3d32498430&gt;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>global_skip_validation</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>kwargs</td>
+                                        <td class="code">
+                                            <pre>{&#x27;sample_weight&#x27;: None}</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>partial_fit_and_fitted</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>prefer_skip_nested_validation</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/sklearn/cluster/_dbscan.py</code>,
+                        line 391, in fit
+
+
+
+                        <div class="context" id="c139900806104640">
+
+                            <ol start="384" class="pre-context" id="pre139900806104640">
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>            Note that weights are absolute, and default to 1.</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        Returns</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        -------</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        self : object</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>            Returns a fitted instance of self.</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        &quot;&quot;&quot;</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="391" class="context-line">
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        X = validate_data(self, X, accept_sparse=&quot;csr&quot;)</pre>
+                                    <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='392' class="post-context" id="post139900806104640">
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        if sample_weight is not None:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>            sample_weight = _check_sample_weight(sample_weight, X)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        # Calculate neighborhood for all samples. This leaves the original</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900806104640', 'post139900806104640')">
+                                    <pre>        # point in, which needs to be considered later (i.e. point i is in the</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900806104640">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>X</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>sample_weight</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>self</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>y</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/sklearn/utils/validation.py</code>,
+                        line 2944, in validate_data
+
+
+
+                        <div class="context" id="c139900840387392">
+
+                            <ol start="2937" class="pre-context" id="pre139900840387392">
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        if not no_val_X and no_val_y:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>            out = X</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        elif no_val_X and not no_val_y:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>            out = y</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        else:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>            out = X, y</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>    elif not no_val_X and no_val_y:</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="2944" class="context-line">
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        out = check_array(X, input_name=&quot;X&quot;, **check_params)</pre>
+                                    <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='2945' class="post-context" id="post139900840387392">
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>    elif no_val_X and not no_val_y:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        out = _check_y(y, **check_params)</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>    else:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>        if validate_separately:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>            # We need this because some estimators validate X and y</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900840387392', 'post139900840387392')">
+                                    <pre>            # separately, and in general, separately calling check_array()</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900840387392">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>X</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>_estimator</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>check_params</td>
+                                        <td class="code">
+                                            <pre>{&#x27;accept_sparse&#x27;: &#x27;csr&#x27;,
+ &#x27;estimator&#x27;: DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)}</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>default_check_params</td>
+                                        <td class="code">
+                                            <pre>{&#x27;estimator&#x27;: DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)}</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>no_val_X</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>no_val_y</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>reset</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>skip_check_array</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>tags</td>
+                                        <td class="code">
+                                            <pre>Tags(estimator_type=&#x27;clusterer&#x27;,
+     target_tags=TargetTags(required=False,
+                            one_d_labels=False,
+                            two_d_labels=False,
+                            positive_only=False,
+                            multi_output=False,
+                            single_output=True),
+     transformer_tags=None,
+     classifier_tags=None,
+     regressor_tags=None,
+     array_api_support=False,
+     no_validation=False,
+     non_deterministic=False,
+     requires_fit=True,
+     _skip_test=False,
+     input_tags=InputTags(one_d_array=False,
+                          two_d_array=True,
+                          three_d_array=False,
+                          sparse=True,
+                          categorical=False,
+                          string=False,
+                          dict=False,
+                          positive_only=False,
+                          allow_nan=False,
+                          pairwise=False))</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>validate_separately</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>y</td>
+                                        <td class="code">
+                                            <pre>&#x27;no_validation&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </details>
+
+                    </li>
+
+
+                    <li class="frame user">
+
+                        <code class="fname">/usr/local/lib/python3.10/site-packages/sklearn/utils/validation.py</code>,
+                        line 1093, in check_array
+
+
+
+                        <div class="context" id="c139900813675328">
+
+                            <ol start="1086" class="pre-context" id="pre139900813675328">
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                else:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                    msg = (</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                        f&quot;Expected 2D array, got 1D array instead:\narray={array}.\n&quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                        &quot;Reshape your data either using array.reshape(-1, 1) if &quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                        &quot;your data has a single feature or array.reshape(1, -1) &quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                        &quot;if it contains a single sample.&quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                    )</pre>
+                                </li>
+
+                            </ol>
+
+                            <ol start="1093" class="context-line">
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                raise ValueError(msg)</pre> <span>…</span>
+                                </li>
+                            </ol>
+
+                            <ol start='1094' class="post-context" id="post139900813675328">
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre></pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>        if dtype_numeric and hasattr(array.dtype, &quot;kind&quot;) and array.dtype.kind in &quot;USV&quot;:</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>            raise ValueError(</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                &quot;dtype=&#x27;numeric&#x27; is not compatible with arrays of bytes/strings.&quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>                &quot;Convert your data to numeric values explicitly instead.&quot;</pre>
+                                </li>
+
+                                <li onclick="toggle('pre139900813675328', 'post139900813675328')">
+                                    <pre>            )</pre>
+                                </li>
+
+                            </ol>
+
+                        </div>
+
+
+
+
+                        <details>
+                            <summary class="commands">Local vars</summary>
+
+                            <table class="vars" id="v139900813675328">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Variable</th>
+                                        <th scope="col">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td>accept_large_sparse</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>accept_sparse</td>
+                                        <td class="code">
+                                            <pre>&#x27;csr&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>allow_nd</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>array</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>array_orig</td>
+                                        <td class="code">
+                                            <pre>array([], dtype=float64)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>context</td>
+                                        <td class="code">
+                                            <pre>&#x27; by DBSCAN&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>copy</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>dtype</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>dtype_numeric</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>dtype_orig</td>
+                                        <td class="code">
+                                            <pre>dtype(&#x27;float64&#x27;)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>dtypes_orig</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>ensure_2d</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>ensure_all_finite</td>
+                                        <td class="code">
+                                            <pre>True</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>ensure_min_features</td>
+                                        <td class="code">
+                                            <pre>1</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>ensure_min_samples</td>
+                                        <td class="code">
+                                            <pre>1</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>ensure_non_negative</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>estimator</td>
+                                        <td class="code">
+                                            <pre>DBSCAN(eps=0.00023544184586407157, metric=&#x27;haversine&#x27;, min_samples=1)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>estimator_name</td>
+                                        <td class="code">
+                                            <pre>&#x27;DBSCAN&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>force_all_finite</td>
+                                        <td class="code">
+                                            <pre>&#x27;deprecated&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>force_writeable</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>input_name</td>
+                                        <td class="code">
+                                            <pre>&#x27;X&#x27;</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>is_array_api_compliant</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>msg</td>
+                                        <td class="code">
+                                            <pre>(&#x27;Expected 2D array, got 1D array instead:\n&#x27;
+ &#x27;array=[].\n&#x27;
+ &#x27;Reshape your data either using array.reshape(-1, 1) if your data has a &#x27;
+ &#x27;single feature or array.reshape(1, -1) if it contains a single sample.&#x27;)</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>order</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>pandas_requires_conversion</td>
+                                        <td class="code">
+                                            <pre>False</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>type_if_series</td>
+                                        <td class="code">
+                                            <pre>None</pre>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>xp</td>
+                                        <td class="code">
+                                            <pre>&lt;sklearn.utils._array_api._NumPyAPIWrapper object at 0x7f3d36f83bb0&gt;</pre>
                                         </td>
                                     </tr>
 
@@ -1425,7 +2710,7 @@
                 <div id="pastebinTraceback" class="pastebin">
                     <input type="hidden" name="language" value="PythonConsole">
                     <input type="hidden" name="title"
-      value="AssertionError at /delivery/routes/plan/">
+      value="ValueError at /delivery/routes/plan/">
                     <input type="hidden" name="source" value="Django Dpaste Agent">
                     <input type="hidden" name="poster" value="Django">
                     <textarea name="content" id="traceback_area" cols="140" rows="25">
@@ -1468,13 +2753,33 @@ Traceback (most recent call last):
     return view_func(request, *args, **kwargs)
   File "/usr/local/lib/python3.10/site-packages/django/views/generic/base.py", line 104, in view
     return self.dispatch(request, *args, **kwargs)
-  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 511, in dispatch
-    self.response = self.finalize_response(request, response, *args, **kwargs)
-  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 423, in finalize_response
-    assert isinstance(response, HttpResponseBase), (
+  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.10/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/app/delivery/routing/routing.py", line 209, in post
+    clusteredData = clusterLocations(packagesData, driverUsernames=drivers)
+  File "/home/app/delivery/routing/clusterLocations.py", line 21, in clusterLocations
+    dbscanLabels = dbscan.fit_predict(coordinatesRad)
+  File "/usr/local/lib/python3.10/site-packages/sklearn/cluster/_dbscan.py", line 470, in fit_predict
+    self.fit(X, sample_weight=sample_weight)
+  File "/usr/local/lib/python3.10/site-packages/sklearn/base.py", line 1389, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/sklearn/cluster/_dbscan.py", line 391, in fit
+    X = validate_data(self, X, accept_sparse=&quot;csr&quot;)
+  File "/usr/local/lib/python3.10/site-packages/sklearn/utils/validation.py", line 2944, in validate_data
+    out = check_array(X, input_name=&quot;X&quot;, **check_params)
+  File "/usr/local/lib/python3.10/site-packages/sklearn/utils/validation.py", line 1093, in check_array
+    raise ValueError(msg)
 
-Exception Type: AssertionError at /delivery/routes/plan/
-Exception Value: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `&lt;class &#x27;list&#x27;&gt;`
+Exception Type: ValueError at /delivery/routes/plan/
+Exception Value: Expected 2D array, got 1D array instead:
+array=[].
+Reshape your data either using array.reshape(-1, 1) if your data has a single feature or array.reshape(1, -1) if it contains a single sample.
 </textarea>
                     <br><br>
                     <input type="submit" value="Share this traceback on a public website">
@@ -1601,6 +2906,13 @@ Exception Value: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse
                     </tr>
 
                     <tr>
+                        <td>GEOAPIFY_KEY</td>
+                        <td class="code">
+                            <pre>&#x27;********************&#x27;</pre>
+                        </td>
+                    </tr>
+
+                    <tr>
                         <td>GPG_KEY</td>
                         <td class="code">
                             <pre>&#x27;********************&#x27;</pre>
@@ -1617,7 +2929,7 @@ Exception Value: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse
                     <tr>
                         <td>HOSTNAME</td>
                         <td class="code">
-                            <pre>&#x27;14b5b4d4af32&#x27;</pre>
+                            <pre>&#x27;0978ed933de4&#x27;</pre>
                         </td>
                     </tr>
 
@@ -1771,7 +3083,7 @@ Exception Value: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse
                     <tr>
                         <td>SERVER_NAME</td>
                         <td class="code">
-                            <pre>&#x27;14b5b4d4af32&#x27;</pre>
+                            <pre>&#x27;0978ed933de4&#x27;</pre>
                         </td>
                     </tr>
 
@@ -1820,7 +3132,7 @@ Exception Value: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse
                     <tr>
                         <td>wsgi.input</td>
                         <td class="code">
-                            <pre>&lt;django.core.handlers.wsgi.LimitedStream object at 0x7f98093ef970&gt;</pre>
+                            <pre>&lt;django.core.handlers.wsgi.LimitedStream object at 0x7f3d31d2fdc0&gt;</pre>
                         </td>
                     </tr>
 

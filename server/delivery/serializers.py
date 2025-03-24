@@ -12,7 +12,7 @@ class RouteAssignmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RouteAssignment
-        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'routeID']
+        fields = ['user', 'packageSequence', 'mapRoute', 'truck', 'dateOfCreation', 'routeID', 'totalDuration']
 
     def validate(self, data):
         request = self.context.get('request')
@@ -83,7 +83,7 @@ class PackageSerializer(serializers.ModelSerializer):
                 recipientPhoneNumber=validated_data['recipientPhoneNumber'],
                 deliveryDate=validated_data['deliveryDate'],
                 weight=validated_data['weight'],
-                status=validated_data.get('status', 'pending')
+                status=validated_data.get('status', 'pending'),
             )
             return package
         except Exception as e:
