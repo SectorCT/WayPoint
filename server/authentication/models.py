@@ -26,6 +26,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
+
+    busy = models.BooleanField(default = False)
+
+    workingHours = models.JSONField(default=dict, blank=True, help_text="Working hours per weekday")
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'phoneNumber']
