@@ -66,20 +66,28 @@ def createRoutesFromJson(jsonData):
 
         for i, wp in enumerate(sortedWaypoints):
             pkgInfo = wp.get("package_info")
-            pkgInfo["order"] = i
-            
-            # Properly assigns each package with status in_tranzit
-            if pkgInfo and pkgInfo.get('packageID') != 'ADMIN':
-                try:
-                    pkgInfo["duration"] = wp.get("duration", 0)
-                    package = Package.objects.get(packageID=pkgInfo['packageID'])
-                    package.status = 'in_tranzit'
-                    package.save()
-                except Package.DoesNotExist:
-                    raise ValueError(f"Package with ID '{pkgInfo['packageID']}' does not exist.")
-            
+            wpDuration = wp.get("duration", 0)
+
             if pkgInfo:
-                packageSequence.append(pkgInfo)
+                finalPkg = {
+                    "order": i,
+                    "packageID": pkgInfo.get("packageID", ""),
+                    "duration": wpDuration
+                }
+
+                # Assign status to real packages only (skip ADMIN/fake ones)
+                if pkgInfo.get('packageID') != 'ADMIN':
+                    try:
+                        package = Package.objects.get(packageID=pkgInfo['packageID'])
+                        package.status = 'in_tranzit'
+                        package.save()
+                    except Package.DoesNotExist:
+                        raise ValueError(f"Package with ID '{pkgInfo['packageID']}' does not exist.")
+                else:
+                    finalPkg['lat'] = pkgInfo['latitude']
+                    finalPkg['lon'] = pkgInfo['longitude']
+                packageSequence.append(finalPkg)
+
             wpRoute = wp.get("route", [])
             if isinstance(wpRoute, list):
                 mapRoute.extend(wpRoute)
