@@ -221,7 +221,7 @@ class RoutePlannerView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        routesToday = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
+        routesToday = RouteAssignment.objects.filter(isActive=True)
         serializer = RouteAssignmentSerializer(routesToday, many=True)
         return Response(serializer.data)
 

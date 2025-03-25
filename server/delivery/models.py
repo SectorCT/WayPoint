@@ -169,7 +169,7 @@ class RouteAssignment(models.Model):
     
     isActive = models.BooleanField(default=True)
 
-    dateOfCreation = models.DateField(auto_now_add=True)
+    dateOfCreation = models.DateTimeField(auto_now_add=True)
 
     totalDuration = models.FloatField(default = 0.0)
 
@@ -177,3 +177,22 @@ class RouteAssignment(models.Model):
 
     def __str__(self):
         return f"Route assigned to {self.driver.username}"
+    
+# class Depot(models.Model):
+#     depotID = models.CharField(
+#         max_length=12, 
+#         unique=True, 
+#         default=generate_package_id
+#         )
+#     depotName = models.CharField(max_length=100)
+    
+#     latitude = models.FloatField(null = False, blank = False)
+#     longitude = models.FloatField(null = False, blank = False)
+
+#     maxTrucks = models.IntegerField()
+    
+#     trucks = models.ManyToManyField('Truck', blank=True, related_name='depots')
+
+#     manager = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='managedDepots')
+
+

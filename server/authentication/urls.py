@@ -7,7 +7,8 @@ from .views import (
     LogoutView,
     GetAllUsersView,
     GetUserView,
-    RefreshAccessTokenView
+    RefreshAccessTokenView,
+    GetAllWorkingDriversView
     )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', RefreshAccessTokenView.as_view(), name='token_refresh'),
-    path('users/', GetAllUsersView.as_view(), name='get_all_users'),
-    path('user/', GetUserView.as_view(), name='get_user')
+    path('drivers/', GetAllUsersView.as_view(), name='get_all_users'),
+    path('driver/', GetUserView.as_view(), name='get_user'),
+    path('drivers/working/', GetAllWorkingDriversView.as_view(), name='working_drivers')
 ]
