@@ -37,7 +37,10 @@ export const startJourney = async (drivers: string[]): Promise<void> => {
     method: "POST",
     body: JSON.stringify(body),
   });
-  return response.json();
+  const res = response.text()
+  console.log("res is:", res)
+  // return response.json();
+  return 
 };
 
 export const getAllRoutes = async (): Promise<RouteData[]> => {

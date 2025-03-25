@@ -32,4 +32,5 @@ interface RouteData {
   dateOfCreation: string;
   truck?: string;
   _id?: string;
+  isActive: boolean;
 }

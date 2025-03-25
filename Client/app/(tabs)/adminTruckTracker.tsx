@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, FlatList } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@context/ThemeContext";
@@ -8,6 +8,8 @@ import { DrawerLayout } from 'react-native-gesture-handler';
 import { getAllRoutes, getUserByUsername } from "../../utils/journeyApi";
 import { useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import useStyles from "./adminTruckTracker.styles";
+import moment from "moment";
 
 interface Coordinate {
   latitude: number;
@@ -105,6 +107,8 @@ export default function AdminTruckTrackerScreen() {
   const [routeData, setRouteData] = useState<RouteData[]>([]);
   const [userData, setUserData] = useState<Map<string, any>>(new Map());
   const params = useLocalSearchParams<{ routes?: string }>();
+  const styles = useStyles();
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   useEffect(() => {
     const initializeRouteData = async () => {
@@ -258,131 +262,124 @@ export default function AdminTruckTrackerScreen() {
     drawerRef.current?.closeDrawer();
   };
 
-  const renderDrawerContent = () => {
-    // Group routes by user
-    const routesByUser = routeData.reduce((acc, route) => {
-      if (!acc[route.user]) {
-        acc[route.user] = [];
-      }
-      acc[route.user].push(route);
-      return acc;
-    }, {} as Record<string, RouteData[]>);
-
-    return (
-      <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}>
-        <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
-          <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Route Summary</Text>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={() => drawerRef.current?.closeDrawer()}
-          >
-            <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
-          </TouchableOpacity>
+  const renderRouteItem = ({ item }: { item: RouteData }) => (
+    <View style={styles.routeItem}>
+      <View style={styles.routeHeader}>
+        <View style={styles.driverInfo}>
+          <View style={[styles.driverBadge, { backgroundColor: generateColorFromValue(item.user) }]}>
+            <Text style={styles.driverText}>{item.user[0].toUpperCase()}</Text>
+          </View>
+          <Text style={styles.driverText}>{item.user}</Text>
         </View>
-
-        <ScrollView 
-          style={styles.routeList}
-          contentContainerStyle={styles.routeListContent}
-          showsVerticalScrollIndicator={true}
+        <TouchableOpacity 
+          style={[styles.callButton, { backgroundColor: generateColorFromValue(item.user) }]}
+          onPress={() => Linking.openURL(`tel:${userData.get(item.user)?.phoneNumber}`)}
         >
-          {Object.entries(routesByUser).map(([username, userRoutes]) => {
-            const userInfo = userData.get(username);
-            const routeColor = generateColorFromValue(username);
-            
-            return (
-              <View key={`user-${username}`} style={styles.userSection}>
-                <View style={styles.routeHeader}>
-                  <View style={styles.driverInfo}>
-                    <View style={[styles.driverBadge, { backgroundColor: routeColor }]}>
-                      <MaterialIcons name="person" size={20} color="#FFFFFF" />
-                    </View>
-                    <Text style={[styles.driverText, { color: theme.color.black }]}>
-                      {userInfo?.username || username}
-                    </Text>
-                  </View>
-                  {userInfo?.phoneNumber && (
-                    <TouchableOpacity onPress={() => Linking.openURL(`tel:${userInfo.phoneNumber}`)}>
-                      <LinearGradient
-                        colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.callButton}
-                      >
-                        <MaterialIcons name="phone" size={20} color="#FFFFFF" />
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                
-                {userRoutes.map((route, index) => {
-                  const progress = calculateRouteProgress(route);
-                  return (
-                    <TouchableOpacity
-                      key={`route-${username}-${route.dateOfCreation}-${index}`}
-                      style={styles.routeItem}
-                      onPress={() => handleRoutePress(route)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.progressContainer}>
-                        <View style={styles.progressBarBackground}>
-                          <View 
-                            style={[
-                              styles.progressBarFill, 
-                              { 
-                                width: `${progress}%`,
-                                backgroundColor: routeColor
-                              }
-                            ]} 
-                          />
-                        </View>
-                        <Text style={styles.progressText}>
-                          {Math.round(progress)}% Complete
-                        </Text>
-                      </View>
-
-                      <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                          <MaterialIcons name="local-shipping" size={20} color={theme.color.darkPrimary} />
-                          <Text style={styles.statText}>
-                            {route.packageSequence.length} Packages
-                          </Text>
-                        </View>
-                        <View style={styles.statItem}>
-                          <MaterialIcons 
-                            name="check-circle" 
-                            size={20} 
-                            color={theme.color.darkPrimary} 
-                          />
-                          <Text style={styles.statText}>
-                            {route.packageSequence.filter(pkg => pkg.status === 'delivered').length} Delivered
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            );
-          })}
-        </ScrollView>
+          <MaterialIcons name="phone" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
-    );
-  };
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBarBackground}>
+          <View 
+            style={[
+              styles.progressBarFill, 
+              { 
+                width: `${(item.packageSequence.filter(pkg => pkg.status === 'delivered').length / item.packageSequence.length) * 100}%`,
+                backgroundColor: generateColorFromValue(item.user)
+              }
+            ]} 
+          />
+        </View>
+        <Text style={styles.progressText}>
+          {item.packageSequence.filter(pkg => pkg.status === 'delivered').length} / {item.packageSequence.length} packages delivered
+        </Text>
+      </View>
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <MaterialIcons name="local-shipping" size={16} color="#666" />
+          <Text style={styles.statText}>{item.packageSequence.length} packages</Text>
+        </View>
+        <View style={styles.statItem}>
+          <MaterialIcons name="schedule" size={16} color="#666" />
+          <Text style={styles.statText}>{moment(item.dateOfCreation).format('h:mm A')}</Text>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
-    <DrawerLayout
-      ref={drawerRef}
-      drawerWidth={DRAWER_WIDTH}
-      drawerPosition="right"
-      drawerType="slide"
-      drawerBackgroundColor={theme.color.white}
-      renderNavigationView={renderDrawerContent}
-    >
-      <View style={styles.container}>
-        {routeData.length === 0 ? (
-          <EmptyState theme={theme} />
-        ) : (
-          <>
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={initialRegion}
+        showsUserLocation
+        showsMyLocationButton
+      >
+        {routeData.map((zoneData, index) => {
+          const routePoints: Coordinate[] = zoneData.mapRoute.map((point: [number, number]) => ({
+            latitude: point[1],
+            longitude: point[0],
+          }));
+          const zoneLocationsArray = zoneLocations.get(zoneData.user) || [];
+          const routeColor = generateColorFromValue(zoneData.user);
+
+          return (
+            <React.Fragment key={`route-${zoneData.user}-${zoneData.dateOfCreation}-${index}`}>
+              <Polyline
+                coordinates={routePoints}
+                strokeColor={routeColor}
+                strokeWidth={3}
+              />
+              {zoneLocationsArray.map((location) => (
+                <Marker
+                  key={`marker-${zoneData.user}-${location.waypoint_index}`}
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude
+                  }}
+                >
+                  <CustomMarker 
+                    number={location.waypoint_index} 
+                    isDelivered={location.package_info.status === 'delivered'}
+                  />
+                </Marker>
+              ))}
+            </React.Fragment>
+          );
+        })}
+      </MapView>
+      <TouchableOpacity style={styles.menuButton} onPress={() => drawerRef.current?.openDrawer()}>
+        <MaterialIcons name="menu" size={24} color="#000" />
+      </TouchableOpacity>
+      <DrawerLayout
+        ref={drawerRef}
+        drawerWidth={300}
+        drawerPosition="right"
+        drawerType="slide"
+        drawerBackgroundColor="#FFFFFF"
+        renderNavigationView={() => (
+          <View style={styles.drawerContainer}>
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>Active Routes</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={() => drawerRef.current?.closeDrawer()}>
+                <MaterialIcons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={routeData}
+              renderItem={renderRouteItem}
+              keyExtractor={(item) => item.user}
+              contentContainerStyle={styles.routeListContent}
+              style={styles.routeList}
+            />
+          </View>
+        )}
+      >
+        <View style={styles.container}>
+          {routeData.length === 0 ? (
+            <EmptyState theme={theme} />
+          ) : (
             <MapView
               ref={mapRef}
               style={styles.map}
@@ -422,17 +419,10 @@ export default function AdminTruckTrackerScreen() {
                 );
               })}
             </MapView>
-
-            <TouchableOpacity 
-              style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
-              onPress={() => drawerRef.current?.openDrawer()}
-            >
-              <MaterialIcons name="menu" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </DrawerLayout>
+          )}
+        </View>
+      </DrawerLayout>
+    </View>
   );
 }
 

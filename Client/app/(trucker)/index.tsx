@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Drawer } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
@@ -8,6 +8,7 @@ import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
+import useStyles from "./index.styles";
 
 interface Coordinate {
   latitude: number;
@@ -115,6 +116,8 @@ export default function TruckerViewScreen() {
   const [currentZone, setCurrentZone] = useState<RouteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const styles = useStyles();
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   
@@ -236,7 +239,7 @@ export default function TruckerViewScreen() {
         <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text>
         <TouchableOpacity 
           style={styles.closeButton} 
-          onPress={() => drawerRef.current?.closeDrawer()}
+          onPress={() => setDrawerVisible(false)}
         >
           <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
         </TouchableOpacity>
@@ -310,297 +313,124 @@ export default function TruckerViewScreen() {
   }
 
   return (
-    <DrawerLayout
-      ref={drawerRef}
-      drawerWidth={DRAWER_WIDTH}
-      drawerPosition="right"
-      drawerType="slide"
-      drawerBackgroundColor={theme.color.white}
-      renderNavigationView={renderDrawerContent}
-    >
-      <View style={styles.container}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={position.latitude && position.longitude ? {
-            latitude: position.latitude,
-            longitude: position.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          } : initialRegion}
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={position.latitude && position.longitude ? {
+          latitude: position.latitude,
+          longitude: position.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        } : initialRegion}
+        showsUserLocation
+        showsMyLocationButton
+      >
+        <Polyline
+          coordinates={routePoints}
+          strokeColor={routeColor}
+          strokeWidth={3}
+        />
+
+        {locations.map((location) => (
+          <Marker
+            key={`marker-${location.package_info.packageID}`}
+            coordinate={{
+              latitude: location.latitude,
+              longitude: location.longitude
+            }}
+          >
+            <CustomMarker 
+              number={location.waypoint_index} 
+              isDelivered={location.package_info.status === 'delivered'}
+            />
+          </Marker>
+        ))}
+
+        {position.latitude && position.longitude && (
+          <Marker
+            coordinate={{
+              latitude: position.latitude,
+              longitude: position.longitude
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            flat={true}
+          >
+            <CurrentPositionMarker heading={position.heading} />
+          </Marker>
+        )}
+      </MapView>
+
+      <TouchableOpacity style={styles.menuButton} onPress={() => setDrawerVisible(true)}>
+        <MaterialIcons name="menu" size={24} color="#000" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        <MaterialIcons name="logout" size={24} color="#000" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.recenterButton} onPress={handleRecenter}>
+        <MaterialIcons name="my-location" size={24} color="#000" />
+      </TouchableOpacity>
+
+      <Drawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        style={styles.drawerContainer}
+      >
+        <View style={styles.drawerHeader}>
+          <Text style={styles.drawerTitle}>Packages</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setDrawerVisible(false)}>
+            <MaterialIcons name="close" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+        <ScrollView
+          contentContainerStyle={styles.packageListContent}
+          style={styles.packageList}
         >
-          <Polyline
-            coordinates={routePoints}
-            strokeColor={routeColor}
-            strokeWidth={3}
-          />
-
-          {locations.map((location) => (
-            <Marker
-              key={`marker-${location.package_info.packageID}`}
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude
-              }}
-            >
-              <CustomMarker 
-                number={location.waypoint_index} 
-                isDelivered={location.package_info.status === 'delivered'}
-              />
-            </Marker>
-          ))}
-
-          {position.latitude && position.longitude && (
-            <Marker
-              coordinate={{
-                latitude: position.latitude,
-                longitude: position.longitude
-              }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              flat={true}
-            >
-              <CurrentPositionMarker heading={position.heading} />
-            </Marker>
+          {activeLocations.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <MaterialIcons name="check-circle" size={64} color={theme.color.darkPrimary} />
+              <Text style={[styles.emptyStateTitle, { color: theme.color.black }]}>
+                All Deliveries Complete!
+              </Text>
+              <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
+                Great job! You've completed all your deliveries for today.
+              </Text>
+            </View>
+          ) : (
+            activeLocations.map((location) => (
+              <View key={location.waypoint_index} style={styles.packageItem}>
+                <View style={styles.packageHeader}>
+                  <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
+                    <Text style={styles.indexText}>{location.waypoint_index}</Text>
+                  </View>
+                  <Text style={[styles.recipientName, { color: theme.color.black }]}>
+                    {location.package_info.recipient}
+                  </Text>
+                </View>
+                <View style={styles.addressRow}>
+                  <Text style={styles.address}>{location.package_info.address}</Text>
+                  <TouchableOpacity 
+                    style={[styles.callButton, { backgroundColor: theme.color.darkPrimary }]}
+                    onPress={() => Linking.openURL(`tel:${location.package_info.recipientPhoneNumber}`)}
+                  >
+                    <MaterialIcons name="phone" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity 
+                  style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]}
+                  onPress={() => handleDelivery(location.package_info.packageID)}
+                >
+                  <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
+                  <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>
+                    Mark as Delivered
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))
           )}
-        </MapView>
-
-        <TouchableOpacity 
-          style={[styles.logoutButton, { backgroundColor: theme.color.darkPrimary }]} 
-          onPress={logout}
-        >
-          <MaterialIcons name="logout" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.menuButton, { backgroundColor: theme.color.darkPrimary }]} 
-          onPress={() => drawerRef.current?.openDrawer()}
-        >
-          <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[
-            styles.recenterButton, 
-            { 
-              backgroundColor: theme.color.darkPrimary,
-            }
-          ]} 
-          onPress={handleRecenter}
-        >
-          <MaterialIcons 
-            name="my-location"
-            size={24} 
-            color="#FFFFFF" 
-          />
-        </TouchableOpacity>
-      </View>
-    </DrawerLayout>
+        </ScrollView>
+      </Drawer>
+    </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
-  },
-  markerContainer: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000',
-  },
-  markerContainerDelivered: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E9',
-  },
-  markerText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  currentPositionContainer: {
-    width: 35,
-    height: 35,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  navigationIcon: {
-    backfaceVisibility: 'hidden',
-    position: 'absolute',
-  },
-  menuButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  drawerContainer: {
-    flex: 1,
-  },
-  drawerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1.41,
-  },
-  drawerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  packageList: {
-    flex: 1,
-  },
-  packageListContent: {
-    padding: 20,
-  },
-  packageItem: {
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: '#f5f5f5',
-    marginBottom: 10,
-  },
-  packageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  indexBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  indexText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  recipientName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  address: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-    marginRight: 10,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  callButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-  },
-  completeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-  recenterButton: {
-    position: 'absolute',
-    bottom: 40,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginHorizontal: 20,
-  },
-  logoutButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-}); 
+} 

@@ -3,9 +3,10 @@ import {
   View,
   Text,
   Alert,
-  StyleSheet,
   TouchableOpacity,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
@@ -13,6 +14,8 @@ import { GradientButton } from "@components/basic/gradientButton/gradientButton"
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router, useLocalSearchParams } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import useStyles from "./addPackage.styles";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY;
 
@@ -24,12 +27,15 @@ interface PackageState {
   weight: string;
   latitude?: string;
   longitude?: string;
+  packageId: string;
+  recipientName: string;
 }
 
 export default function AddPackageScreen() {
   const { theme } = useTheme();
   const params = useLocalSearchParams();
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const styles = useStyles();
 
   // Initialize state from params or default values
   const [formState, setFormState] = useState<PackageState>({
@@ -40,6 +46,8 @@ export default function AddPackageScreen() {
     weight: (params.weight as string) || "",
     latitude: params.latitude as string,
     longitude: params.longitude as string,
+    packageId: (params.packageId as string) || "",
+    recipientName: (params.recipientName as string) || "",
   });
 
   useEffect(() => {
@@ -142,165 +150,115 @@ export default function AddPackageScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: theme.color.black }]}>
-          Add New Package
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
-          Enter package details
-        </Text>
-      </View>
-
-      <View style={styles.formContainer}>
-        <View style={styles.addressContainer}>
-          <FormField
-            label="Delivery Address"
-            value={formState.address}
-            onChangeText={(text) =>
-              setFormState({ ...formState, address: text })
-            }
-            placeholder="Enter delivery address"
-            icon="location-on"
-            actionIcon="map"
-            onActionPress={handlePickLocation}
-          />
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.headerContainer}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Add New Package</Text>
+            <Text style={styles.headerSubtitle}>Enter the details of the new package</Text>
+          </View>
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="inventory" size={48} color={theme.color.mediumPrimary} />
+          </View>
         </View>
-
-        <FormField
-          label="Recipient Name"
-          value={formState.recipient}
-          onChangeText={(text) =>
-            setFormState({ ...formState, recipient: text })
-          }
-          placeholder="Enter recipient name"
-          icon="person"
-        />
-
-        <FormField
-          label="Recipient Phone Number"
-          value={formState.recipientPhoneNumber}
-          onChangeText={(text) =>
-            setFormState({ ...formState, recipientPhoneNumber: text })
-          }
-          placeholder="Enter recipient phone number"
-          icon="phone"
-          keyboardType="phone-pad"
-        />
-
-        <TouchableOpacity onPress={showDatePickerModal}>
+        <View style={styles.formContainer}>
           <FormField
-            label="Delivery Date"
-            value={formState.deliveryDate}
+            label="Package ID"
+            value={formState.packageId}
             onChangeText={(text) =>
-              setFormState({ ...formState, deliveryDate: text })
+              setFormState({ ...formState, packageId: text.toUpperCase() })
             }
-            placeholder="Select delivery date"
-            icon="event"
-            editable={false}
+            placeholder="Enter package ID"
+            icon="inventory"
+            autoCapitalize="characters"
           />
-        </TouchableOpacity>
-
-        <FormField
-          label="Weight (kg)"
-          value={formState.weight}
-          onChangeText={(text) => {
-            // Only allow numbers and one decimal point
-            if (/^\d*\.?\d*$/.test(text)) {
-              setFormState({ ...formState, weight: text });
+          <FormField
+            label="Recipient Name"
+            value={formState.recipientName}
+            onChangeText={(text) =>
+              setFormState({ ...formState, recipientName: text })
             }
-          }}
-          placeholder="Enter package weight"
-          icon="fitness-center"
-          keyboardType="numeric"
-        />
-
-        {showDatePicker && (
-          <DateTimePicker
-            testID="datePicker"
-            value={(() => {
-              if (!formState.deliveryDate) return new Date();
-              try {
-                const [month, day, year] = formState.deliveryDate.split('/');
-                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-              } catch (e) {
-                return new Date();
+            placeholder="Enter recipient name"
+            icon="person"
+          />
+          <FormField
+            label="Phone Number"
+            value={formState.recipientPhoneNumber}
+            onChangeText={(text) =>
+              setFormState({ ...formState, recipientPhoneNumber: text })
+            }
+            placeholder="Enter phone number"
+            icon="phone"
+            keyboardType="phone-pad"
+          />
+          <View style={styles.addressContainer}>
+            <FormField
+              label="Address"
+              value={formState.address}
+              onChangeText={(text) =>
+                setFormState({ ...formState, address: text })
               }
-            })()}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onDateChange}
-            minimumDate={new Date()}
+              placeholder="Enter address"
+              icon="location-on"
+              actionIcon="map"
+              onActionPress={handlePickLocation}
+            />
+          </View>
+          <TouchableOpacity onPress={showDatePickerModal}>
+            <FormField
+              label="Delivery Date"
+              value={formState.deliveryDate}
+              onChangeText={(text) =>
+                setFormState({ ...formState, deliveryDate: text })
+              }
+              placeholder="Select delivery date"
+              icon="event"
+              editable={false}
+            />
+          </TouchableOpacity>
+          <FormField
+            label="Weight (kg)"
+            value={formState.weight}
+            onChangeText={(text) => {
+              // Only allow numbers and one decimal point
+              if (/^\d*\.?\d*$/.test(text)) {
+                setFormState({ ...formState, weight: text });
+              }
+            }}
+            placeholder="Enter package weight"
+            icon="fitness-center"
+            keyboardType="numeric"
           />
-        )}
-
-        <View style={styles.buttonContainer}>
-          <GradientButton title="Add Package" onPress={handleSubmit} />
+          {showDatePicker && (
+            <DateTimePicker
+              testID="datePicker"
+              value={(() => {
+                if (!formState.deliveryDate) return new Date();
+                try {
+                  const [month, day, year] = formState.deliveryDate.split('/');
+                  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                } catch (e) {
+                  return new Date();
+                }
+              })()}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
         </View>
+      </ScrollView>
+      <View style={styles.buttonContainer}>
+        <GradientButton title="Add Package" onPress={handleSubmit} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#FFFFFF",
-  },
-  headerContainer: {
-    marginTop: 60,
-    marginBottom: 32,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  addressContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
-  mapButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  locationText: {
-    fontSize: 12,
-    color: "rgba(0, 0, 0, 0.6)",
-    marginTop: -12,
-    marginBottom: 16,
-    marginLeft: 8,
-  },
-  buttonContainer: {
-    marginTop: 16,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  formContainer: {
-    flex: 1,
-  },
-});
