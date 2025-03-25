@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getPackages } from "../../utils/journeyApi";
-import useStyles from "./styles/packageStyles";
+import useStyles from "./packages.styles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";

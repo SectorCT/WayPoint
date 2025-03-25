@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@context/ThemeContext';
 import { getAvailableTrucks, getPackages, getEmployees, startJourney } from '../utils/journeyApi';
 import moment from 'moment';
 import { router } from 'expo-router';
+import useStyles from "./startJourney.styles";
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface DriverItemProps {
   driver: User;
@@ -125,6 +127,8 @@ export default function StartJourneyScreen() {
   const [employees, setEmployees] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const styles = useStyles();
+
   // Calculate recommended number of trucks and employees
   const recommendedCount = Math.ceil(todaysPackages.length / 30);
 
@@ -193,87 +197,75 @@ export default function StartJourneyScreen() {
     }
   };
 
+  const renderDriverItem = ({ item }: { item: User }) => (
+    <View style={styles.driverItem}>
+      <View style={styles.driverHeader}>
+        <View style={styles.driverInfo}>
+          <MaterialIcons name="person" size={24} color="#666" />
+          <Text style={styles.driverName}>{item.username}</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[
+              styles.selectButton,
+              { borderColor: selectedDrivers.has(item.username) ? theme.color.mediumPrimary : '#ddd' }
+            ]}
+            onPress={() => toggleDriverSelection(item.username)}
+          >
+            {selectedDrivers.has(item.username) && (
+              <MaterialIcons name="check" size={20} color={theme.color.mediumPrimary} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      {expandedDrivers.has(item.username) && (
+        <View style={styles.expandedContent}>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="phone" size={20} color="#666" />
+            <Text style={styles.detailText}>{item.phoneNumber}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="email" size={20} color="#666" />
+            <Text style={styles.detailText}>{item.email}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.color.white }]}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.color.black }]}>Start Journey</Text>
-        <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
-          Select up to {availableTrucks.length} drivers
-        </Text>
+        <Text style={styles.title}>Start New Journey</Text>
+        <Text style={styles.subtitle}>Select a driver to start the journey</Text>
       </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.mainStats}>
-          <View style={[styles.statCard, { backgroundColor: theme.color.white }]}>
-            <MaterialIcons name="local-shipping" size={24} color={theme.color.mediumPrimary} />
-            <Text style={[styles.statNumber, { color: theme.color.black }]}>{availableTrucks.length}</Text>
-            <Text style={[styles.statLabel, { color: theme.color.black }]}>Available Trucks</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.color.white }]}>
-            <MaterialIcons name="inventory" size={24} color={theme.color.mediumPrimary} />
-            <Text style={[styles.statNumber, { color: theme.color.black }]}>{todaysPackages.length}</Text>
-            <Text style={[styles.statLabel, { color: theme.color.black }]}>Today's Packages</Text>
-          </View>
-        </View>
-        <View style={[styles.recommendedCard, { backgroundColor: theme.color.white }]}>
-          <MaterialIcons name="recommend" size={20} color={theme.color.mediumPrimary} />
-          <Text style={[styles.recommendedText, { color: theme.color.black }]}>
-            Recommended number of trucks and employees: {recommendedCount}
-          </Text>
-        </View>
-      </View>
-
-      <View style={[styles.searchContainer, { backgroundColor: theme.color.white }]}>
-        <MaterialIcons name="search" size={24} color={theme.color.lightGrey} />
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={24} color="#666" />
         <TextInput
-          style={[styles.searchInput, { color: theme.color.black }]}
+          style={styles.searchInput}
           placeholder="Search drivers..."
-          placeholderTextColor={theme.color.lightGrey}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <MaterialIcons name="close" size={24} color={theme.color.lightGrey} />
-          </TouchableOpacity>
-        )}
       </View>
-
-      <ScrollView 
-        style={styles.driverList}
+      <FlatList
+        data={filteredDrivers}
+        renderItem={renderDriverItem}
+        keyExtractor={(item) => item.username}
         contentContainerStyle={styles.driverListContent}
-      >
-        {filteredDrivers.map((driver) => (
-          <DriverItem
-            key={driver.username}
-            driver={driver}
-            isSelected={selectedDrivers.has(driver.username)}
-            onSelect={() => toggleDriverSelection(driver.username)}
-            isExpanded={expandedDrivers.has(driver.username)}
-            onToggleExpand={() => toggleDriverExpansion(driver.username)}
-            isDisabled={!selectedDrivers.has(driver.username) && selectedDrivers.size >= availableTrucks.length}
-          />
-        ))}
-      </ScrollView>
-
+        style={styles.driverList}
+      />
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.startButton,
-            { 
-              backgroundColor: selectedDrivers.size > 0 
-                ? theme.color.darkPrimary 
-                : theme.color.lightGrey 
-            }
-          ]}
-          onPress={handleStartJourney}
-          disabled={selectedDrivers.size === 0}
+        <LinearGradient
+          colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.startButton}
         >
-          <MaterialIcons name="play-arrow" size={24} color="#FFF" />
-          <Text style={styles.startButtonText}>
-            Start Journey ({selectedDrivers.size})
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleStartJourney}>
+            <Text style={styles.startButtonText}>Start Journey</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     </View>
   );

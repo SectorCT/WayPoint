@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { API_BASE_URL } from '../config/env';
 import { AuthResponse, AuthError, LoginRequest, RegisterRequest } from '../types/api';
 
 interface AuthContextType {
@@ -14,6 +13,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+ 
+const API_BASE_URL = process.env.EXPO_BASE_URL || 'http://0.0.0.0:8000';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

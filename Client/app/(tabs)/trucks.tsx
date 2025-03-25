@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getAvailableTrucks } from "../../utils/journeyApi";
-import useStyles from "./styles/trucksStyles";
+import useStyles from "./trucks.styles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
 import { generateColorFromString } from "@/utils/colors";

@@ -70,10 +70,10 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      <Tabs.Screen name="styles/homeStyles" options={{ href: null }} />
-      <Tabs.Screen name="styles/packageStyles" options={{ href: null }} />
-      <Tabs.Screen name="styles/trucksStyles" options={{ href: null }} />
+      <Tabs.Screen name="adminTruckTracker.styles" options={{ href: null }} />
+      <Tabs.Screen name="home.styles" options={{ href: null }} />
+      <Tabs.Screen name="packages.styles" options={{ href: null }} />
+      <Tabs.Screen name="trucks.styles" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -8,17 +8,14 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest } from "../../utils/api";
-import useStyles from "./styles/homeStyles";
+import useStyles from "./home.styles";
 import { router } from "expo-router";
-import AddButton from "@/components/basic/addButton/addButton";
-import PackageModule from "@components/listModule/packageModule/packageModule";
-import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 import { useAuth } from "@/context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
+import { getAllRoutes } from "@/utils/journeyApi";
 
 interface PastEntryType {
   date: string;
@@ -61,11 +58,27 @@ const pastEntries: PastEntryType[] = [
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const styles = useStyles();
+  const [activeJourney, setActiveJourney] = useState<RouteData | null>(null);
 
-  const [journeyStarted, setJourneyStarted] = useState(false);
+  useEffect(() => {
+    checkActiveJourney();
+  }, []);
+
+  const checkActiveJourney = async () => {
+    try {
+      setLoading(true);
+      const routes = await getAllRoutes();
+      // If there are any routes, consider it an active journey
+      setActiveJourney(routes.length > 0 ? routes[0] : null);
+    } catch (error) {
+      console.error("Error checking active journey:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -112,10 +125,19 @@ export default function HomeScreen() {
               data={[{ id: "main" }]}
               renderItem={() => (
                 <View>
-                  {journeyStarted ? (
-                    <CurrentJourney packagesDelivered={13} totalPackages={20} />
+                  {activeJourney ? (
+                    <CurrentJourney 
+                      packagesDelivered={activeJourney.packageSequence.filter(pkg => pkg.status === 'delivered').length} 
+                      totalPackages={activeJourney.packageSequence.length} 
+                    />
                   ) : (
-                    <TouchableOpacity style={styles.startNewButton} onPress={() => router.push("/startJourney")}>
+                    <TouchableOpacity 
+                      style={[
+                        styles.startNewButton,
+                        { backgroundColor: theme.color.mediumPrimary }
+                      ]} 
+                      onPress={() => router.push("/startJourney")}
+                    >
                       <Text style={styles.startNewButtonText}>
                         Start new journey
                       </Text>

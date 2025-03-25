@@ -6,6 +6,7 @@ import { GradientButton } from "@components/basic/gradientButton/gradientButton"
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import useStyles from "./addTruck.styles";
 
 interface TruckState {
   licensePlate: string;
@@ -14,6 +15,7 @@ interface TruckState {
 
 export default function AddTruckScreen() {
   const { theme } = useTheme();
+  const styles = useStyles();
 
   const [formState, setFormState] = useState<TruckState>({
     licensePlate: "",
@@ -54,38 +56,23 @@ export default function AddTruckScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.color.lightPrimary },
-          ]}
-        >
-          <MaterialIcons
-            name="local-shipping"
-            size={32}
-            color={theme.color.darkPrimary}
-          />
-        </View>
-        <Text style={[styles.headerTitle, { color: theme.color.black }]}>
-          Add New Truck
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
-          Enter truck details
-        </Text>
+        <Text style={styles.headerTitle}>Add New Truck</Text>
+        <Text style={styles.headerSubtitle}>Enter the details of the new truck</Text>
       </View>
-
       <View style={styles.formContainer}>
+        <View style={styles.iconContainer}>
+          <MaterialIcons name="local-shipping" size={32} color={theme.color.mediumPrimary} />
+        </View>
         <FormField
-          label="License Plate"
+          label="Truck ID"
           value={formState.licensePlate}
           onChangeText={(text) =>
             setFormState({ ...formState, licensePlate: text.toUpperCase() })
           }
-          placeholder="Enter license plate"
+          placeholder="Enter truck ID"
           icon="directions-car"
           autoCapitalize="characters"
         />
-
         <FormField
           label="Max Capacity (kg)"
           value={formState.maxCapacity}
@@ -96,7 +83,6 @@ export default function AddTruckScreen() {
           icon="fitness-center"
           keyboardType="numeric"
         />
-
         <View style={styles.buttonContainer}>
           <GradientButton title="Add Truck" onPress={handleSubmit} />
         </View>
