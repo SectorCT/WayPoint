@@ -158,6 +158,7 @@ export default function AddPackageScreen() {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerContainer}>
           <View style={styles.headerTextContainer}>
@@ -211,6 +212,11 @@ export default function AddPackageScreen() {
               onActionPress={handlePickLocation}
             />
           </View>
+          {formState.latitude && formState.longitude && (
+            <Text style={styles.locationText}>
+              Selected location: {formState.latitude}, {formState.longitude}
+            </Text>
+          )}
           <TouchableOpacity onPress={showDatePickerModal}>
             <FormField
               label="Delivery Date"
