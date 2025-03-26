@@ -14,7 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
  
-const API_BASE_URL = process.env.EXPO_BASE_URL || 'http://0.0.0.0:8000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://0.0.0.0:8000';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

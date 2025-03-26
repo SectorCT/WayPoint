@@ -1,5 +1,7 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet, Dimensions, Platform } from "react-native";
 import { useTheme } from "@context/ThemeContext";
+
+const DRAWER_WIDTH = 300;
 
 export default function useStyles() {
   const { theme } = useTheme();
@@ -7,10 +9,18 @@ export default function useStyles() {
   return StyleSheet.create({
     container: {
       flex: 1,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     map: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').height,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     markerContainer: {
       backgroundColor: 'white',
@@ -32,12 +42,17 @@ export default function useStyles() {
       fontWeight: 'bold',
     },
     currentPositionContainer: {
-      width: 35,
-      height: 35,
-      backgroundColor: 'transparent',
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#FFFFFF',
       justifyContent: 'center',
       alignItems: 'center',
-      position: 'relative',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
     },
     navigationIcon: {
       backfaceVisibility: 'hidden',
@@ -45,14 +60,41 @@ export default function useStyles() {
     },
     menuButton: {
       position: 'absolute',
+      top: 16,
+      right: 16,
+      backgroundColor: '#000',
+      borderRadius: 8,
+      padding: 12,
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    logoutButton: {
+      position: 'absolute',
       top: 40,
-      right: 20,
+      left: 20,
       width: 50,
       height: 50,
       borderRadius: 25,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: 'white',
       elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    recenterButton: {
+      position: 'absolute',
+      bottom: 16,
+      right: 16,
+      backgroundColor: '#000',
+      borderRadius: 8,
+      padding: 12,
+      elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,
@@ -60,27 +102,27 @@ export default function useStyles() {
     },
     drawerContainer: {
       flex: 1,
+      backgroundColor: '#FFFFFF',
     },
     drawerHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 1.41,
+      borderBottomColor: '#E0E0E0',
     },
     drawerTitle: {
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: 'bold',
+      color: '#000',
     },
     closeButton: {
       padding: 8,
+    },
+    drawerContent: {
+      flex: 1,
+      padding: 16,
     },
     packageList: {
       flex: 1,
@@ -89,15 +131,41 @@ export default function useStyles() {
       padding: 20,
     },
     packageItem: {
-      padding: 15,
-      borderRadius: 10,
-      backgroundColor: '#f5f5f5',
-      marginBottom: 10,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: '#E0E0E0',
+    },
+    packageItemDelivered: {
+      borderColor: '#4CAF50',
+      backgroundColor: '#F1F8E9',
     },
     packageHeader: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 8,
+    },
+    packageNumber: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#000',
+    },
+    packageAddress: {
+      fontSize: 14,
+      color: '#666',
+      marginBottom: 4,
+    },
+    packageRecipient: {
+      fontSize: 14,
+      color: '#666',
+      marginBottom: 4,
+    },
+    packagePhone: {
+      fontSize: 14,
+      color: '#666',
     },
     indexBadge: {
       width: 24,
@@ -169,21 +237,6 @@ export default function useStyles() {
       textAlign: 'center',
       paddingHorizontal: 32,
     },
-    recenterButton: {
-      position: 'absolute',
-      bottom: 40,
-      right: 20,
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      justifyContent: 'center',
-      alignItems: 'center',
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    },
     centerContent: {
       justifyContent: 'center',
       alignItems: 'center',
@@ -193,20 +246,19 @@ export default function useStyles() {
       textAlign: 'center',
       marginHorizontal: 20,
     },
-    logoutButton: {
-      position: 'absolute',
-      top: 40,
-      left: 20,
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+    loadingContainer: {
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 16,
+      color: '#666',
     },
   });
 } 

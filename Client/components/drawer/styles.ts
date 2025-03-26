@@ -1,36 +1,9 @@
-import { StyleSheet, Dimensions } from "react-native";
-import { useTheme } from "@context/ThemeContext";
+import { StyleSheet } from 'react-native';
 
 export default function useStyles() {
-  const { theme } = useTheme();
-
   return StyleSheet.create({
     container: {
       flex: 1,
-    },
-    map: {
-      width: Dimensions.get('screen').width,
-      height: Dimensions.get('screen').height,
-    },
-    menuButton: {
-      position: 'absolute',
-      top: 40,
-      right: 20,
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      overflow: 'hidden',
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    },
-    menuButtonGradient: {
-      width: '100%',
-      height: '100%',
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     drawerContainer: {
       flex: 1,
@@ -39,11 +12,12 @@ export default function useStyles() {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      paddingTop: 40,
       paddingHorizontal: 20,
       paddingVertical: 16,
       borderBottomWidth: 1,
       borderBottomColor: '#eee',
-      elevation: 2,
+      
     },
     drawerTitle: {
       fontSize: 24,
@@ -123,26 +97,6 @@ export default function useStyles() {
     statText: {
       fontSize: 14,
       color: '#666',
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    emptyTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginTop: 20,
-      marginBottom: 10,
-    },
-    emptyText: {
-      fontSize: 16,
-      textAlign: 'center',
-      opacity: 0.8,
-    },
-    userSection: {
-      marginBottom: 20,
     },
     callButton: {
       width: 36,

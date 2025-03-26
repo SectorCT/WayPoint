@@ -10,6 +10,7 @@ import { FONTS } from "@/constants/fonts";
 import { ThemeProvider } from "@context/ThemeContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
+import { StatusBar } from "expo-status-bar";
 
 const loadFonts = () => {
   return Font.loadAsync({
@@ -54,7 +55,18 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider>
-      <Slot />
+      <PositionProvider>
+        <StatusBar hidden={true} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "fade",
+            navigationBarHidden: true,
+          }}
+        >
+          <Slot />
+        </Stack>
+      </PositionProvider>
     </ThemeProvider>
   );
 }
@@ -63,9 +75,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <PositionProvider>
-          <RootLayoutNav />
-        </PositionProvider>
+        <RootLayoutNav />
       </AuthProvider>
     </GestureHandlerRootView>
   );
