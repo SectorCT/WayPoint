@@ -1,71 +1,50 @@
-import React, { useState } from "react";
-import { Stack, Slot } from "expo-router";
-import { AuthProvider } from "../context/AuthContext";
-import { PositionProvider } from "../context/PositionContext";
+import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useColorScheme } from "react-native";
+import { ThemeProvider } from "@context/ThemeContext";
+import { AuthProvider } from "@context/AuthContext";
+import { PositionProvider } from "@context/PositionContext";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { FONTS } from "@/constants/fonts";
-import { ThemeProvider } from "@context/ThemeContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { router } from 'expo-router';
 
-const loadFonts = () => {
-  return Font.loadAsync({
-    [FONTS.regular]: require("../assets/fonts/Regular.ttf"),
-    [FONTS.medium]: require("../assets/fonts/Medium.ttf"),
-    [FONTS.semibold]: require("../assets/fonts/SemiBold.ttf"),
-    [FONTS.bold]: require("../assets/fonts/Bold.ttf"),
-  });
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
+
+const FONTS = {
+  Regular: require("@assets/fonts/Regular.ttf"),
+  Medium: require("@assets/fonts/Medium.ttf"),
+  SemiBold: require("@assets/fonts/SemiBold.ttf"),
+  Bold: require("@assets/fonts/Bold.ttf"),
 };
 
-function RootLayoutNav() {
-  const { user } = useAuth();
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
   useEffect(() => {
-    async function prepare() {
+    async function loadFonts() {
       try {
-        await loadFonts();
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setFontsLoaded(true);
+        await Font.loadAsync(FONTS);
         await SplashScreen.hideAsync();
+      } catch (error) {
+        console.error("Error loading fonts:", error);
       }
     }
-    prepare();
+    loadFonts();
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      if (!user) {
-        router.replace('/(auth)/login');
-      } else if (user.isManager) {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/(trucker)');
-      }
-    }
-  }, [user, fontsLoaded]);
-
-  if (!fontsLoaded) return null;
-
-  return (
-    <ThemeProvider>
-      <Slot />
-    </ThemeProvider>
-  );
-}
-
-export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <PositionProvider>
-          <RootLayoutNav />
-        </PositionProvider>
+        <ThemeProvider>
+          <PositionProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+          </PositionProvider>
+        </ThemeProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

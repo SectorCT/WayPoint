@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import useStyles from "./styles";
-import { useTheme } from "@context/ThemeContext";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import InfoEntryPast from "../infoEntryPast/infoEntryPast";
 import Cubes from "@assets/icons/cubes.svg";
 import Truck from "@assets/icons/truck.svg";

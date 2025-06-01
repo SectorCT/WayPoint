@@ -17,14 +17,14 @@
       ],
       "@components/*": [
         "./components/*"
-      ],
+      ]
     },
-    "typeRoots": ["types"]
+    "typeRoots": [
+      "types"
+    ]
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "**/*.tsx"
   ]
 }

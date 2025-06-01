@@ -1,8 +1,8 @@
 export const FONTS = {
-  regular: "SF-Pro-Text-Regular",
-  medium: "SF-Pro-Text-Medium",
-  semibold: "SF-Pro-Text-Semibold",
-  bold: "SF-Pro-Text-Bold",
+  regular: "Regular",
+  medium: "Medium",
+  semibold: "SemiBold",
+  bold: "Bold",
 } as const;
 
 export type FontVariants = keyof typeof FONTS;
