@@ -18,7 +18,7 @@ import CurrentJourney from "@/components/listModule/currentJourney/currentJourne
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 import { useAuth } from "@/context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 interface PastEntryType {
   date: string;

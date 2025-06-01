@@ -1,8 +1,9 @@
+import React from "react";
 import { View, Text, TouchableOpacity, Linking, Alert } from "react-native";
 import useStyles from "./styles";
-import { useTheme } from "@context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext";
 import Trash from "@assets/icons/trash.svg";
-import { MaterialIcons } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { makeAuthenticatedRequest } from "../../../utils/api";
 

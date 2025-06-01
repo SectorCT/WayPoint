@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { MaterialIcons } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import { usePosition } from "@context/PositionContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
@@ -12,6 +12,29 @@ import { LinearGradient } from "expo-linear-gradient";
 interface Coordinate {
   latitude: number;
   longitude: number;
+}
+
+interface Package {
+  packageID: string;
+  latitude: number;
+  longitude: number;
+  status: string;
+  [key: string]: any;
+}
+
+interface RouteLocation {
+  latitude: number;
+  longitude: number;
+  waypoint_index: number;
+  package_info: Package;
+}
+
+interface RouteData {
+  user: string;
+  dateOfCreation: string;
+  packageSequence: Package[];
+  mapRoute: [number, number][];
+  [key: string]: any;
 }
 
 // Function to generate a color based on a value
@@ -78,7 +101,7 @@ const calculateRouteBounds = (routePoints: Coordinate[]) => {
   let minLng = routePoints[0].longitude;
   let maxLng = routePoints[0].longitude;
 
-  routePoints.forEach(point => {
+  routePoints.forEach((point: Coordinate) => {
     minLat = Math.min(minLat, point.latitude);
     maxLat = Math.max(maxLat, point.latitude);
     minLng = Math.min(minLng, point.longitude);
@@ -96,7 +119,7 @@ const calculateRouteBounds = (routePoints: Coordinate[]) => {
   };
 };
 
-export default function AdminTruckTrackerScreen() {
+const AdminTruckTrackerScreen: React.FC = () => {
   const { theme } = useTheme();
   const { position } = usePosition();
   const drawerRef = useRef<DrawerLayout>(null);
@@ -388,6 +411,10 @@ export default function AdminTruckTrackerScreen() {
               style={styles.map}
               provider={PROVIDER_GOOGLE}
               initialRegion={initialRegion}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+              showsCompass={true}
+              showsScale={true}
             >
               {routeData.map((zoneData, index) => {
                 const routePoints: Coordinate[] = zoneData.mapRoute.map((point: [number, number]) => ({
@@ -434,7 +461,9 @@ export default function AdminTruckTrackerScreen() {
       </View>
     </DrawerLayout>
   );
-}
+};
+
+export default AdminTruckTrackerScreen;
 
 const styles = StyleSheet.create({
   container: {

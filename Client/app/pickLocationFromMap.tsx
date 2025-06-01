@@ -4,7 +4,7 @@ import MapView, { Marker, MapPressEvent, Region } from "react-native-maps";
 import { useLocalSearchParams, router } from "expo-router";
 import * as Location from "expo-location";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 interface LocationState {
   latitude?: string;

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import Cubes from "@assets/icons/cubes.svg";
 import House from "@assets/icons/house.svg";
