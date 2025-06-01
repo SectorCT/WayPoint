@@ -92,6 +92,18 @@ export default function AddPackageScreen() {
       );
       const formattedWeight = parseFloat(formState.weight || "0").toFixed(6);
 
+      const requestBody = {
+        address: formState.address,
+        latitude: parseFloat(formattedLatitude),
+        longitude: parseFloat(formattedLongitude),
+        recipient: formState.recipient,
+        recipientPhoneNumber: formState.recipientPhoneNumber,
+        deliveryDate: formattedDate,
+        weight: parseFloat(formattedWeight),
+      };
+
+      console.log("Request body:", JSON.stringify(requestBody, null, 2));
+
       const response = await makeAuthenticatedRequest(
         "/delivery/packages/create/",
         {
@@ -99,19 +111,13 @@ export default function AddPackageScreen() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            address: formState.address,
-            latitude: parseFloat(formattedLatitude),
-            longitude: parseFloat(formattedLongitude),
-            recipient: formState.recipient,
-            recipientPhoneNumber: formState.recipientPhoneNumber,
-            deliveryDate: formattedDate,
-            weight: parseFloat(formattedWeight),
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
 
-      console.log(response);
+      console.log("Response status:", response.status);
+      const responseData = await response.json();
+      console.log("Response data:", JSON.stringify(responseData, null, 2));
 
       if (response.ok) {
         router.replace("/(tabs)/packages");

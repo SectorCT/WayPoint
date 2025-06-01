@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? `http://${Constants.expoConfig?.hostUri?.split(':')[0]}:8000`;
 
 export const makeAuthenticatedRequest = async <T = any>(
   endpoint: string,
