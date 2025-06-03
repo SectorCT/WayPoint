@@ -62,13 +62,16 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
+const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
   <View style={[
     styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered
+    isDelivered && styles.markerContainerDelivered,
+    isUndelivered && styles.markerContainerUndelivered
   ]}>
     {isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
+    ) : isUndelivered ? (
+      <MaterialIcons name="close" size={20} color="#FF4136" />
     ) : (
       <Text style={styles.markerText}>{number}</Text>
     )}
@@ -196,6 +199,11 @@ const AdminTruckTrackerScreen: React.FC = () => {
 
         setZoneLocations(newZoneLocations);
         setUserData(newUserData);
+
+        // Force a map update to show markers
+        if (mapRef.current) {
+          mapRef.current.forceUpdate();
+        }
       } catch (error) {
         console.error('Error initializing route data:', error);
       }
@@ -238,8 +246,10 @@ const AdminTruckTrackerScreen: React.FC = () => {
 
   const calculateRouteProgress = (route: RouteData): number => {
     if (!route.packageSequence || route.packageSequence.length === 0) return 0;
-    const deliveredCount = route.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length + 1;
-    return (deliveredCount / route.packageSequence.length) * 100;
+    const completedCount = route.packageSequence.filter(
+      (pkg: Package) => pkg.status === 'delivered' || pkg.status === 'undelivered'
+    ).length;
+    return (completedCount / route.packageSequence.length) * 100;
   };
 
   const handleRoutePress = (routeData: RouteData) => {
@@ -339,6 +349,8 @@ const AdminTruckTrackerScreen: React.FC = () => {
                 
                 {userRoutes.map((route, index) => {
                   const progress = calculateRouteProgress(route);
+                  const deliveredCount = route.packageSequence.filter(pkg => pkg.status === 'delivered').length;
+                  const undeliveredCount = route.packageSequence.filter(pkg => pkg.status === 'undelivered').length;
                   return (
                     <TouchableOpacity
                       key={`route-${username}-${route.dateOfCreation}-${index}`}
@@ -370,15 +382,29 @@ const AdminTruckTrackerScreen: React.FC = () => {
                             {route.packageSequence.length} Packages
                           </Text>
                         </View>
-                        <View style={styles.statItem}>
-                          <MaterialIcons 
-                            name="check-circle" 
-                            size={20} 
-                            color={theme.color.darkPrimary} 
-                          />
-                          <Text style={styles.statText}>
-                            {route.packageSequence.filter(pkg => pkg.status === 'delivered').length} Delivered
-                          </Text>
+                        <View style={styles.statsColumn}>
+                          <View style={styles.statItem}>
+                            <MaterialIcons 
+                              name="check-circle" 
+                              size={20} 
+                              color={theme.color.darkPrimary} 
+                            />
+                            <Text style={styles.statText}>
+                              {deliveredCount} Delivered
+                            </Text>
+                          </View>
+                          {undeliveredCount > 0 && (
+                            <View style={styles.statItem}>
+                              <MaterialIcons 
+                                name="close" 
+                                size={20} 
+                                color="#FF4136" 
+                              />
+                              <Text style={[styles.statText, { color: '#FF4136' }]}>
+                                {undeliveredCount} Undelivered
+                              </Text>
+                            </View>
+                          )}
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -442,6 +468,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
                         <CustomMarker 
                           number={location.waypoint_index} 
                           isDelivered={location.package_info.status === 'delivered'}
+                          isUndelivered={location.package_info.status === 'undelivered'}
                         />
                       </Marker>
                     ))}
@@ -486,6 +513,10 @@ const styles = StyleSheet.create({
   markerContainerDelivered: {
     borderColor: '#4CAF50',
     backgroundColor: '#E8F5E9',
+  },
+  markerContainerUndelivered: {
+    borderColor: '#FF4136',
+    backgroundColor: '#FFEBEE',
   },
   markerText: {
     color: '#000',
@@ -589,6 +620,11 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  statsColumn: {
+    flexDirection: 'column',
+    gap: 8,
   },
   statItem: {
     flexDirection: 'row',

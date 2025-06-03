@@ -130,6 +130,8 @@ export default function TruckerViewScreen() {
   const [currentZone, setCurrentZone] = useState<RouteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReturning, setIsReturning] = useState(false);
+  const [routePoints, setRoutePoints] = useState<Coordinate[]>([]);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   
@@ -164,17 +166,38 @@ export default function TruckerViewScreen() {
       waypoint_index: index,
       package_info: {
         ...packageInfo,
-        // Automatically mark ADMIN packages as delivered
         status: packageInfo.packageID === "ADMIN" ? "delivered" : packageInfo.status
       }
     }));
     setLocations(newLocations);
   }, [currentZone]);
 
-  const routePoints: Coordinate[] = currentZone?.mapRoute?.map((point) => ({
-    latitude: point[1],
-    longitude: point[0],
-  })) || [];
+  useEffect(() => {
+    if (!currentZone?.mapRoute) {
+      return;
+    }
+
+    const allPackagesCompleted = locations.every(
+      location => location.package_info.status === 'delivered' || 
+                 location.package_info.status === 'undelivered' ||
+                 location.package_info.packageID === "ADMIN"
+    );
+
+    const baseRoutePoints = currentZone.mapRoute.map((point) => ({
+      latitude: point[1],
+      longitude: point[0],
+    }));
+
+    if (allPackagesCompleted && !isReturning) {
+      setIsReturning(true);
+      if (baseRoutePoints.length > 0) {
+        setRoutePoints([...baseRoutePoints, baseRoutePoints[0]]);
+      }
+    } else if (!allPackagesCompleted) {
+      setRoutePoints(baseRoutePoints);
+      setIsReturning(false);
+    }
+  }, [currentZone?.mapRoute, locations, isReturning]);
 
   const activeLocations = locations.filter(
     location => location.package_info.status !== 'delivered' && 
@@ -298,8 +321,18 @@ export default function TruckerViewScreen() {
               All Deliveries Complete!
             </Text>
             <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              Great job! You've completed all your deliveries for today.
+              {isReturning ? 
+                "Great job! Now return to the starting point to complete your journey." :
+                "Great job! You've completed all your deliveries for today."}
             </Text>
+            {isReturning && (
+              <View style={styles.returnRouteContainer}>
+                <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
+                <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
+                  Return Route Active
+                </Text>
+              </View>
+            )}
           </View>
         ) : (
           activeLocations.map((location) => (
@@ -681,6 +714,19 @@ const styles = StyleSheet.create({
   },
   undeliveredButtonText: {
     fontSize: 12,
+    fontWeight: '500',
+  },
+  returnRouteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    gap: 8,
+  },
+  returnRouteText: {
+    fontSize: 16,
     fontWeight: '500',
   },
 }); 
