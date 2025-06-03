@@ -246,10 +246,14 @@ const AdminTruckTrackerScreen: React.FC = () => {
 
   const calculateRouteProgress = (route: RouteData): number => {
     if (!route.packageSequence || route.packageSequence.length === 0) return 0;
-    const completedCount = route.packageSequence.filter(
+    // Filter out ADMIN package and count completed packages
+    const actualPackages = route.packageSequence.filter(pkg => pkg.packageID !== "ADMIN");
+    if (actualPackages.length === 0) return 0;
+    
+    const completedCount = actualPackages.filter(
       (pkg: Package) => pkg.status === 'delivered' || pkg.status === 'undelivered'
     ).length;
-    return (completedCount / route.packageSequence.length) * 100;
+    return (completedCount / actualPackages.length) * 100;
   };
 
   const handleRoutePress = (routeData: RouteData) => {
@@ -349,8 +353,10 @@ const AdminTruckTrackerScreen: React.FC = () => {
                 
                 {userRoutes.map((route, index) => {
                   const progress = calculateRouteProgress(route);
-                  const deliveredCount = route.packageSequence.filter(pkg => pkg.status === 'delivered').length;
-                  const undeliveredCount = route.packageSequence.filter(pkg => pkg.status === 'undelivered').length;
+                  // Filter out ADMIN package for counts
+                  const actualPackages = route.packageSequence.filter(pkg => pkg.packageID !== "ADMIN");
+                  const deliveredCount = actualPackages.filter(pkg => pkg.status === 'delivered').length;
+                  const undeliveredCount = actualPackages.filter(pkg => pkg.status === 'undelivered').length;
                   return (
                     <TouchableOpacity
                       key={`route-${username}-${route.dateOfCreation}-${index}`}
@@ -379,7 +385,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
                         <View style={styles.statItem}>
                           <MaterialIcons name="local-shipping" size={20} color={theme.color.darkPrimary} />
                           <Text style={styles.statText}>
-                            {route.packageSequence.length} Packages
+                            {actualPackages.length} Packages
                           </Text>
                         </View>
                         <View style={styles.statsColumn}>
