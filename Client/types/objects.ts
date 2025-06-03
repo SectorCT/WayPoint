@@ -1,4 +1,4 @@
-interface Package {
+export interface Package {
     address: string;
     latitude: number;
     longitude: number;
@@ -10,9 +10,23 @@ interface Package {
     packageID: string;
 }
 
-interface Truck {
+export interface Truck {
     kilogramCapacity: number;
     licensePlate: string;
+}
+
+export interface User {
+    username: string;
+    isManager: boolean;
+}
+
+export interface RouteData {
+    user: string;
+    packageSequence: Package[];
+    mapRoute: [number, number][];
+    dateOfCreation: string;
+    truck?: string;
+    _id?: string;
 }
 
 interface Coordinate {
@@ -23,13 +37,4 @@ interface Coordinate {
 interface RouteLocation extends Coordinate {
   waypoint_index: number;
   package_info: Package;
-}
-
-interface RouteData {
-  user: string;
-  packageSequence: Package[];
-  mapRoute: [number, number][];
-  dateOfCreation: string;
-  truck?: string;
-  _id?: string;
 }

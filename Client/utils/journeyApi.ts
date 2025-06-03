@@ -1,4 +1,5 @@
 import { makeAuthenticatedRequest } from './api';
+import { Truck, Package, User, RouteData } from '../types/objects';
 
 
 export const getAvailableTrucks = async (): Promise<Truck[]> => {
