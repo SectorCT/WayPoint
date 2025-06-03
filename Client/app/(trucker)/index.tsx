@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -27,7 +27,7 @@ interface User {
 }
 
 interface Package {
-  status: "pending" | "in_transit" | "delivered";
+  status: "pending" | "in_transit" | "delivered" | "undelivered";
   weight: number;
   address: string;
   latitude: number;
@@ -45,6 +45,18 @@ interface RouteData {
   dateOfCreation: string;
   truck?: string;
   _id?: string;
+}
+
+interface Theme {
+  color: {
+    white: string;
+    black: string;
+    mediumPrimary: string;
+    darkPrimary: string;
+    lightPrimary: string;
+    lightGrey: string;
+    error: string;
+  };
 }
 
 const DRAWER_WIDTH = 300;
@@ -74,13 +86,16 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
+const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
   <View style={[
     styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered
+    isDelivered && styles.markerContainerDelivered,
+    isUndelivered && styles.markerContainerUndelivered
   ]}>
     {isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
+    ) : isUndelivered ? (
+      <MaterialIcons name="close" size={20} color="#FF4136" />
     ) : (
       <Text style={styles.markerText}>{number}</Text>
     )}
@@ -162,7 +177,9 @@ export default function TruckerViewScreen() {
   })) || [];
 
   const activeLocations = locations.filter(
-    location => location.package_info.status !== 'delivered' && location.package_info.packageID !== "ADMIN"
+    location => location.package_info.status !== 'delivered' && 
+                location.package_info.status !== 'undelivered' && 
+                location.package_info.packageID !== "ADMIN"
   );
 
   useEffect(() => {
@@ -218,6 +235,33 @@ export default function TruckerViewScreen() {
     }
   };
 
+  const handleUndelivered = async (packageId: string) => {
+    try {
+      const response = await markPackageAsUndelivered(packageId);
+
+      if (!response.ok) {
+        console.error('Failed to mark package as undelivered:', response);
+      }
+
+      // Update the status of the package in locations
+      const updatedLocations = locations.map(location => 
+        location.package_info.packageID === packageId 
+          ? { 
+              ...location, 
+              package_info: { 
+                ...location.package_info, 
+                status: 'undelivered' as const 
+              } 
+            }
+          : location
+      );
+      setLocations(updatedLocations);
+      
+    } catch (error) {
+      console.error('Error marking package as undelivered:', error);
+    }
+  };
+
   const initialRegion = locations && locations.length > 0 ? {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
@@ -267,6 +311,15 @@ export default function TruckerViewScreen() {
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
                 </Text>
+                <TouchableOpacity 
+                  style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
+                  onPress={() => handleUndelivered(location.package_info.packageID)}
+                >
+                  <MaterialIcons name="close" size={16} color="#FF4136" />
+                  <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
+                    Didn't Deliver
+                  </Text>
+                </TouchableOpacity>
               </View>
               <View style={styles.addressRow}>
                 <Text style={styles.address}>{location.package_info.address}</Text>
@@ -347,6 +400,7 @@ export default function TruckerViewScreen() {
               <CustomMarker 
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
+                isUndelivered={location.package_info.status === 'undelivered'}
               />
             </Marker>
           ))}
@@ -421,6 +475,10 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
     backgroundColor: '#E8F5E9',
   },
+  markerContainerUndelivered: {
+    borderColor: '#FF4136',
+    backgroundColor: '#FFEBEE',
+  },
   markerText: {
     color: '#000',
     fontSize: 16,
@@ -493,6 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    justifyContent: 'space-between',
   },
   indexBadge: {
     width: 24,
@@ -510,6 +569,8 @@ const styles = StyleSheet.create({
   recipientName: {
     fontSize: 16,
     fontWeight: 'bold',
+    flex: 1,
+    marginRight: 8,
   },
   address: {
     fontSize: 14,
@@ -602,5 +663,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10,
+  },
+  undeliveredButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 4,
+  },
+  undeliveredButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 }); 

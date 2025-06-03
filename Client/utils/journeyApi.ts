@@ -74,4 +74,13 @@ export const markPackageAsDelivered = async (packageID: string): Promise<Respons
   });
 };
 
+export const markPackageAsUndelivered = async (packageID: string): Promise<Response> => {
+  return makeAuthenticatedRequest(`/delivery/packages_mark_undelivered/`, {
+    method: "POST",
+    body: JSON.stringify({
+      "packageID": packageID
+    }),
+  });
+};
+
 
