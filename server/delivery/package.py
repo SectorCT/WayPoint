@@ -121,3 +121,36 @@ def mark_delivered(request):
             route.save()
 
     return Response({"detail": "Package marked as delivered"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def mark_undelivered(request):
+    package_id = request.data.get('packageID')
+    if not package_id:
+        return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        package = Package.objects.get(packageID=package_id)
+    except Package.DoesNotExist:
+        return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if package.status == 'undelivered':
+        return Response({"error": "Package already marked as undelivered"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Mark package as undelivered
+    package.status = 'undelivered'
+    package.save()
+
+    # Update status in all active route assignments
+    route_assignments = RouteAssignment.objects.filter(isActive=True)
+    for route in route_assignments:
+        updated = False
+        sequence = route.packageSequence
+        for item in sequence:
+            if item.get('packageID') == package_id:
+                item['status'] = 'undelivered'
+                updated = True
+        if updated:
+            route.packageSequence = sequence
+            route.save()
+
+    return Response({"detail": "Package marked as undelivered"}, status=status.HTTP_200_OK)
