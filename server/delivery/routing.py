@@ -19,7 +19,7 @@ from .serializers import RouteAssignmentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .clusterLocations import cluster_locations
-from .createRoutes import create_routes
+from .createRoutes import create_routes, _get_trip_service
 from .models import Package, Truck, RouteAssignment
 from datetime import timedelta
 from django.utils import timezone
@@ -271,6 +271,46 @@ class finishRoute(APIView):
             return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
         route.save()
         return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)
+
+class getReturnRoute(APIView):
+    def post(self, request):
+        try:
+            current_lat = float(request.data.get('currentLat'))
+            current_lng = float(request.data.get('currentLng'))
+            default_lat = float(request.data.get('defaultLat'))
+            default_lng = float(request.data.get('defaultLng'))
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid coordinates provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create input for OSRM
+        osrm_input = {
+            "locations": [
+                {
+                    "latitude": current_lat,
+                    "longitude": current_lng
+                },
+                {
+                    "latitude": default_lat,
+                    "longitude": default_lng
+                }
+            ]
+        }
+
+        try:
+            # Get route from OSRM
+            osrm_response = _get_trip_service(osrm_input)
+            
+            if "error" in osrm_response:
+                return Response({"error": "Failed to get route from OSRM"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Extract route coordinates
+            if "trips" in osrm_response and osrm_response["trips"]:
+                route_coordinates = osrm_response["trips"][0]["geometry"]["coordinates"]
+                return Response({"route": route_coordinates}, status=status.HTTP_200_OK)
+            
+            return Response({"error": "No route found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": f"Error calculating route: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class dropAllRoutes(APIView):
     def delete(self, request):

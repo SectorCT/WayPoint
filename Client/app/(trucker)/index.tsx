@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -200,14 +200,97 @@ export default function TruckerViewScreen() {
     }
   }, [currentZone?.mapRoute, locations, isReturning]);
 
-  const handleReturnRoute = () => {
-    setIsReturnMode(true);
-    // Keep only the default location (ADMIN package)
-    const defaultLocation = locations.find(loc => loc.package_info.packageID === "ADMIN");
-    if (defaultLocation) {
+  const handleReturnRoute = async () => {
+    try {
+      setIsReturnMode(true);
+      // Close the drawer
+      drawerRef.current?.closeDrawer();
+      
+      // Keep only the default location (ADMIN package)
+      const defaultLocation = locations.find(loc => loc.package_info.packageID === "ADMIN");
+      if (!defaultLocation || !position.latitude || !position.longitude) {
+        throw new Error('Missing location data');
+      }
+
       setLocations([defaultLocation]);
-      // Clear the route points
-      setRoutePoints([]);
+      
+      // Get the return route from current position to default location
+      const returnRoute = await getReturnRoute(
+        position.latitude,
+        position.longitude,
+        defaultLocation.latitude,
+        defaultLocation.longitude
+      );
+      
+      if (!returnRoute || !Array.isArray(returnRoute) || returnRoute.length === 0) {
+        throw new Error('Invalid route data received from OSRM');
+      }
+
+      // Convert the route coordinates to the format expected by the map
+      // OSRM returns coordinates in [longitude, latitude] format
+      const routePoints = returnRoute.map(point => {
+        if (!Array.isArray(point) || point.length !== 2) {
+          throw new Error('Invalid coordinate format in route data');
+        }
+        return {
+          latitude: point[1],  // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        };
+      });
+      
+      if (routePoints.length < 2) {
+        throw new Error('Route must contain at least 2 points');
+      }
+
+      // Only keep the route points from current position to default location
+      // Remove any points that would create a return path
+      const directRoutePoints = routePoints.slice(0, Math.ceil(routePoints.length / 2));
+      setRoutePoints(directRoutePoints);
+      
+      // Center the map on the route
+      if (mapRef.current && directRoutePoints.length > 0) {
+        const bounds = directRoutePoints.reduce((acc, point) => ({
+          minLat: Math.min(acc.minLat, point.latitude),
+          maxLat: Math.max(acc.maxLat, point.latitude),
+          minLng: Math.min(acc.minLng, point.longitude),
+          maxLng: Math.max(acc.maxLng, point.longitude)
+        }), {
+          minLat: directRoutePoints[0].latitude,
+          maxLat: directRoutePoints[0].latitude,
+          minLng: directRoutePoints[0].longitude,
+          maxLng: directRoutePoints[0].longitude
+        });
+
+        const center = {
+          latitude: (bounds.minLat + bounds.maxLat) / 2,
+          longitude: (bounds.minLng + bounds.maxLng) / 2
+        };
+
+        const span = {
+          latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
+          longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5
+        };
+
+        mapRef.current.animateToRegion({
+          ...center,
+          ...span
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error getting return route:', error);
+      // Show error message to user
+      Alert.alert(
+        'Route Calculation Failed',
+        error instanceof Error ? error.message : 'Unable to calculate the return route. Please try again.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            // Reset state on error
+            setRoutePoints([]);
+            setIsReturnMode(false);
+          }
+        }]
+      );
     }
   };
 
@@ -437,6 +520,14 @@ export default function TruckerViewScreen() {
             <Polyline
               coordinates={routePoints}
               strokeColor={routeColor}
+              strokeWidth={3}
+            />
+          )}
+
+          {isReturnMode && routePoints.length > 0 && (
+            <Polyline
+              coordinates={routePoints}
+              strokeColor="#0074D9"
               strokeWidth={3}
             />
           )}
