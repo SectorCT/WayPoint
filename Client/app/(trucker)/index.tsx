@@ -132,6 +132,7 @@ export default function TruckerViewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isReturning, setIsReturning] = useState(false);
   const [routePoints, setRoutePoints] = useState<Coordinate[]>([]);
+  const [isReturnMode, setIsReturnMode] = useState(false);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   
@@ -198,6 +199,17 @@ export default function TruckerViewScreen() {
       setIsReturning(false);
     }
   }, [currentZone?.mapRoute, locations, isReturning]);
+
+  const handleReturnRoute = () => {
+    setIsReturnMode(true);
+    // Keep only the default location (ADMIN package)
+    const defaultLocation = locations.find(loc => loc.package_info.packageID === "ADMIN");
+    if (defaultLocation) {
+      setLocations([defaultLocation]);
+      // Clear the route points
+      setRoutePoints([]);
+    }
+  };
 
   const activeLocations = locations.filter(
     location => location.package_info.status !== 'delivered' && 
@@ -327,10 +339,15 @@ export default function TruckerViewScreen() {
             </Text>
             {isReturning && (
               <View style={styles.returnRouteContainer}>
-                <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
-                <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
-                  Return Route Active
-                </Text>
+                <TouchableOpacity 
+                  style={styles.returnRouteButton}
+                  onPress={handleReturnRoute}
+                >
+                  <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
+                  <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
+                    Return Route Active
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -416,13 +433,31 @@ export default function TruckerViewScreen() {
             longitudeDelta: 0.0421,
           } : initialRegion}
         >
-          <Polyline
-            coordinates={routePoints}
-            strokeColor={routeColor}
-            strokeWidth={3}
-          />
+          {!isReturnMode && (
+            <Polyline
+              coordinates={routePoints}
+              strokeColor={routeColor}
+              strokeWidth={3}
+            />
+          )}
 
-          {locations.map((location) => (
+          {!isReturnMode && locations.map((location) => (
+            <Marker
+              key={`marker-${location.package_info.packageID}`}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index} 
+                isDelivered={location.package_info.status === 'delivered'}
+                isUndelivered={location.package_info.status === 'undelivered'}
+              />
+            </Marker>
+          ))}
+
+          {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}`}
               coordinate={{
@@ -728,5 +763,13 @@ const styles = StyleSheet.create({
   returnRouteText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  returnRouteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
   },
 }); 
