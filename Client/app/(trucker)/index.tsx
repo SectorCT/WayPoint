@@ -354,30 +354,46 @@ export default function TruckerViewScreen() {
   };
 
   const handleUndelivered = async (packageId: string) => {
-    try {
-      const response = await markPackageAsUndelivered(packageId);
+    Alert.alert(
+      "Mark as Undelivered",
+      "Are you sure you want to continue with the other packages?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await markPackageAsUndelivered(packageId);
 
-      if (!response.ok) {
-        console.error('Failed to mark package as undelivered:', response);
-      }
+              if (!response.ok) {
+                console.error('Failed to mark package as undelivered:', response);
+              }
 
-      // Update the status of the package in locations
-      const updatedLocations = locations.map(location => 
-        location.package_info.packageID === packageId 
-          ? { 
-              ...location, 
-              package_info: { 
-                ...location.package_info, 
-                status: 'undelivered' as const 
-              } 
+              // Update the status of the package in locations
+              const updatedLocations = locations.map(location => 
+                location.package_info.packageID === packageId 
+                  ? { 
+                      ...location, 
+                      package_info: { 
+                        ...location.package_info, 
+                        status: 'undelivered' as const 
+                      } 
+                    }
+                  : location
+              );
+              setLocations(updatedLocations);
+              
+            } catch (error) {
+              console.error('Error marking package as undelivered:', error);
             }
-          : location
-      );
-      setLocations(updatedLocations);
-      
-    } catch (error) {
-      console.error('Error marking package as undelivered:', error);
-    }
+          }
+        }
+      ]
+    );
   };
 
   const initialRegion = locations && locations.length > 0 ? {
