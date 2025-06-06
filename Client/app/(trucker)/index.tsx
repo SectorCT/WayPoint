@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -27,7 +27,7 @@ interface User {
 }
 
 interface Package {
-  status: "pending" | "in_transit" | "delivered";
+  status: "pending" | "in_transit" | "delivered" | "undelivered";
   weight: number;
   address: string;
   latitude: number;
@@ -45,6 +45,18 @@ interface RouteData {
   dateOfCreation: string;
   truck?: string;
   _id?: string;
+}
+
+interface Theme {
+  color: {
+    white: string;
+    black: string;
+    mediumPrimary: string;
+    darkPrimary: string;
+    lightPrimary: string;
+    lightGrey: string;
+    error: string;
+  };
 }
 
 const DRAWER_WIDTH = 300;
@@ -74,13 +86,16 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered }: { number: number, isDelivered: boolean }) => (
+const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
   <View style={[
     styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered
+    isDelivered && styles.markerContainerDelivered,
+    isUndelivered && styles.markerContainerUndelivered
   ]}>
     {isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
+    ) : isUndelivered ? (
+      <MaterialIcons name="close" size={20} color="#FF4136" />
     ) : (
       <Text style={styles.markerText}>{number}</Text>
     )}
@@ -115,6 +130,9 @@ export default function TruckerViewScreen() {
   const [currentZone, setCurrentZone] = useState<RouteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReturning, setIsReturning] = useState(false);
+  const [routePoints, setRoutePoints] = useState<Coordinate[]>([]);
+  const [isReturnMode, setIsReturnMode] = useState(false);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   
@@ -149,20 +167,137 @@ export default function TruckerViewScreen() {
       waypoint_index: index,
       package_info: {
         ...packageInfo,
-        // Automatically mark ADMIN packages as delivered
         status: packageInfo.packageID === "ADMIN" ? "delivered" : packageInfo.status
       }
     }));
     setLocations(newLocations);
   }, [currentZone]);
 
-  const routePoints: Coordinate[] = currentZone?.mapRoute?.map((point) => ({
-    latitude: point[1],
-    longitude: point[0],
-  })) || [];
+  useEffect(() => {
+    if (!currentZone?.mapRoute) {
+      return;
+    }
+
+    const allPackagesCompleted = locations.every(
+      location => location.package_info.status === 'delivered' || 
+                 location.package_info.status === 'undelivered' ||
+                 location.package_info.packageID === "ADMIN"
+    );
+
+    const baseRoutePoints = currentZone.mapRoute.map((point) => ({
+      latitude: point[1],
+      longitude: point[0],
+    }));
+
+    if (allPackagesCompleted && !isReturning) {
+      setIsReturning(true);
+      if (baseRoutePoints.length > 0) {
+        setRoutePoints([...baseRoutePoints, baseRoutePoints[0]]);
+      }
+    } else if (!allPackagesCompleted) {
+      setRoutePoints(baseRoutePoints);
+      setIsReturning(false);
+    }
+  }, [currentZone?.mapRoute, locations, isReturning]);
+
+  const handleReturnRoute = async () => {
+    try {
+      setIsReturnMode(true);
+      // Close the drawer
+      drawerRef.current?.closeDrawer();
+      
+      // Keep only the default location (ADMIN package)
+      const defaultLocation = locations.find(loc => loc.package_info.packageID === "ADMIN");
+      if (!defaultLocation || !position.latitude || !position.longitude) {
+        throw new Error('Missing location data');
+      }
+
+      setLocations([defaultLocation]);
+      
+      // Get the return route from current position to default location
+      const returnRoute = await getReturnRoute(
+        position.latitude,
+        position.longitude,
+        defaultLocation.latitude,
+        defaultLocation.longitude
+      );
+      
+      if (!returnRoute || !Array.isArray(returnRoute) || returnRoute.length === 0) {
+        throw new Error('Invalid route data received from OSRM');
+      }
+
+      // Convert the route coordinates to the format expected by the map
+      // OSRM returns coordinates in [longitude, latitude] format
+      const routePoints = returnRoute.map(point => {
+        if (!Array.isArray(point) || point.length !== 2) {
+          throw new Error('Invalid coordinate format in route data');
+        }
+        return {
+          latitude: point[1],  // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        };
+      });
+      
+      if (routePoints.length < 2) {
+        throw new Error('Route must contain at least 2 points');
+      }
+
+      // Only keep the route points from current position to default location
+      // Remove any points that would create a return path
+      const directRoutePoints = routePoints.slice(0, Math.ceil(routePoints.length / 2));
+      setRoutePoints(directRoutePoints);
+      
+      // Center the map on the route
+      if (mapRef.current && directRoutePoints.length > 0) {
+        const bounds = directRoutePoints.reduce((acc, point) => ({
+          minLat: Math.min(acc.minLat, point.latitude),
+          maxLat: Math.max(acc.maxLat, point.latitude),
+          minLng: Math.min(acc.minLng, point.longitude),
+          maxLng: Math.max(acc.maxLng, point.longitude)
+        }), {
+          minLat: directRoutePoints[0].latitude,
+          maxLat: directRoutePoints[0].latitude,
+          minLng: directRoutePoints[0].longitude,
+          maxLng: directRoutePoints[0].longitude
+        });
+
+        const center = {
+          latitude: (bounds.minLat + bounds.maxLat) / 2,
+          longitude: (bounds.minLng + bounds.maxLng) / 2
+        };
+
+        const span = {
+          latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
+          longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5
+        };
+
+        mapRef.current.animateToRegion({
+          ...center,
+          ...span
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error getting return route:', error);
+      // Show error message to user
+      Alert.alert(
+        'Route Calculation Failed',
+        error instanceof Error ? error.message : 'Unable to calculate the return route. Please try again.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            // Reset state on error
+            setRoutePoints([]);
+            setIsReturnMode(false);
+          }
+        }]
+      );
+    }
+  };
 
   const activeLocations = locations.filter(
-    location => location.package_info.status !== 'delivered' && location.package_info.packageID !== "ADMIN"
+    location => location.package_info.status !== 'delivered' && 
+                location.package_info.status !== 'undelivered' && 
+                location.package_info.packageID !== "ADMIN"
   );
 
   useEffect(() => {
@@ -218,6 +353,49 @@ export default function TruckerViewScreen() {
     }
   };
 
+  const handleUndelivered = async (packageId: string) => {
+    Alert.alert(
+      "Mark as Undelivered",
+      "Are you sure you want to continue with the other packages?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await markPackageAsUndelivered(packageId);
+
+              if (!response.ok) {
+                console.error('Failed to mark package as undelivered:', response);
+              }
+
+              // Update the status of the package in locations
+              const updatedLocations = locations.map(location => 
+                location.package_info.packageID === packageId 
+                  ? { 
+                      ...location, 
+                      package_info: { 
+                        ...location.package_info, 
+                        status: 'undelivered' as const 
+                      } 
+                    }
+                  : location
+              );
+              setLocations(updatedLocations);
+              
+            } catch (error) {
+              console.error('Error marking package as undelivered:', error);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const initialRegion = locations && locations.length > 0 ? {
     latitude: locations[0].latitude,
     longitude: locations[0].longitude,
@@ -254,8 +432,23 @@ export default function TruckerViewScreen() {
               All Deliveries Complete!
             </Text>
             <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              Great job! You've completed all your deliveries for today.
+              {isReturning ? 
+                "Great job! Now return to the starting point to complete your journey." :
+                "Great job! You've completed all your deliveries for today."}
             </Text>
+            {isReturning && (
+              <View style={styles.returnRouteContainer}>
+                <TouchableOpacity 
+                  style={styles.returnRouteButton}
+                  onPress={handleReturnRoute}
+                >
+                  <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
+                  <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
+                    Return Route Active
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           activeLocations.map((location) => (
@@ -267,6 +460,15 @@ export default function TruckerViewScreen() {
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
                 </Text>
+                <TouchableOpacity 
+                  style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
+                  onPress={() => handleUndelivered(location.package_info.packageID)}
+                >
+                  <MaterialIcons name="close" size={16} color="#FF4136" />
+                  <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
+                    Didn't Deliver
+                  </Text>
+                </TouchableOpacity>
               </View>
               <View style={styles.addressRow}>
                 <Text style={styles.address}>{location.package_info.address}</Text>
@@ -330,13 +532,23 @@ export default function TruckerViewScreen() {
             longitudeDelta: 0.0421,
           } : initialRegion}
         >
-          <Polyline
-            coordinates={routePoints}
-            strokeColor={routeColor}
-            strokeWidth={3}
-          />
+          {!isReturnMode && (
+            <Polyline
+              coordinates={routePoints}
+              strokeColor={routeColor}
+              strokeWidth={3}
+            />
+          )}
 
-          {locations.map((location) => (
+          {isReturnMode && routePoints.length > 0 && (
+            <Polyline
+              coordinates={routePoints}
+              strokeColor="#0074D9"
+              strokeWidth={3}
+            />
+          )}
+
+          {!isReturnMode && locations.map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}`}
               coordinate={{
@@ -347,6 +559,23 @@ export default function TruckerViewScreen() {
               <CustomMarker 
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
+                isUndelivered={location.package_info.status === 'undelivered'}
+              />
+            </Marker>
+          ))}
+
+          {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
+            <Marker
+              key={`marker-${location.package_info.packageID}`}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index} 
+                isDelivered={location.package_info.status === 'delivered'}
+                isUndelivered={location.package_info.status === 'undelivered'}
               />
             </Marker>
           ))}
@@ -421,6 +650,10 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
     backgroundColor: '#E8F5E9',
   },
+  markerContainerUndelivered: {
+    borderColor: '#FF4136',
+    backgroundColor: '#FFEBEE',
+  },
   markerText: {
     color: '#000',
     fontSize: 16,
@@ -493,6 +726,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    justifyContent: 'space-between',
   },
   indexBadge: {
     width: 24,
@@ -510,6 +744,8 @@ const styles = StyleSheet.create({
   recipientName: {
     fontSize: 16,
     fontWeight: 'bold',
+    flex: 1,
+    marginRight: 8,
   },
   address: {
     fontSize: 14,
@@ -602,5 +838,45 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10,
+  },
+  undeliveredButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 4,
+  },
+  undeliveredButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  returnRouteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    gap: 8,
+  },
+  returnRouteText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  returnRouteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
   },
 }); 
