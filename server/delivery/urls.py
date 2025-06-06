@@ -1,7 +1,7 @@
 from django.urls import path
-from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered
+from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered, mark_undelivered
 from .truck import createTruck, getAllTrucks, deleteTruck
-from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings
+from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
@@ -10,6 +10,7 @@ urlpatterns = [
     path('packages/createMany/', createManyPackages.as_view(), name='create-package'),
     path('packages/<str:id>/', deletePackage.as_view(), name='delete-package'),
     path('packages_mark/', mark_delivered, name='mark-as-delivered'),
+    path('packages_mark_undelivered/', mark_undelivered, name='mark-as-undelivered'),
 
     
     path('trucks/', getAllTrucks.as_view(), name='get-all-trucks'),
@@ -23,4 +24,5 @@ urlpatterns = [
     path('route/all/', getAllRoutings.as_view(), name = 'all-routes'),
     path('route/finish/', finishRoute.as_view(), name = 'finish-route'),
     path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes'),
+    path('route/return/', getReturnRoute.as_view(), name = 'get-return-route'),
 ]

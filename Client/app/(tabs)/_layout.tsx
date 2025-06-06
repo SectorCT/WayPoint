@@ -53,15 +53,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="truckerView"
-        options={{
-          title: "Trucker",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="person" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="adminTruckTracker"
         options={{
           title: "Admin",
