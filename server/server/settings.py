@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'delivery.apps.DeliveryConfig',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'company_management',
 ]
 
 MIDDLEWARE = [
@@ -31,6 +32,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'company_management.middleware.CompanyIDValidationMiddleware',
 ]
 
 ROOT_URLCONF = 'server.urls'
