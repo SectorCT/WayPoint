@@ -5,12 +5,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView    
 from rest_framework import status, views
 from .models import User
+from .utils import send_registration_notification
 
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            # Send registration notifications
+            send_registration_notification(user, user.company)
+            
             refresh = RefreshToken.for_user(user)
             user_data = UserSerializer(user).data
             return Response({

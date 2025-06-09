@@ -6,6 +6,7 @@ from .models import Company
 from .serializers import CompanySerializer, CompanyCreateSerializer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from authentication.utils import send_verification_notification
 
 User = get_user_model()
 
@@ -57,6 +58,10 @@ class CompanyViewSet(viewsets.ModelViewSet):
             trucker.is_verified = True
             trucker.verification_date = timezone.now()
             trucker.save()
+            
+            # Send verification notification
+            send_verification_notification(trucker)
+            
             return Response({'detail': 'Trucker verified successfully'})
         except User.DoesNotExist:
             return Response({'detail': 'Trucker not found'}, status=status.HTTP_404_NOT_FOUND)

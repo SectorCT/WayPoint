@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
+from company_management.models import Company
 
 User = get_user_model()
 
@@ -10,10 +11,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, label="Confirm Password")
+    company_id = serializers.UUIDField(write_only=True, required=True)
     
     class Meta:
         model = User
-        fields = ('email', 'username', 'phoneNumber', 'password', 'password2', 'isManager')
+        fields = ('email', 'username', 'phoneNumber', 'password', 'password2', 'isManager', 'company_id')
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -40,17 +42,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         if len(data.get('password')) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         
+        # Validate company ID
+        company_id = data.get('company_id')
+        try:
+            company = Company.objects.get(id=company_id, status=True)
+            data['company'] = company
+        except Company.DoesNotExist:
+            raise serializers.ValidationError("Invalid or inactive company ID.")
+        
         return data
     
     def create(self, validated_data):
         validated_data.pop('password2')
+        company = validated_data.pop('company')
         try:
             user = User.objects.create_user(
                 email=validated_data['email'],
                 username=validated_data['username'],
                 phoneNumber=validated_data.get('phoneNumber'),
                 password=validated_data['password'],
-                isManager = validated_data['isManager']
+                isManager=validated_data['isManager'],
+                company=company,
+                is_verified=False  # New users start as unverified
             )
         except Exception as e:
             raise serializers.ValidationError(f"Error creating user: {str(e)}")
