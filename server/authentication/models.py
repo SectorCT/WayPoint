@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from company_management.models import Company
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, phoneNumber, password=None, **extra_fields):
@@ -20,7 +21,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
     phoneNumber = models.CharField(max_length=15, blank=True, null=True)
-    isManager = models.BooleanField(default = False)
+    isManager = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    verification_date = models.DateTimeField(null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, related_name='users')
     
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -30,6 +34,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['username', 'phoneNumber']
     
     objects = UserManager()
+    
+    class Meta:
+        db_table = 'users'
+        indexes = [
+            models.Index(fields=['email'], name='idx_users_email'),
+            models.Index(fields=['company'], name='idx_users_company'),
+        ]
     
     def __str__(self):
         return self.email
