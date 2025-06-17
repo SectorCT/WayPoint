@@ -10,17 +10,23 @@ import Weight from "@assets/icons/weight.svg";
 
 interface PastEntryProps {
   date: string;
-  numPackages: number;
+  delivered: {
+    numPackages: number;
+    kilos: number;
+  };
+  undelivered: {
+    numPackages: number;
+    kilos: number;
+  };
   numTrucks: number;
-  kilos: number;
   duration: string;
 }
 
 export default function PastEntry({
   date,
-  numPackages,
+  delivered,
+  undelivered,
   numTrucks,
-  kilos,
   duration,
 }: PastEntryProps) {
   const styles = useStyles();
@@ -33,31 +39,35 @@ export default function PastEntry({
           <Text style={styles.title}>{date}</Text>
           <Text style={styles.status}>{duration}</Text>
         </View>
-      </View>
-
-      <View style={styles.statsContainer}>
-        <InfoEntryPast
-          Icon={Cubes}
-          value={numPackages}
-          label="packages"
-          gradientColor={"#F5D8FC"}
-        />
-
-        <InfoEntryPast
-          Icon={Truck}
-          value={numTrucks}
-          label="trucks"
-          gradientColor={"#D9E2FC"}
-        />
-
-        <InfoEntryPast
-          Icon={Weight}
-          value={kilos}
-          label="kilos of packages"
-          gradientColor={"#FCD9D9"}
-          iconSize={20}
-          marginTop={-3}
-        />
+        
+        <View style={styles.statsContainer}>
+          <View style={styles.rowStat}>
+            <View style={styles.iconContainer}>
+              <Cubes width={20} height={20} fill="#F5D8FC" />
+            </View>
+            <Text style={styles.deliveredText}>{delivered.numPackages} Delivered packages</Text>
+            <View style={styles.kgBadgeDelivered}>
+              <Text style={styles.kgBadgeText}>{delivered.kilos} kg</Text>
+            </View>
+          </View>
+          
+          <View style={styles.rowStat}>
+            <View style={styles.iconContainer}>
+              <Cubes width={20} height={20} fill="#FFE6E6" />
+            </View>
+            <Text style={styles.undeliveredText}>{undelivered.numPackages} Undelivered packages</Text>
+            <View style={styles.kgBadgeUndelivered}>
+              <Text style={styles.kgBadgeText}>{undelivered.kilos} kg</Text>
+            </View>
+          </View>
+          
+          <View style={styles.rowStat}>
+            <View style={styles.iconContainer}>
+              <Truck width={20} height={20} fill="#D9E2FC" />
+            </View>
+            <Text style={styles.truckText}>{numTrucks} Trucks</Text>
+          </View>
+        </View>
       </View>
     </View>
   );

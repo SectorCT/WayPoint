@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .clusterLocations import cluster_locations
 from .createRoutes import create_routes, _get_trip_service
-from .models import Package, Truck, RouteAssignment
+from .models import Package, Truck, RouteAssignment, DeliveryHistory
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework import status
@@ -29,7 +29,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
 import json
-from django.db.models import Case, When, IntegerField
+from django.db.models import Case, When, IntegerField, Sum
 
 User = get_user_model()
 
@@ -270,7 +270,63 @@ class finishRoute(APIView):
         else:
             return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
         route.save()
-        return Response({"detail": "Marked route as finished"}, status=status.HTTP_201_CREATED)
+        
+        # Create delivery history directly
+        try:
+            # Get delivered packages for this route
+            delivered_packages = Package.objects.filter(
+                packageID__in=[pkg.get('packageID') for pkg in route.packageSequence if pkg.get('packageID') != 'ADMIN'],
+                status='delivered'
+            )
+            
+            # Calculate total weight
+            total_kilos = delivered_packages.aggregate(
+                total_weight=Sum('weight')
+            )['total_weight'] or 0.00
+            
+            # Get duration from request or use default
+            duration_hours = request.data.get('duration_hours', 0)
+            
+            # Create or update delivery history
+            delivery_history, created = DeliveryHistory.objects.get_or_create(
+                delivery_date=timezone.now().date(),
+                driver=driver,
+                defaults={
+                    'truck': route.truck,
+                    'total_packages': delivered_packages.count(),
+                    'total_kilos': total_kilos,
+                    'duration_hours': duration_hours,
+                    'route_assignment': route
+                }
+            )
+            
+            if not created:
+                # Update existing record
+                delivery_history.truck = route.truck
+                delivery_history.total_packages = delivered_packages.count()
+                delivery_history.total_kilos = total_kilos
+                delivery_history.duration_hours = duration_hours
+                delivery_history.route_assignment = route
+                delivery_history.save()
+            
+            # Add delivered packages to the history
+            delivery_history.completed_packages.set(delivered_packages)
+            
+            return Response({
+                "detail": "Marked route as finished and created delivery history",
+                "delivery_history": {
+                    "total_packages": delivery_history.total_packages,
+                    "total_kilos": float(delivery_history.total_kilos),
+                    "duration_hours": float(delivery_history.duration_hours)
+                }
+            }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            # If delivery history creation fails, still return success for route finishing
+            return Response({
+                "detail": "Marked route as finished but failed to create delivery history",
+                "error": str(e)
+            }, status=status.HTTP_201_CREATED)
 
 class getReturnRoute(APIView):
     def post(self, request):
@@ -279,6 +335,7 @@ class getReturnRoute(APIView):
             current_lng = float(request.data.get('currentLng'))
             default_lat = float(request.data.get('defaultLat'))
             default_lng = float(request.data.get('defaultLng'))
+            driver_username = request.data.get('username')  # Add driver username
         except (TypeError, ValueError):
             return Response({"error": "Invalid coordinates provided"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -306,6 +363,83 @@ class getReturnRoute(APIView):
             # Extract route coordinates
             if "trips" in osrm_response and osrm_response["trips"]:
                 route_coordinates = osrm_response["trips"][0]["geometry"]["coordinates"]
+                
+                # Create delivery history when driver requests return route (indicating they're done)
+                if driver_username:
+                    try:
+                        print(f"Creating delivery history for driver: {driver_username}")
+                        driver = User.objects.get(username=driver_username)
+                        route = RouteAssignment.objects.get(driver=driver, isActive=True)
+                        
+                        print(f"Found route for driver: {route.routeID}")
+                        
+                        # Get delivered packages for this route
+                        delivered_packages = Package.objects.filter(
+                            packageID__in=[pkg.get('packageID') for pkg in route.packageSequence if pkg.get('packageID') != 'ADMIN'],
+                            status='delivered'
+                        )
+                        
+                        # Get undelivered packages for this route
+                        undelivered_packages = Package.objects.filter(
+                            packageID__in=[pkg.get('packageID') for pkg in route.packageSequence if pkg.get('packageID') != 'ADMIN'],
+                            status='undelivered'
+                        )
+                        
+                        print(f"Found {delivered_packages.count()} delivered packages")
+                        print(f"Found {undelivered_packages.count()} undelivered packages")
+                        
+                        # Calculate total weight for delivered packages
+                        delivered_kilos = delivered_packages.aggregate(
+                            total_weight=Sum('weight')
+                        )['total_weight'] or 0.00
+                        
+                        # Calculate total weight for undelivered packages
+                        undelivered_kilos = undelivered_packages.aggregate(
+                            total_weight=Sum('weight')
+                        )['total_weight'] or 0.00
+                        
+                        print(f"Delivered kilos: {delivered_kilos}")
+                        print(f"Undelivered kilos: {undelivered_kilos}")
+                        
+                        # Create or update delivery history
+                        delivery_history, created = DeliveryHistory.objects.get_or_create(
+                            delivery_date=timezone.now().date(),
+                            driver=driver,
+                            defaults={
+                                'truck': route.truck,
+                                'total_packages': delivered_packages.count(),
+                                'total_kilos': delivered_kilos,
+                                'undelivered_packages': undelivered_packages.count(),
+                                'undelivered_kilos': undelivered_kilos,
+                                'duration_hours': 0,  # Will be updated when route is actually finished
+                                'route_assignment': route
+                            }
+                        )
+                        
+                        if not created:
+                            # Update existing record
+                            delivery_history.truck = route.truck
+                            delivery_history.total_packages = delivered_packages.count()
+                            delivery_history.total_kilos = delivered_kilos
+                            delivery_history.undelivered_packages = undelivered_packages.count()
+                            delivery_history.undelivered_kilos = undelivered_kilos
+                            delivery_history.route_assignment = route
+                            delivery_history.save()
+                        
+                        # Add delivered packages to the history
+                        delivery_history.completed_packages.set(delivered_packages)
+                        
+                        # Add undelivered packages to the history
+                        delivery_history.undelivered_packages_list.set(undelivered_packages)
+                        
+                        print(f"Successfully created/updated delivery history: {delivery_history.id}")
+                        
+                    except Exception as e:
+                        # Log error but don't fail the return route request
+                        print(f"Error creating delivery history: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+                
                 return Response({"route": route_coordinates}, status=status.HTTP_200_OK)
             
             return Response({"error": "No route found"}, status=status.HTTP_404_NOT_FOUND)
