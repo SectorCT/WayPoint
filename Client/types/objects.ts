@@ -18,6 +18,8 @@ export interface Truck {
 export interface User {
     username: string;
     isManager: boolean;
+    email: string;
+    phoneNumber: string;
 }
 
 export interface RouteData {

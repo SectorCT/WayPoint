@@ -6,9 +6,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest } from "../../utils/api";
+import { makeAuthenticatedRequest, getDeliveryHistory } from "../../utils/api";
 import useStyles from "./styles/homeStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
@@ -22,50 +23,52 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 interface PastEntryType {
   date: string;
-  numPackages: number;
+  delivered: {
+    numPackages: number;
+    kilos: number;
+  };
+  undelivered: {
+    numPackages: number;
+    kilos: number;
+  };
   numTrucks: number;
-  kilos: number;
   hours: string;
 }
-
-const pastEntries: PastEntryType[] = [
-  {
-    date: "20th March",
-    numPackages: 23,
-    numTrucks: 5,
-    kilos: 100,
-    hours: "3:50",
-  },
-  {
-    date: "19th March",
-    numPackages: 18,
-    numTrucks: 4,
-    kilos: 80,
-    hours: "4:12",
-  },
-  {
-    date: "18th March",
-    numPackages: 25,
-    numTrucks: 6,
-    kilos: 120,
-    hours: "3:15",
-  },
-  {
-    date: "17th March",
-    numPackages: 15,
-    numTrucks: 3,
-    kilos: 60,
-    hours: "5:15",
-  },
-];
 
 export default function HomeScreen() {
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pastEntries, setPastEntries] = useState<PastEntryType[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const styles = useStyles();
 
   const [journeyStarted, setJourneyStarted] = useState(false);
+
+  // Fetch delivery history on component mount
+  useEffect(() => {
+    fetchDeliveryHistory();
+  }, []);
+
+  const fetchDeliveryHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const historyData = await getDeliveryHistory(7); // Get last 7 days
+      setPastEntries(historyData);
+    } catch (error) {
+      console.error('Error fetching delivery history:', error);
+      setPastEntries([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDeliveryHistory();
+    setRefreshing(false);
+  };
 
   const handleLogout = async () => {
     try {
@@ -79,9 +82,9 @@ export default function HomeScreen() {
   const renderPastEntry = ({ item }: { item: PastEntryType }) => (
     <PastEntry
       date={item.date}
-      numPackages={item.numPackages}
+      delivered={item.delivered}
+      undelivered={item.undelivered}
       numTrucks={item.numTrucks}
-      kilos={item.kilos}
       duration={item.hours}
     />
   );
@@ -123,19 +126,55 @@ export default function HomeScreen() {
                   )}
                   <View style={styles.pastHistory}>
                     <Text style={styles.titlepasthistory}>Past History</Text>
-                    <FlatList
-                      data={pastEntries}
-                      renderItem={renderPastEntry}
-                      keyExtractor={(item) => item.date}
-                      scrollEnabled={false}
-                      ItemSeparatorComponent={() => (
-                        <View style={{ height: 12 }} />
-                      )}
-                    />
+                    {historyLoading ? (
+                      <ActivityIndicator size="small" color={theme.color.mediumPrimary} style={{ marginTop: 10 }} />
+                    ) : pastEntries.length > 0 ? (
+                      <View>
+                        {pastEntries.map((item, index) => (
+                          <View key={item.date}>
+                            <PastEntry
+                              date={item.date}
+                              delivered={item.delivered}
+                              undelivered={item.undelivered}
+                              numTrucks={item.numTrucks}
+                              duration={item.hours}
+                            />
+                            {index < pastEntries.length - 1 && (
+                              <View style={{ height: 12 }} />
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <View style={{ 
+                        padding: 20, 
+                        alignItems: 'center', 
+                        backgroundColor: theme.color.white,
+                        borderRadius: 16,
+                        marginTop: 10,
+                        ...theme.shadow
+                      }}>
+                        <Text style={{ 
+                          color: theme.color.lightGrey, 
+                          fontSize: theme.fontSize.medium,
+                          fontFamily: theme.font.regular
+                        }}>
+                          No delivery history available
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               )}
               keyExtractor={(item) => item.id}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[theme.color.mediumPrimary]}
+                  tintColor={theme.color.mediumPrimary}
+                />
+              }
               contentContainerStyle={{
                 paddingBottom: 100,
                 gap: 12,

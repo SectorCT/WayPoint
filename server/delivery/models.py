@@ -176,3 +176,80 @@ class RouteAssignment(models.Model):
 
     def __str__(self):
         return f"Route assigned to {self.driver.username}"
+
+class DeliveryHistoryManager(models.Manager):
+    def get_daily_stats(self, date):
+        """Get delivery statistics for a specific date"""
+        return self.filter(delivery_date=date)
+    
+    def get_recent_history(self, days=7):
+        """Get delivery history for the last N days"""
+        from django.utils.timezone import now
+        from datetime import timedelta
+        end_date = now().date()
+        start_date = end_date - timedelta(days=days)
+        return self.filter(delivery_date__range=[start_date, end_date]).order_by('-delivery_date')
+
+
+class DeliveryHistory(models.Model):
+    delivery_date = models.DateField(help_text="Date when the delivery was completed")
+    driver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='delivery_history'
+    )
+    truck = models.ForeignKey(
+        Truck, on_delete=models.CASCADE, related_name='delivery_history'
+    )
+    total_packages = models.IntegerField(default=0, help_text="Total number of packages delivered")
+    total_kilos = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0.00,
+        help_text="Total weight of packages delivered in kilograms"
+    )
+    undelivered_packages = models.IntegerField(default=0, help_text="Total number of packages that couldn't be delivered")
+    undelivered_kilos = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0.00,
+        help_text="Total weight of packages that couldn't be delivered in kilograms"
+    )
+    duration_hours = models.DecimalField(
+        max_digits=4, decimal_places=2, default=0.00,
+        help_text="Duration of the delivery journey in hours"
+    )
+    completed_packages = models.ManyToManyField(
+        Package, related_name='delivery_history',
+        help_text="Packages that were delivered in this journey"
+    )
+    undelivered_packages_list = models.ManyToManyField(
+        Package, related_name='undelivered_history',
+        help_text="Packages that couldn't be delivered in this journey"
+    )
+    route_assignment = models.ForeignKey(
+        RouteAssignment, on_delete=models.CASCADE, related_name='delivery_history',
+        null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = DeliveryHistoryManager()
+
+    class Meta:
+        unique_together = ['delivery_date', 'driver']
+        ordering = ['-delivery_date']
+
+    def __str__(self):
+        return f"Delivery by {self.driver.username} on {self.delivery_date}"
+
+    def calculate_stats(self):
+        """Calculate and update delivery statistics"""
+        delivered_packages = self.completed_packages.filter(status='delivered')
+        undelivered_packages = self.undelivered_packages_list.filter(status='undelivered')
+        
+        self.total_packages = delivered_packages.count()
+        self.total_kilos = delivered_packages.aggregate(
+            total_weight=models.Sum('weight')
+        )['total_weight'] or 0.00
+        
+        self.undelivered_packages = undelivered_packages.count()
+        self.undelivered_kilos = undelivered_packages.aggregate(
+            total_weight=models.Sum('weight')
+        )['total_weight'] or 0.00
+        
+        self.save()

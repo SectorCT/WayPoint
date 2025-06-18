@@ -36,7 +36,8 @@ export default function useStyles() {
       color: theme.color.black,
     },
     statsContainer: {
-      gap: 15,
+      marginTop: 8,
+      gap: 4,
     },
     deleteButton: {
       position: "absolute",
@@ -64,6 +65,74 @@ export default function useStyles() {
       alignItems: "center",
       gap: 20,
       alignSelf: "flex-start",
+    },
+    rowStat: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 6,
+      marginBottom: 2,
+    },
+    iconContainer: {
+      width: 24,
+      height: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 8,
+    },
+    deliveredText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.semibold,
+      color: theme.color.black,
+      flex: 1,
+    },
+    undeliveredText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.semibold,
+      color: "#FF6B6B",
+      flex: 1,
+    },
+    kgBadgeDelivered: {
+      backgroundColor: "#F5D8FC",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      marginLeft: 8,
+      minWidth: 48,
+      alignItems: "center",
+    },
+    kgBadgeUndelivered: {
+      backgroundColor: "#FFE6E6",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      marginLeft: 8,
+      minWidth: 48,
+      alignItems: "center",
+    },
+    kgBadgeText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.black,
+    },
+    truckText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.lightGrey,
+      marginTop: 2,
+    },
+    undeliveredContainer: {
+      borderLeftWidth: 4,
+      borderLeftColor: "#FF6B6B",
+      backgroundColor: "#FFF5F5",
+    },
+    undeliveredTitle: {
+      color: "#FF6B6B",
+    },
+    typeText: {
+      fontSize: theme.fontSize.medium,
+      fontFamily: theme.font.medium,
+      color: theme.color.lightGrey,
+      marginTop: 4,
     },
   });
 }
