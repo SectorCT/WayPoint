@@ -25,6 +25,10 @@ export default function useStyles() {
       borderBottomWidth: 0.5,
       borderBottomColor: theme.color.lightGrey,
     },
+    buttonContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
     title: {
       fontSize: theme.fontSize.extraExtraLarge,
       fontFamily: theme.font.medium,
