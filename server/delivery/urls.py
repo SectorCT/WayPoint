@@ -1,7 +1,7 @@
 from django.urls import path
 from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered, mark_undelivered
 from .truck import createTruck, getAllTrucks, deleteTruck
-from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute
+from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
 
 urlpatterns = [
@@ -26,6 +26,7 @@ urlpatterns = [
     path('route/finish/', finishRoute.as_view(), name = 'finish-route'),
     path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes'),
     path('route/return/', getReturnRoute.as_view(), name = 'get-return-route'),
+    path('route/checkDriverStatus/', CheckDriverStatusView.as_view(), name = 'check-driver-status'),
 
     # Delivery History endpoints
     path('history/create/', CreateDeliveryHistoryView.as_view(), name='create-delivery-history'),

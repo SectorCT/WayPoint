@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, Alert } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '@context/ThemeContext';
-import { getAvailableTrucks, getPackages, getEmployees, startJourney } from '../utils/journeyApi';
+import { getAvailableTrucks, getPackages, getEmployees, startJourney, checkDriverStatus } from '../utils/journeyApi';
+import { User, Truck, Package } from '../types/objects';
 import moment from 'moment';
 import { router } from 'expo-router';
 
@@ -13,6 +14,7 @@ interface DriverItemProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isDisabled: boolean;
+  driverStatus?: any;
 }
 
 const DriverItem: React.FC<DriverItemProps> = ({
@@ -22,6 +24,7 @@ const DriverItem: React.FC<DriverItemProps> = ({
   isExpanded,
   onToggleExpand,
   isDisabled,
+  driverStatus,
 }) => {
   const { theme } = useTheme();
   const [animation] = useState(new Animated.Value(0));
@@ -39,6 +42,52 @@ const DriverItem: React.FC<DriverItemProps> = ({
     outputRange: [70, 200],
   });
 
+  // Determine if driver should be disabled based on status
+  const isStatusDisabled = driverStatus && (
+    driverStatus.status === 'active' || 
+    driverStatus.status === 'completed' || 
+    driverStatus.status === 'completed_today'
+  );
+
+  const finalDisabled = isDisabled || isStatusDisabled;
+
+  // Get status message and color
+  const getStatusInfo = () => {
+    if (!driverStatus) return { message: '', color: theme.color.lightGrey };
+    
+    switch (driverStatus.status) {
+      case 'active':
+        const pending = driverStatus.pending_packages || 0;
+        const delivered = driverStatus.delivered_packages || 0;
+        const undelivered = driverStatus.undelivered_packages || 0;
+        return { 
+          message: `Active route: ${delivered} delivered, ${undelivered} undelivered${pending > 0 ? `, ${pending} pending` : ''}`, 
+          color: theme.color.mediumPrimary 
+        };
+      case 'completed':
+        const completedDelivered = driverStatus.delivered_packages || 0;
+        const completedUndelivered = driverStatus.undelivered_packages || 0;
+        return { 
+          message: `Completed: ${completedDelivered} delivered, ${completedUndelivered} undelivered`, 
+          color: '#4CAF50' 
+        };
+      case 'completed_today':
+        return { 
+          message: `Completed today: ${driverStatus.delivered_packages} packages`, 
+          color: '#4CAF50' 
+        };
+      case 'available':
+        return { 
+          message: 'Available for assignment', 
+          color: '#4CAF50' 
+        };
+      default:
+        return { message: '', color: theme.color.lightGrey };
+    }
+  };
+
+  const statusInfo = getStatusInfo();
+
   return (
     <Animated.View 
       style={[
@@ -47,27 +96,34 @@ const DriverItem: React.FC<DriverItemProps> = ({
           maxHeight,
           backgroundColor: theme.color.white,
           borderColor: isSelected ? theme.color.darkPrimary : theme.color.lightGrey,
-          opacity: isDisabled ? 0.5 : 1,
+          opacity: finalDisabled ? 0.5 : 1,
         }
       ]}
     >
       <TouchableOpacity 
         style={styles.driverHeader} 
         onPress={onToggleExpand}
-        disabled={isDisabled}
+        disabled={finalDisabled}
       >
         <View style={styles.driverInfo}>
           <MaterialIcons 
             name="person" 
             size={24} 
-            color={isDisabled ? theme.color.lightGrey : theme.color.darkPrimary} 
+            color={finalDisabled ? theme.color.lightGrey : theme.color.darkPrimary} 
           />
-          <Text style={[
-            styles.driverName, 
-            { color: isDisabled ? theme.color.lightGrey : theme.color.black }
-          ]}>
-            {driver.username}
-          </Text>
+          <View style={styles.driverTextContainer}>
+            <Text style={[
+              styles.driverName, 
+              { color: finalDisabled ? theme.color.lightGrey : theme.color.black }
+            ]}>
+              {driver.username}
+            </Text>
+            {statusInfo.message && (
+              <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                {statusInfo.message}
+              </Text>
+            )}
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity 
@@ -75,16 +131,16 @@ const DriverItem: React.FC<DriverItemProps> = ({
               styles.selectButton,
               { 
                 backgroundColor: isSelected ? theme.color.darkPrimary : 'transparent',
-                opacity: isDisabled ? 0.5 : 1,
+                opacity: finalDisabled ? 0.5 : 1,
               }
             ]}
             onPress={onSelect}
-            disabled={isDisabled}
+            disabled={finalDisabled}
           >
             <MaterialIcons 
               name={isSelected ? "check" : "add"} 
               size={20} 
-              color={isSelected ? "#FFF" : (isDisabled ? theme.color.lightGrey : theme.color.darkPrimary)} 
+              color={isSelected ? "#FFF" : (finalDisabled ? theme.color.lightGrey : theme.color.darkPrimary)} 
             />
           </TouchableOpacity>
           <MaterialIcons 
@@ -124,6 +180,7 @@ export default function StartJourneyScreen() {
   const [todaysPackages, setTodaysPackages] = useState<Package[]>([]);
   const [employees, setEmployees] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [driverStatuses, setDriverStatuses] = useState<{[key: string]: any}>({});
 
   // Calculate recommended number of trucks and employees
   const recommendedCount = Math.ceil(todaysPackages.length / 30);
@@ -148,6 +205,25 @@ export default function StartJourneyScreen() {
         setAvailableTrucks(trucks);
         setTodaysPackages(filteredPackages);
         setEmployees(employeesData);
+        
+        // Check status for all drivers
+        const statusPromises = employeesData.map(async (driver) => {
+          try {
+            const status = await checkDriverStatus(driver.username);
+            return { username: driver.username, status };
+          } catch (error) {
+            console.error(`Error checking status for ${driver.username}:`, error);
+            return { username: driver.username, status: null };
+          }
+        });
+        
+        const statusResults = await Promise.all(statusPromises);
+        const statusMap = statusResults.reduce((acc, result) => {
+          acc[result.username] = result.status;
+          return acc;
+        }, {} as {[key: string]: any});
+        
+        setDriverStatuses(statusMap);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -183,6 +259,38 @@ export default function StartJourneyScreen() {
 
   const handleStartJourney = async () => {
     try {
+      // Check driver status before starting journey
+      const driverStatusChecks = await Promise.all(
+        Array.from(selectedDrivers).map(async (driverUsername) => {
+          try {
+            const status = await checkDriverStatus(driverUsername);
+            return { username: driverUsername, status };
+          } catch (error) {
+            console.error(`Error checking status for ${driverUsername}:`, error);
+            return { username: driverUsername, status: null };
+          }
+        })
+      );
+
+      // Check for drivers with active routes or completed packages
+      const problematicDrivers = driverStatusChecks.filter(
+        check => check.status && (check.status.status === 'active' || check.status.status === 'completed' || check.status.status === 'completed_today')
+      );
+
+      if (problematicDrivers.length > 0) {
+        const driverMessages = problematicDrivers.map(driver => {
+          const status = driver.status;
+          return `${driver.username}: ${status.message}`;
+        });
+
+        Alert.alert(
+          'Driver Status Issue',
+          `The following drivers cannot be assigned new routes:\n\n${driverMessages.join('\n')}`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const data = await startJourney(Array.from(selectedDrivers));
       router.push({
         pathname: '/(tabs)/adminTruckTracker',
@@ -190,6 +298,21 @@ export default function StartJourneyScreen() {
       });
     } catch (error) {
       console.error('Error starting journey:', error);
+      
+      // Show specific error message for driver already has active route
+      if (error instanceof Error && error.message.includes('already has an active route')) {
+        Alert.alert(
+          'Route Assignment Error',
+          'One or more selected drivers already have active routes. Please check driver status before assigning new routes.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'An unexpected error occurred while starting the journey.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -252,6 +375,7 @@ export default function StartJourneyScreen() {
             isExpanded={expandedDrivers.has(driver.username)}
             onToggleExpand={() => toggleDriverExpansion(driver.username)}
             isDisabled={!selectedDrivers.has(driver.username) && selectedDrivers.size >= availableTrucks.length}
+            driverStatus={driverStatuses[driver.username]}
           />
         ))}
       </ScrollView>
@@ -318,6 +442,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  driverTextContainer: {
+    flexDirection: 'column',
   },
   driverName: {
     fontSize: 16,
@@ -441,5 +568,10 @@ const styles = StyleSheet.create({
   recommendedText: {
     fontSize: 14,
     flex: 1,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
   },
 }); 

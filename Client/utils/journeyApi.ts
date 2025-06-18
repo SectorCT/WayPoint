@@ -30,13 +30,29 @@ export const getUserByUsername = async (username: string): Promise<User> => {
   return user;
 };
 
-export const startJourney = async (drivers: string[]): Promise<void> => {
+export const startJourney = async (drivers: string[]): Promise<any> => {
   const body = {
     drivers: drivers,
   }
   const response = await makeAuthenticatedRequest('/delivery/route/', {
     method: "POST",
     body: JSON.stringify(body),
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to start journey');
+  }
+  
+  return response.json();
+};
+
+export const checkDriverStatus = async (username: string): Promise<any> => {
+  const response = await makeAuthenticatedRequest('/delivery/route/checkDriverStatus/', {
+    method: "POST",
+    body: JSON.stringify({
+      username: username
+    }),
   });
   return response.json();
 };
