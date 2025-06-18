@@ -11,8 +11,10 @@ import { getPackages } from "../../utils/journeyApi";
 import useStyles from "./styles/packageStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
+import HistoryButton from "@/components/basic/historyButton/historyButton";
 import PackageModule from "@components/listModule/packageModule/packageModule";
 import moment from "moment";
+import { Package } from "../../types/objects";
 
 export default function PackagesScreen() {
   const { theme } = useTheme();
@@ -48,7 +50,6 @@ export default function PackagesScreen() {
     const initialGroups: Record<string, Package[]> = {
       Today: [],
       Tomorrow: [],
-      Overdue: [],
     };
 
     const groupedPackages = packages.reduce((acc, pkg) => {
@@ -56,13 +57,12 @@ export default function PackagesScreen() {
         acc.Today.push(pkg);
       } else if (pkg.deliveryDate === tomorrow) {
         acc.Tomorrow.push(pkg);
-      } else if (moment(pkg.deliveryDate).isBefore(today)) {
-        acc.Overdue.push(pkg);
-      } else {
+      } else if (moment(pkg.deliveryDate).isAfter(tomorrow)) {
         const formattedDate = moment(pkg.deliveryDate).format("MMM D, YYYY");
         if (!acc[formattedDate]) acc[formattedDate] = [];
         acc[formattedDate].push(pkg);
       }
+      // Overdue packages are now excluded from main view
       return acc;
     }, initialGroups);
 
@@ -76,9 +76,8 @@ export default function PackagesScreen() {
     sections: [string, Package[]][],
   ): [string, Package[]][] => {
     const priorityOrder = {
-      Overdue: 0,
-      Today: 1,
-      Tomorrow: 2,
+      Today: 0,
+      Tomorrow: 1,
     };
 
     return sections.sort((a, b) => {
@@ -112,10 +111,16 @@ export default function PackagesScreen() {
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Add your packages</Text>
-            <AddButton
-              onPress={() => router.navigate("/addPackage")}
-              style={{ marginRight: 0 }}
-            />
+            <View style={styles.buttonContainer}>
+              <HistoryButton
+                onPress={() => router.navigate("/packagesHistory")}
+                style={{ marginRight: 10 }}
+              />
+              <AddButton
+                onPress={() => router.navigate("/addPackage")}
+                style={{ marginRight: 0 }}
+              />
+            </View>
           </View>
 
           {loading ? (
@@ -134,10 +139,7 @@ export default function PackagesScreen() {
               renderItem={({ item: [section, sectionPackages] }) => (
                 <>
                   <Text
-                    style={[
-                      styles.sectionHeader,
-                      section === "Overdue" ? styles.overdueHeader : {},
-                    ]}
+                    style={styles.sectionHeader}
                   >
                     {section}
                   </Text>

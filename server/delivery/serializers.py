@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Package, Truck
 from rest_framework import serializers
-from .models import Package, RouteAssignment
+from .models import Package, RouteAssignment, DeliveryHistory
 from datetime import date
 
 
@@ -111,3 +111,73 @@ class TruckSerializer(serializers.ModelSerializer):
             return truck
         except Exception as e:
             raise serializers.ValidationError(f"Error creating truck: {str(e)}")
+
+
+class DeliveryHistorySerializer(serializers.ModelSerializer):
+    driver_username = serializers.CharField(source='driver.username', read_only=True)
+    truck_license = serializers.CharField(source='truck.licensePlate', read_only=True)
+    date_formatted = serializers.SerializerMethodField()
+    duration_formatted = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DeliveryHistory
+        fields = [
+            'id', 'delivery_date', 'driver_username', 'truck_license',
+            'total_packages', 'total_kilos', 'duration_hours',
+            'date_formatted', 'duration_formatted'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_date_formatted(self, obj):
+        """Format date as '20th March' style"""
+        from datetime import datetime
+        date_obj = obj.delivery_date
+        day = date_obj.day
+        month = date_obj.strftime('%B')
+        
+        # Add ordinal suffix to day
+        if 4 <= day <= 20 or 24 <= day <= 30:
+            suffix = "th"
+        else:
+            suffix = ["st", "nd", "rd"][day % 10 - 1]
+        
+        return f"{day}{suffix} {month}"
+
+    def get_duration_formatted(self, obj):
+        """Format duration as '3:50' style (hours:minutes)"""
+        hours = int(obj.duration_hours)
+        minutes = int((obj.duration_hours - hours) * 60)
+        return f"{hours}:{minutes:02d}"
+
+
+class DeliveryHistorySummarySerializer(serializers.ModelSerializer):
+    date_formatted = serializers.SerializerMethodField()
+    duration_formatted = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DeliveryHistory
+        fields = [
+            'delivery_date', 'total_packages', 'total_kilos', 'duration_hours',
+            'date_formatted', 'duration_formatted'
+        ]
+
+    def get_date_formatted(self, obj):
+        """Format date as '20th March' style"""
+        from datetime import datetime
+        date_obj = obj.delivery_date
+        day = date_obj.day
+        month = date_obj.strftime('%B')
+        
+        # Add ordinal suffix to day
+        if 4 <= day <= 20 or 24 <= day <= 30:
+            suffix = "th"
+        else:
+            suffix = ["st", "nd", "rd"][day % 10 - 1]
+        
+        return f"{day}{suffix} {month}"
+
+    def get_duration_formatted(self, obj):
+        """Format duration as '3:50' style (hours:minutes)"""
+        hours = int(obj.duration_hours)
+        minutes = int((obj.duration_hours - hours) * 60)
+        return f"{hours}:{minutes:02d}"

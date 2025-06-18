@@ -62,3 +62,17 @@ export const makeAuthenticatedRequest = async <T = any>(
     throw error;
   }
 };
+
+export const getDeliveryHistory = async (days: number = 7): Promise<any[]> => {
+  try {
+    const response = await makeAuthenticatedRequest(`/delivery/history/?days=${days}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching delivery history:', error);
+    throw error;
+  }
+};
