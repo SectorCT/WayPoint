@@ -451,3 +451,77 @@ class dropAllRoutes(APIView):
         count, _ = RouteAssignment.objects.all().delete()
         package_count = Package.objects.all().update(status='pending')
         return Response({"detail": f"{count} route assignments dropped."}, status=status.HTTP_200_OK)
+
+class CheckDriverStatusView(APIView):
+    """
+    Check if a driver has an active route or has completed their packages for the day
+    """
+    def post(self, request):
+        try:
+            driver_username = request.data.get('username')
+            if not driver_username:
+                return Response({"error": "Driver username is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            driver = User.objects.get(username=driver_username)
+            
+            # Check if driver has an active route
+            active_route = RouteAssignment.objects.filter(driver=driver, isActive=True).first()
+            
+            if active_route:
+                # Check if all packages in the route have been processed (delivered or undelivered)
+                route_packages = [pkg.get('packageID') for pkg in active_route.packageSequence if pkg.get('packageID') != 'ADMIN']
+                delivered_packages = Package.objects.filter(
+                    packageID__in=route_packages,
+                    status='delivered'
+                ).count()
+                
+                undelivered_packages = Package.objects.filter(
+                    packageID__in=route_packages,
+                    status='undelivered'
+                ).count()
+                
+                total_packages = len(route_packages)
+                processed_packages = delivered_packages + undelivered_packages
+                
+                if processed_packages == total_packages and total_packages > 0:
+                    return Response({
+                        "status": "completed",
+                        "message": f"Driver {driver_username} has completed their route ({delivered_packages} delivered, {undelivered_packages} undelivered)",
+                        "delivered_packages": delivered_packages,
+                        "undelivered_packages": undelivered_packages,
+                        "total_packages": total_packages
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        "status": "active",
+                        "message": f"Driver {driver_username} has an active route with {delivered_packages} delivered, {undelivered_packages} undelivered, {total_packages - processed_packages} pending",
+                        "delivered_packages": delivered_packages,
+                        "undelivered_packages": undelivered_packages,
+                        "total_packages": total_packages,
+                        "pending_packages": total_packages - processed_packages
+                    }, status=status.HTTP_200_OK)
+            else:
+                # Check if driver has delivery history for today
+                today = timezone.now().date()
+                delivery_history = DeliveryHistory.objects.filter(
+                    driver=driver,
+                    delivery_date=today
+                ).first()
+                
+                if delivery_history:
+                    return Response({
+                        "status": "completed_today",
+                        "message": f"Driver {driver_username} has completed their deliveries for today",
+                        "delivered_packages": delivery_history.total_packages,
+                        "total_kilos": float(delivery_history.total_kilos)
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        "status": "available",
+                        "message": f"Driver {driver_username} is available for route assignment"
+                    }, status=status.HTTP_200_OK)
+                    
+        except User.DoesNotExist:
+            return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": f"Error checking driver status: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
