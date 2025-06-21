@@ -261,6 +261,16 @@ export default function StartJourneyScreen() {
   };
 
   const handleStartJourney = async () => {
+    // Check if there are any unassigned packages
+    const unassignedPackages = todaysPackages.filter(pkg => pkg.status === 'pending');
+    if (unassignedPackages.length === 0) {
+      Alert.alert(
+        'All Packages Assigned',
+        'All packages are already assigned to drivers.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     try {
       // Check driver status before starting journey
       const driverStatusChecks = await Promise.all(
