@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, Alert, Modal } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '@context/ThemeContext';
-import { getAvailableTrucks, getPackages, getEmployees, startJourney, checkDriverStatus } from '../utils/journeyApi';
+import { getAvailableTrucks, getPackages, getEmployees, startJourney, checkDriverStatus, assignTruckAndStartJourney } from '../utils/journeyApi';
 import { User, Truck, Package } from '../types/objects';
 import moment from 'moment';
 import { router } from 'expo-router';
@@ -181,6 +181,9 @@ export default function StartJourneyScreen() {
   const [employees, setEmployees] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [driverStatuses, setDriverStatuses] = useState<{[key: string]: any}>({});
+  const [plannedRoutes, setPlannedRoutes] = useState<any[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [currentDriverIndex, setCurrentDriverIndex] = useState(0);
 
   // Calculate recommended number of trucks and employees
   const recommendedCount = Math.ceil(todaysPackages.length / 30);
@@ -291,11 +294,11 @@ export default function StartJourneyScreen() {
         return;
       }
 
-      const data = await startJourney(Array.from(selectedDrivers));
-      router.push({
-        pathname: '/(tabs)/adminTruckTracker',
-        params: { routes: JSON.stringify(data) }
-      });
+      const routes = await startJourney(Array.from(selectedDrivers));
+      setPlannedRoutes(routes);
+      setCurrentDriverIndex(0);
+      setIsModalVisible(true);
+      
     } catch (error) {
       console.error('Error starting journey:', error);
       
@@ -316,8 +319,69 @@ export default function StartJourneyScreen() {
     }
   };
 
+  const handleAssignTruck = async (truckLicensePlate: string) => {
+    const driverUsername = Array.from(selectedDrivers)[currentDriverIndex];
+    const route = plannedRoutes.find(r => r.driverUsername === driverUsername);
+
+    if (!route) {
+        Alert.alert('Error', `Could not find a route for ${driverUsername}.`);
+        setIsModalVisible(false);
+        return;
+    }
+
+    try {
+        await assignTruckAndStartJourney(
+            driverUsername,
+            truckLicensePlate,
+            route.route.map((wp: any) => wp.package_info),
+            route.route.flatMap((wp: any) => wp.route)
+        );
+
+        setAvailableTrucks(availableTrucks.filter(t => t.licensePlate !== truckLicensePlate));
+
+        if (currentDriverIndex < selectedDrivers.size - 1) {
+            setCurrentDriverIndex(currentDriverIndex + 1);
+        } else {
+            setIsModalVisible(false);
+            router.push({
+                pathname: '/(tabs)/adminTruckTracker',
+            });
+        }
+    } catch (error) {
+        console.error('Error assigning truck:', error);
+        Alert.alert('Error', error instanceof Error ? error.message : 'An unexpected error occurred.');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.color.white }]}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+            <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}>
+                <Text style={[styles.modalTitle, { color: theme.color.black }]}>
+                    Assign Truck to {Array.from(selectedDrivers)[currentDriverIndex]}
+                </Text>
+                <ScrollView>
+                    {availableTrucks.map(truck => (
+                        <TouchableOpacity
+                            key={truck.licensePlate}
+                            style={[styles.truckItem, { borderBottomColor: theme.color.lightGrey }]}
+                            onPress={() => handleAssignTruck(truck.licensePlate)}
+                        >
+                            <Text style={{color: theme.color.black}}>{truck.licensePlate}</Text>
+                            <Text style={{color: theme.color.darkPrimary}}>{truck.kilogramCapacity} kg</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+        </View>
+      </Modal>
+
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.color.black }]}>Start Journey</Text>
         <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
@@ -573,5 +637,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  truckItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 }); 
