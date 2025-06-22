@@ -215,11 +215,15 @@ export default function TruckerViewScreen() {
       setLocations([defaultLocation]);
       
       // Get the return route from current position to default location
+      if (!user) {
+        throw new Error('User not found');
+      }
       const returnRoute = await getReturnRoute(
         position.latitude,
         position.longitude,
         defaultLocation.latitude,
-        defaultLocation.longitude
+        defaultLocation.longitude,
+        user.username
       );
       
       if (!returnRoute || !Array.isArray(returnRoute) || returnRoute.length === 0) {

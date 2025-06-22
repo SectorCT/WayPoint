@@ -9,11 +9,13 @@ export default function TruckModule({
   capacity,
   licensePlate,
   color,
+  isUsed,
   onDelete,
 }: {
   licensePlate: string;
   color: string;
   capacity: number;
+  isUsed: boolean;
   onDelete?: () => void;
 }) {
   const styles = useStyles();
@@ -61,6 +63,13 @@ export default function TruckModule({
         </View>
         <View style={styles.secondRow}>
           <Text style={styles.location}>{capacity} kilos of capacity</Text>
+          <Text style={{
+            color: isUsed ? '#FF0000' : '#00C853',
+            marginLeft: 10,
+            fontWeight: 'bold',
+          }}>
+            {isUsed ? 'Taken' : 'Available'}
+          </Text>
           <TouchableOpacity onPress={handleDelete} style={styles.trashOuter}>
             <View style={styles.trashIcon}>
               <Trash height={15} width={15} fill={theme.color.lightGrey} />

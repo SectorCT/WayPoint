@@ -104,7 +104,8 @@ export const getReturnRoute = async (
   currentLat: number,
   currentLng: number,
   defaultLat: number,
-  defaultLng: number
+  defaultLng: number,
+  username: string
 ): Promise<[number, number][]> => {
   try {
     const response = await makeAuthenticatedRequest('/delivery/route/return/', {
@@ -113,7 +114,8 @@ export const getReturnRoute = async (
         currentLat,
         currentLng,
         defaultLat,
-        defaultLng
+        defaultLng,
+        username
       }),
     });
     

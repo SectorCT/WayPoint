@@ -13,6 +13,7 @@ export interface Package {
 export interface Truck {
     kilogramCapacity: number;
     licensePlate: string;
+    isUsed: boolean;
 }
 
 export interface User {
