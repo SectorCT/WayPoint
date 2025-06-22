@@ -14,9 +14,12 @@ class createTruck(APIView):
     def post(self, request, *args, **kwargs):
         serializer = TruckSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"detail": "Truck created successfully."}, status=status.HTTP_201_CREATED)
-        
+            try:
+                serializer.save()
+                return Response({"detail": "Truck created successfully."}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                print("Truck creation error:", e)
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         error_messages = " ".join([" ".join(messages) for messages in serializer.errors.values()])
         return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -26,6 +29,15 @@ class getAllTrucks(APIView):
     
     def get(self, request, *args, **kwargs):
         trucks = Truck.objects.all()
+        serializer = TruckSerializer(trucks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class getAvailableTrucks(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
+    
+    def get(self, request, *args, **kwargs):
+        trucks = Truck.objects.filter(isUsed=False)
         serializer = TruckSerializer(trucks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

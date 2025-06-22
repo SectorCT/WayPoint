@@ -96,7 +96,7 @@ class PackageSerializer(serializers.ModelSerializer):
 class TruckSerializer(serializers.ModelSerializer):
     class Meta:
         model = Truck
-        fields = ['licensePlate', 'kilogramCapacity']
+        fields = ['licensePlate', 'kilogramCapacity', 'isUsed']
     
     def validate(self, data):
         # Add any custom validation if needed

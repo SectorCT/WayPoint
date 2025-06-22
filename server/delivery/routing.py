@@ -219,19 +219,19 @@ class RoutePlannerView(APIView):
 
         final_routes = connect_routes_and_assignments(clustered_data)
         
-        try:
-            create_routes_from_json(final_routes)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # try:
+        #     create_routes_from_json(final_routes)
+        # except ValueError as e:
+        #     return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        Package.objects.filter(
-            status="pending",
-            deliveryDate__lte=tomorrow
-        ).update(status="in_tranzit")
+        # Package.objects.filter(
+        #     status="pending",
+        #     deliveryDate__lte=tomorrow
+        # ).update(status="in_tranzit")
         
-        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
-        serializer = RouteAssignmentSerializer(routes_today, many=True)
-        return Response(serializer.data)
+        # routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
+        # serializer = RouteAssignmentSerializer(routes_today, many=True)
+        return Response(final_routes)
 
 class getRoutingBasedOnDriver(APIView):
     # Uncomment when authentication is set up.
@@ -433,6 +433,16 @@ class getReturnRoute(APIView):
                         delivery_history.undelivered_packages_list.set(undelivered_packages)
                         
                         print(f"Successfully created/updated delivery history: {delivery_history.id}")
+
+                        # Mark the truck as available again
+                        route.truck.isUsed = False
+                        route.truck.save()
+                        print(f"Truck {route.truck.licensePlate} marked as available.")
+
+                        # Mark the route as inactive
+                        route.isActive = False
+                        route.save()
+                        print(f"Route {route.routeID} marked as inactive.")
                         
                     except Exception as e:
                         # Log error but don't fail the return route request
@@ -454,7 +464,7 @@ class dropAllRoutes(APIView):
 
 class CheckDriverStatusView(APIView):
     """
-    Check if a driver has an active route or has completed their packages for the day
+    Check if a driver has an active route or has completed their packages for the day (for today only)
     """
     def post(self, request):
         try:
@@ -463,9 +473,10 @@ class CheckDriverStatusView(APIView):
                 return Response({"error": "Driver username is required"}, status=status.HTTP_400_BAD_REQUEST)
             
             driver = User.objects.get(username=driver_username)
+            today = timezone.now().date()
             
-            # Check if driver has an active route
-            active_route = RouteAssignment.objects.filter(driver=driver, isActive=True).first()
+            # Only consider active routes created today
+            active_route = RouteAssignment.objects.filter(driver=driver, isActive=True, dateOfCreation=today).first()
             
             if active_route:
                 # Check if all packages in the route have been processed (delivered or undelivered)
@@ -501,8 +512,7 @@ class CheckDriverStatusView(APIView):
                         "pending_packages": total_packages - processed_packages
                     }, status=status.HTTP_200_OK)
             else:
-                # Check if driver has delivery history for today
-                today = timezone.now().date()
+                # Only consider delivery history for today
                 delivery_history = DeliveryHistory.objects.filter(
                     driver=driver,
                     delivery_date=today
@@ -525,3 +535,46 @@ class CheckDriverStatusView(APIView):
             return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": f"Error checking driver status: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AssignTruckAndStartJourneyView(APIView):
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, IsManager]
+
+    def post(self, request, *args, **kwargs):
+        driver_username = request.data.get("driverUsername")
+        truck_license_plate = request.data.get("truckLicensePlate")
+        package_sequence = request.data.get("packageSequence")
+        map_route = request.data.get("mapRoute")
+        
+        if not all([driver_username, truck_license_plate, package_sequence, map_route]):
+            return Response({"error": "Missing required data."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            driver = User.objects.get(username=driver_username)
+        except User.DoesNotExist:
+            return Response({"error": f"Driver '{driver_username}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            truck = Truck.objects.get(licensePlate=truck_license_plate)
+        except Truck.DoesNotExist:
+            return Response({"error": f"Truck with license plate '{truck_license_plate}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        if truck.isUsed:
+            return Response({"error": f"Truck with license plate '{truck_license_plate}' is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        route_instance = RouteAssignment.objects.create_route(
+            driver=driver,
+            packageSequence=package_sequence,
+            mapRoute=map_route,
+            truck=truck,
+            dateOfCreation=timezone.now().date()
+        )
+
+        truck.isUsed = True
+        truck.save()
+
+        package_ids = [pkg.get("packageID") for pkg in package_sequence if pkg.get("packageID") != "ADMIN"]
+        Package.objects.filter(packageID__in=package_ids).update(status="in_transit")
+
+        serializer = RouteAssignmentSerializer(route_instance)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
