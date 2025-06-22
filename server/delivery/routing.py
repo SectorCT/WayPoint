@@ -454,7 +454,7 @@ class dropAllRoutes(APIView):
 
 class CheckDriverStatusView(APIView):
     """
-    Check if a driver has an active route or has completed their packages for the day
+    Check if a driver has an active route or has completed their packages for the day (for today only)
     """
     def post(self, request):
         try:
@@ -463,9 +463,10 @@ class CheckDriverStatusView(APIView):
                 return Response({"error": "Driver username is required"}, status=status.HTTP_400_BAD_REQUEST)
             
             driver = User.objects.get(username=driver_username)
+            today = timezone.now().date()
             
-            # Check if driver has an active route
-            active_route = RouteAssignment.objects.filter(driver=driver, isActive=True).first()
+            # Only consider active routes created today
+            active_route = RouteAssignment.objects.filter(driver=driver, isActive=True, dateOfCreation=today).first()
             
             if active_route:
                 # Check if all packages in the route have been processed (delivered or undelivered)
@@ -501,8 +502,7 @@ class CheckDriverStatusView(APIView):
                         "pending_packages": total_packages - processed_packages
                     }, status=status.HTTP_200_OK)
             else:
-                # Check if driver has delivery history for today
-                today = timezone.now().date()
+                # Only consider delivery history for today
                 delivery_history = DeliveryHistory.objects.filter(
                     driver=driver,
                     delivery_date=today
