@@ -1,7 +1,7 @@
 from django.urls import path
 from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered, mark_undelivered
-from .truck import createTruck, getAllTrucks, deleteTruck
-from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView
+from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
+from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
 
 urlpatterns = [
@@ -16,12 +16,14 @@ urlpatterns = [
     
     path('trucks/', getAllTrucks.as_view(), name='get-all-trucks'),
     path('trucks/create/', createTruck.as_view(), name='create-truck'),
+    path('trucks/available/', getAvailableTrucks.as_view(), name='get-available-trucks'),
     path('trucks/<str:licensePlate>/', deleteTruck.as_view(), name='delete-truck'),
 
 
 
     path('route/getByDriver/', getRoutingBasedOnDriver.as_view(), name='get-routing-based-on-driver'),
     path('route/', RoutePlannerView.as_view(), name = 'route'),
+    path('route/assign/', AssignTruckAndStartJourneyView.as_view(), name='assign-truck-and-start-journey'),
     path('route/all/', getAllRoutings.as_view(), name = 'all-routes'),
     path('route/finish/', finishRoute.as_view(), name = 'finish-route'),
     path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes'),

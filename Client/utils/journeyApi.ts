@@ -47,6 +47,31 @@ export const startJourney = async (drivers: string[]): Promise<any> => {
   return response.json();
 };
 
+export const assignTruckAndStartJourney = async (
+  driverUsername: string,
+  truckLicensePlate: string,
+  packageSequence: any,
+  mapRoute: any
+): Promise<any> => {
+  const body = {
+    driverUsername,
+    truckLicensePlate,
+    packageSequence,
+    mapRoute,
+  };
+  const response = await makeAuthenticatedRequest('/delivery/route/assign/', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to assign truck and start journey');
+  }
+
+  return response.json();
+};
+
 export const checkDriverStatus = async (username: string): Promise<any> => {
   const response = await makeAuthenticatedRequest('/delivery/route/checkDriverStatus/', {
     method: "POST",
@@ -79,7 +104,8 @@ export const getReturnRoute = async (
   currentLat: number,
   currentLng: number,
   defaultLat: number,
-  defaultLng: number
+  defaultLng: number,
+  username: string
 ): Promise<[number, number][]> => {
   try {
     const response = await makeAuthenticatedRequest('/delivery/route/return/', {
@@ -88,7 +114,8 @@ export const getReturnRoute = async (
         currentLat,
         currentLng,
         defaultLat,
-        defaultLng
+        defaultLng,
+        username
       }),
     });
     
