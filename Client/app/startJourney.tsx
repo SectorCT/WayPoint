@@ -373,6 +373,10 @@ export default function StartJourneyScreen() {
       >
         <View style={styles.modalContainer}>
             <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}>
+                <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.backButton}>
+                  <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+                  <Text style={{color: theme.color.darkPrimary, marginLeft: 8}}>Back</Text>
+                </TouchableOpacity>
                 <Text style={[styles.modalTitle, { color: theme.color.black }]}>
                     Assign Truck to {Array.from(selectedDrivers)[currentDriverIndex]}
                 </Text>
@@ -670,5 +674,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
 }); 

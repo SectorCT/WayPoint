@@ -433,6 +433,16 @@ class getReturnRoute(APIView):
                         delivery_history.undelivered_packages_list.set(undelivered_packages)
                         
                         print(f"Successfully created/updated delivery history: {delivery_history.id}")
+
+                        # Mark the truck as available again
+                        route.truck.isUsed = False
+                        route.truck.save()
+                        print(f"Truck {route.truck.licensePlate} marked as available.")
+
+                        # Mark the route as inactive
+                        route.isActive = False
+                        route.save()
+                        print(f"Route {route.routeID} marked as inactive.")
                         
                     except Exception as e:
                         # Log error but don't fail the return route request

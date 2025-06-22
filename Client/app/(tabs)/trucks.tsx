@@ -59,6 +59,7 @@ export default function TrucksScreen() {
                   licensePlate={item.licensePlate}
                   color={generateColorFromString(item.licensePlate)}
                   capacity={item.kilogramCapacity}
+                  isUsed={item.isUsed}
                   onDelete={() => {
                     // Refresh the trucks list after deletion
                     fetchPackages();
