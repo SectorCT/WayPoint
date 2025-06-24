@@ -203,7 +203,7 @@ export default function StartJourneyScreen() {
         //filter packages for today and everything older than today
         const filteredPackages = packages.filter((pkg: Package) => {
           const deliveryDate = moment(pkg.deliveryDate);
-          return deliveryDate.isSame(moment(), 'day') || deliveryDate.isBefore(moment(), 'day');
+          return deliveryDate.isSame(moment(), 'day');
         });
         setAvailableTrucks(trucks);
         setTodaysPackages(filteredPackages);
