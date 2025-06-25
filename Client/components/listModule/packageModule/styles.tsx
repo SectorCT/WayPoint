@@ -73,5 +73,14 @@ export default function useStyles() {
     phoneIcon: {
       margin: 0,
     },
+    statusRow: {
+      marginBottom: 2,
+      marginLeft: 4,
+    },
+    statusText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#4A90E2', // blue for visibility, adjust as needed
+    },
   });
 }

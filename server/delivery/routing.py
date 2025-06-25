@@ -30,6 +30,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsManager
 import json
 from django.db.models import Case, When, IntegerField, Sum
+from rest_framework import serializers
 
 User = get_user_model()
 
@@ -562,13 +563,18 @@ class AssignTruckAndStartJourneyView(APIView):
         if truck.isUsed:
             return Response({"error": f"Truck with license plate '{truck_license_plate}' is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        route_instance = RouteAssignment.objects.create_route(
-            driver=driver,
-            packageSequence=package_sequence,
-            mapRoute=map_route,
-            truck=truck,
-            dateOfCreation=timezone.now().date()
-        )
+        try:
+            route_instance = RouteAssignment.objects.create_route(
+                driver=driver,
+                packageSequence=package_sequence,
+                mapRoute=map_route,
+                truck=truck,
+                dateOfCreation=timezone.now().date()
+            )
+        except serializers.ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         truck.isUsed = True
         truck.save()
