@@ -304,11 +304,14 @@ export default function StartJourneyScreen() {
         return;
       }
 
-      const routes = await startJourney(Array.from(selectedDrivers));
-      setPlannedRoutes(routes);
-      setCurrentDriverIndex(0);
-      setIsModalVisible(true);
-      
+      // Instead of modal, navigate to AssignTrucksScreen
+      router.push({
+        pathname: '/(tabs)/assignTrucks',
+        params: {
+          selectedDrivers: JSON.stringify(employees.filter(e => selectedDrivers.has(e.username))),
+          availableTrucks: JSON.stringify(availableTrucks),
+        },
+      });
     } catch (error) {
       console.error('Error starting journey:', error);
       
