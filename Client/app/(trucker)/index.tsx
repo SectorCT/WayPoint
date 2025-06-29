@@ -83,7 +83,7 @@ const calculateDistance = (coord1: Coordinate, coord2: Coordinate): number => {
   return R * c;
 };
 
-// Function to find the closest point on a route to current position
+// Function to find the closest route point to current position
 const findClosestRoutePoint = (currentPos: Coordinate, routePoints: Coordinate[]): { distance: number, index: number } => {
   let minDistance = Infinity;
   let closestIndex = 0;
@@ -181,8 +181,82 @@ export default function TruckerViewScreen() {
   // Test mode state
   const [isTestModeVisible, setIsTestModeVisible] = useState(false);
   
-  const routeColor = generateColorFromValue(currentZone?.user || '');
+  // Route view mode state
+  const [showFullJourney, setShowFullJourney] = useState(true);
   
+  const routeColor = generateColorFromValue(currentZone?.user || '');
+
+  // Function to get the next undelivered package
+  const getNextDeliveryPoint = (): RouteLocation | null => {
+    const undeliveredLocations = locations.filter(
+      (location: RouteLocation) => location.package_info.status !== 'delivered' && 
+                  location.package_info.status !== 'undelivered' && 
+                  location.package_info.packageID !== "ADMIN"
+    );
+    
+    if (undeliveredLocations.length === 0) return null;
+    
+    // If we have current position, find the closest undelivered package
+    if (position.latitude && position.longitude) {
+      const currentPos: Coordinate = {
+        latitude: position.latitude,
+        longitude: position.longitude
+      };
+      
+      let closestLocation = undeliveredLocations[0];
+      let minDistance = Infinity;
+      
+      undeliveredLocations.forEach((location: RouteLocation) => {
+        const distance = calculateDistance(currentPos, location);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestLocation = location;
+        }
+      });
+      
+      return closestLocation;
+    }
+    
+    // Otherwise return the first undelivered package
+    return undeliveredLocations[0];
+  };
+
+  // Function to get route points to next delivery
+  const getRouteToNextDelivery = (): Coordinate[] => {
+    if (!position.latitude || !position.longitude || !routePoints.length) {
+      return routePoints;
+    }
+
+    const nextDelivery = getNextDeliveryPoint();
+    if (!nextDelivery) {
+      return routePoints; // Return full route if no next delivery
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    // Find the closest point on the current route to our position
+    const { index: currentRouteIndex } = findClosestRoutePoint(currentPos, routePoints);
+    
+    // Find the closest point on the route to the next delivery
+    const nextDeliveryPos: Coordinate = {
+      latitude: nextDelivery.latitude,
+      longitude: nextDelivery.longitude
+    };
+    const { index: deliveryRouteIndex } = findClosestRoutePoint(nextDeliveryPos, routePoints);
+
+    // Get the route segment from current position to next delivery
+    const startIndex = Math.min(currentRouteIndex, deliveryRouteIndex);
+    const endIndex = Math.max(currentRouteIndex, deliveryRouteIndex);
+    
+    // Add current position at the beginning and next delivery at the end
+    const routeSegment = routePoints.slice(startIndex, endIndex + 1);
+    
+    return [currentPos, ...routeSegment, nextDeliveryPos];
+  };
+
   // Function to check for route deviation and recalculate if necessary
   const checkRouteDeviation = async () => {
     if (!position.latitude || !position.longitude || !routePoints.length || isRecalculating || isReturnMode) {
@@ -694,7 +768,7 @@ export default function TruckerViewScreen() {
         >
           {!isReturnMode && (
             <Polyline
-              coordinates={routePoints}
+              coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
               strokeColor={routeColor}
               strokeWidth={3}
             />
@@ -784,6 +858,57 @@ export default function TruckerViewScreen() {
           />
         </TouchableOpacity>
 
+        {/* Route View Mode Switch */}
+        <View style={[styles.routeModeSwitch, { backgroundColor: theme.color.white }]}>
+          <TouchableOpacity 
+            style={[
+              styles.switchOption, 
+              styles.switchOptionLeft,
+              { 
+                backgroundColor: showFullJourney ? theme.color.darkPrimary : 'transparent',
+                borderColor: theme.color.darkPrimary
+              }
+            ]}
+            onPress={() => setShowFullJourney(true)}
+          >
+            <MaterialIcons 
+              name="timeline" 
+              size={14} 
+              color={showFullJourney ? "#FFFFFF" : theme.color.darkPrimary} 
+            />
+            <Text style={[
+              styles.switchText, 
+              { color: showFullJourney ? "#FFFFFF" : theme.color.darkPrimary }
+            ]}>
+              Full
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[
+              styles.switchOption, 
+              styles.switchOptionRight,
+              { 
+                backgroundColor: !showFullJourney ? theme.color.darkPrimary : 'transparent',
+                borderColor: theme.color.darkPrimary
+              }
+            ]}
+            onPress={() => setShowFullJourney(false)}
+          >
+            <MaterialIcons 
+              name="navigation" 
+              size={14} 
+              color={!showFullJourney ? "#FFFFFF" : theme.color.darkPrimary} 
+            />
+            <Text style={[
+              styles.switchText, 
+              { color: !showFullJourney ? "#FFFFFF" : theme.color.darkPrimary }
+            ]}>
+              Next
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Test mode button */}
         <TouchableOpacity 
           style={[styles.testButton, { 
@@ -803,6 +928,16 @@ export default function TruckerViewScreen() {
           <View style={[styles.recalculationIndicator, { backgroundColor: theme.color.darkPrimary }]}>
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.recalculationText}>Recalculating Route...</Text>
+          </View>
+        )}
+
+        {/* Route Mode Indicator */}
+        {!showFullJourney && !isReturnMode && (
+          <View style={[styles.routeModeIndicator, { backgroundColor: '#666666' }]}>
+            <MaterialIcons name="navigation" size={14} color="#FFFFFF" />
+            <Text style={styles.routeModeIndicatorText}>
+              {getNextDeliveryPoint() ? `Next: ${getNextDeliveryPoint()?.package_info.recipient}` : 'No more deliveries'}
+            </Text>
           </View>
         )}
 
@@ -1095,5 +1230,65 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  routeModeSwitch: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    width: 120,
+    height: 40,
+    borderRadius: 20,
+    flexDirection: 'row',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  switchOption: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  switchOptionLeft: {
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderRightWidth: 0,
+  },
+  switchOptionRight: {
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderLeftWidth: 0,
+  },
+  switchText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  routeModeIndicator: {
+    position: 'absolute',
+    top: 50,
+    left: 100,
+    right: 100,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  routeModeIndicatorText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 }); 
