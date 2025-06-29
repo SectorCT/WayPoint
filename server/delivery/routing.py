@@ -584,3 +584,90 @@ class AssignTruckAndStartJourneyView(APIView):
 
         serializer = RouteAssignmentSerializer(route_instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class recalculateRoute(APIView):
+    """
+    Recalculates the route for a driver from their current position to remaining delivery points.
+    This is called when the driver deviates significantly from the planned route.
+    """
+    def post(self, request):
+        try:
+            driver_username = request.data.get('username')
+            current_lat = float(request.data.get('currentLat'))
+            current_lng = float(request.data.get('currentLng'))
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid coordinates or username provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            driver = User.objects.get(username=driver_username)
+            route = RouteAssignment.objects.get(driver=driver, isActive=True)
+        except User.DoesNotExist:
+            return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
+        except RouteAssignment.DoesNotExist:
+            return Response({"error": "No active route found for this driver"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # Get remaining undelivered packages (excluding ADMIN package)
+            remaining_packages = [
+                pkg for pkg in route.packageSequence 
+                if pkg.get('packageID') != 'ADMIN' and 
+                pkg.get('status') not in ['delivered', 'undelivered']
+            ]
+
+            if not remaining_packages:
+                return Response({"error": "No remaining packages to deliver"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create OSRM input with current position as starting point
+            osrm_input = {
+                "locations": [
+                    {
+                        "latitude": current_lat,
+                        "longitude": current_lng,
+                        "name": "Current Position"
+                    }
+                ]
+            }
+
+            # Add remaining package locations
+            for pkg in remaining_packages:
+                osrm_input["locations"].append({
+                    "latitude": pkg.get('latitude'),
+                    "longitude": pkg.get('longitude'),
+                    "name": pkg.get('address', ''),
+                    "package_info": pkg
+                })
+
+            # Add the ADMIN package (factory) as the final destination
+            admin_package = next((pkg for pkg in route.packageSequence if pkg.get('packageID') == 'ADMIN'), None)
+            if admin_package:
+                osrm_input["locations"].append({
+                    "latitude": admin_package.get('latitude'),
+                    "longitude": admin_package.get('longitude'),
+                    "name": admin_package.get('address', 'Factory'),
+                    "package_info": admin_package
+                })
+
+            # Get new route from OSRM
+            osrm_response = _get_trip_service(osrm_input)
+            
+            if "error" in osrm_response:
+                return Response({"error": "Failed to get route from OSRM"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Extract route coordinates
+            if "trips" in osrm_response and osrm_response["trips"]:
+                route_coordinates = osrm_response["trips"][0]["geometry"]["coordinates"]
+                
+                # Update the route in the database
+                route.mapRoute = route_coordinates
+                route.save()
+                
+                return Response({
+                    "route": route_coordinates,
+                    "message": "Route recalculated successfully",
+                    "remaining_packages": len(remaining_packages)
+                }, status=status.HTTP_200_OK)
+            
+            return Response({"error": "No route found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            return Response({"error": f"Error recalculating route: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

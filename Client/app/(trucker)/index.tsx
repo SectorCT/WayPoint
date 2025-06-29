@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
+import RouteDeviationTester from "../../components/RouteDeviationTester";
 
 interface Coordinate {
   latitude: number;
@@ -60,6 +61,43 @@ interface Theme {
 }
 
 const DRAWER_WIDTH = 300;
+
+// Constants for deviation detection
+const DEVIATION_THRESHOLD_METERS = 100; // 100 meters from route
+const CHECK_INTERVAL_MS = 10000; // Check every 10 seconds
+const MAX_DEVIATION_METERS = 500; // 500 meters - trigger recalculation
+
+// Function to calculate distance between two coordinates in meters
+const calculateDistance = (coord1: Coordinate, coord2: Coordinate): number => {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = coord1.latitude * Math.PI / 180;
+  const φ2 = coord2.latitude * Math.PI / 180;
+  const Δφ = (coord2.latitude - coord1.latitude) * Math.PI / 180;
+  const Δλ = (coord2.longitude - coord1.longitude) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+};
+
+// Function to find the closest point on a route to current position
+const findClosestRoutePoint = (currentPos: Coordinate, routePoints: Coordinate[]): { distance: number, index: number } => {
+  let minDistance = Infinity;
+  let closestIndex = 0;
+
+  routePoints.forEach((point, index) => {
+    const distance = calculateDistance(currentPos, point);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestIndex = index;
+    }
+  });
+
+  return { distance: minDistance, index: closestIndex };
+};
 
 // Function to generate a color based on a value
 const generateColorFromValue = (value: string): string => {
@@ -134,8 +172,126 @@ export default function TruckerViewScreen() {
   const [routePoints, setRoutePoints] = useState<Coordinate[]>([]);
   const [isReturnMode, setIsReturnMode] = useState(false);
   
+  // Deviation detection state
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [lastDeviationCheck, setLastDeviationCheck] = useState<number>(0);
+  const [deviationAlertShown, setDeviationAlertShown] = useState(false);
+  const deviationCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Test mode state
+  const [isTestModeVisible, setIsTestModeVisible] = useState(false);
+  
   const routeColor = generateColorFromValue(currentZone?.user || '');
   
+  // Function to check for route deviation and recalculate if necessary
+  const checkRouteDeviation = async () => {
+    if (!position.latitude || !position.longitude || !routePoints.length || isRecalculating || isReturnMode) {
+      return;
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    const { distance } = findClosestRoutePoint(currentPos, routePoints);
+    
+    console.log(`Distance from route: ${distance.toFixed(2)} meters`);
+
+    // If deviation is significant, recalculate route
+    if (distance > MAX_DEVIATION_METERS) {
+      if (!deviationAlertShown) {
+        Alert.alert(
+          "Route Deviation Detected",
+          `You are ${distance.toFixed(0)} meters away from your planned route. Recalculating route...`,
+          [{ text: "OK" }]
+        );
+        setDeviationAlertShown(true);
+      }
+
+      try {
+        setIsRecalculating(true);
+        console.log("Recalculating route due to deviation...");
+        
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        const result = await recalculateRoute(
+          user.username,
+          position.latitude,
+          position.longitude
+        );
+
+        // Update route points with new route
+        const newRoutePoints = result.route.map(point => ({
+          latitude: point[1], // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        }));
+
+        setRoutePoints(newRoutePoints);
+        
+        // Refresh route data
+        const updatedRouteData = await getRoute(user.username);
+        setCurrentZone(updatedRouteData);
+
+        Alert.alert(
+          "Route Updated",
+          `New route calculated with ${result.remaining_packages} remaining deliveries.`,
+          [{ text: "OK" }]
+        );
+
+        setDeviationAlertShown(false);
+      } catch (error) {
+        console.error('Error recalculating route:', error);
+        Alert.alert(
+          "Route Recalculation Failed",
+          "Unable to recalculate route. Please continue following the original route.",
+          [{ text: "OK" }]
+        );
+        setDeviationAlertShown(false);
+      } finally {
+        setIsRecalculating(false);
+      }
+    } else if (distance > DEVIATION_THRESHOLD_METERS && !deviationAlertShown) {
+      // Show warning for minor deviation
+      Alert.alert(
+        "Route Deviation Warning",
+        `You are ${distance.toFixed(0)} meters away from your planned route. Please return to the route.`,
+        [{ text: "OK" }]
+      );
+      setDeviationAlertShown(true);
+    } else if (distance <= DEVIATION_THRESHOLD_METERS) {
+      // Reset alert flag when back on route
+      setDeviationAlertShown(false);
+    }
+  };
+
+  // Set up periodic deviation checking
+  useEffect(() => {
+    if (routePoints.length > 0 && !isReturnMode) {
+      // Clear any existing interval
+      if (deviationCheckIntervalRef.current) {
+        clearInterval(deviationCheckIntervalRef.current);
+      }
+
+      // Start checking for deviations
+      deviationCheckIntervalRef.current = setInterval(() => {
+        checkRouteDeviation();
+      }, CHECK_INTERVAL_MS);
+
+      // Initial check
+      checkRouteDeviation();
+    }
+
+    // Cleanup interval on unmount or when route changes
+    return () => {
+      if (deviationCheckIntervalRef.current) {
+        clearInterval(deviationCheckIntervalRef.current);
+      }
+    };
+  }, [routePoints, position.latitude, position.longitude, isReturnMode]);
+
   useEffect(() => {
     const fetchRoute = async () => {
       try {
@@ -627,6 +783,34 @@ export default function TruckerViewScreen() {
             color="#FFFFFF" 
           />
         </TouchableOpacity>
+
+        {/* Test mode button */}
+        <TouchableOpacity 
+          style={[styles.testButton, { 
+            backgroundColor: '#FF6B35',
+          }]} 
+          onPress={() => setIsTestModeVisible(true)}
+        >
+          <MaterialIcons 
+            name="science"
+            size={24} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+
+        {/* Route recalculation indicator */}
+        {isRecalculating && (
+          <View style={[styles.recalculationIndicator, { backgroundColor: theme.color.darkPrimary }]}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.recalculationText}>Recalculating Route...</Text>
+          </View>
+        )}
+
+        {/* Route Deviation Tester */}
+        <RouteDeviationTester 
+          isVisible={isTestModeVisible}
+          onClose={() => setIsTestModeVisible(false)}
+        />
       </View>
     </DrawerLayout>
   );
@@ -882,5 +1066,34 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
+  },
+  recalculationIndicator: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recalculationText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  testButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 }); 
