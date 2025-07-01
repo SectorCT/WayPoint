@@ -8,7 +8,7 @@ import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
-import RouteDeviationTester from "../../components/RouteDeviationTester";
+import House from "@assets/icons/house.svg";
 
 interface Coordinate {
   latitude: number;
@@ -124,13 +124,19 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
-  <View style={[
-    styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered,
-    isUndelivered && styles.markerContainerUndelivered
-  ]}>
-    {isDelivered ? (
+const CustomMarker = ({ number, isDelivered, isUndelivered, isWarehouse }: { number: number, isDelivered: boolean, isUndelivered: boolean, isWarehouse?: boolean }) => (
+  <View style={
+    isWarehouse
+      ? undefined
+      : [
+          styles.markerContainer,
+          isDelivered && styles.markerContainerDelivered,
+          isUndelivered && styles.markerContainerUndelivered
+        ]
+  }>
+    {isWarehouse ? (
+      <House width={24} height={24} />
+    ) : isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
     ) : isUndelivered ? (
       <MaterialIcons name="close" size={20} color="#FF4136" />
@@ -183,6 +189,9 @@ export default function TruckerViewScreen() {
   
   // Route view mode state
   const [showFullJourney, setShowFullJourney] = useState(true);
+  
+  // Add state to track if camera should follow heading
+  const [isFollowingHeading, setIsFollowingHeading] = useState(false);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
 
@@ -270,8 +279,6 @@ export default function TruckerViewScreen() {
 
     const { distance } = findClosestRoutePoint(currentPos, routePoints);
     
-    console.log(`Distance from route: ${distance.toFixed(2)} meters`);
-
     // If deviation is significant, recalculate route
     if (distance > MAX_DEVIATION_METERS) {
       if (!deviationAlertShown) {
@@ -285,7 +292,6 @@ export default function TruckerViewScreen() {
 
       try {
         setIsRecalculating(true);
-        console.log("Recalculating route due to deviation...");
         
         if (!user) {
           throw new Error('User not found');
@@ -547,18 +553,27 @@ export default function TruckerViewScreen() {
           longitude: position.longitude,
         },
         heading: position.heading || 0,
-        pitch: 0,
+        pitch: 60, // Tilt the camera to show more in front
         zoom: 17,
       }, { duration: 200 });
+      setIsFollowingHeading(true); // Now stays true forever after first click
     }
   };
 
   useEffect(() => {
-    // Initial centering on user's position when it becomes available
-    if (position.latitude && position.longitude) {
-      handleRecenter();
+    if (!isFollowingHeading) return;
+    if (mapRef.current && position.latitude && position.longitude && typeof position.heading === 'number') {
+      mapRef.current.animateCamera({
+        center: {
+          latitude: position.latitude,
+          longitude: position.longitude,
+        },
+        heading: position.heading,
+        pitch: 60,
+        zoom: 17,
+      }, { duration: 200 });
     }
-  }, []);
+  }, [isFollowingHeading, position.heading, position.latitude, position.longitude]);
 
   const handleDelivery = async (packageId: string) => {
     try {
@@ -765,6 +780,7 @@ export default function TruckerViewScreen() {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           } : initialRegion}
+          onPanDrag={() => setIsFollowingHeading(false)}
         >
           {!isReturnMode && (
             <Polyline
@@ -794,6 +810,7 @@ export default function TruckerViewScreen() {
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
                 isUndelivered={location.package_info.status === 'undelivered'}
+                isWarehouse={location.package_info.packageID === "ADMIN"}
               />
             </Marker>
           ))}
@@ -810,6 +827,7 @@ export default function TruckerViewScreen() {
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
                 isUndelivered={location.package_info.status === 'undelivered'}
+                isWarehouse={true}
               />
             </Marker>
           ))}
@@ -909,20 +927,6 @@ export default function TruckerViewScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Test mode button */}
-        <TouchableOpacity 
-          style={[styles.testButton, { 
-            backgroundColor: '#FF6B35',
-          }]} 
-          onPress={() => setIsTestModeVisible(true)}
-        >
-          <MaterialIcons 
-            name="science"
-            size={24} 
-            color="#FFFFFF" 
-          />
-        </TouchableOpacity>
-
         {/* Route recalculation indicator */}
         {isRecalculating && (
           <View style={[styles.recalculationIndicator, { backgroundColor: theme.color.darkPrimary }]}>
@@ -940,12 +944,6 @@ export default function TruckerViewScreen() {
             </Text>
           </View>
         )}
-
-        {/* Route Deviation Tester */}
-        <RouteDeviationTester 
-          isVisible={isTestModeVisible}
-          onClose={() => setIsTestModeVisible(false)}
-        />
       </View>
     </DrawerLayout>
   );
@@ -1215,21 +1213,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  testButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   routeModeSwitch: {
     position: 'absolute',
