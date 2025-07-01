@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
+import House from "@assets/icons/house.svg";
 
 interface Coordinate {
   latitude: number;
@@ -61,6 +62,43 @@ interface Theme {
 
 const DRAWER_WIDTH = 300;
 
+// Constants for deviation detection
+const DEVIATION_THRESHOLD_METERS = 100; // 100 meters from route
+const CHECK_INTERVAL_MS = 10000; // Check every 10 seconds
+const MAX_DEVIATION_METERS = 500; // 500 meters - trigger recalculation
+
+// Function to calculate distance between two coordinates in meters
+const calculateDistance = (coord1: Coordinate, coord2: Coordinate): number => {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = coord1.latitude * Math.PI / 180;
+  const φ2 = coord2.latitude * Math.PI / 180;
+  const Δφ = (coord2.latitude - coord1.latitude) * Math.PI / 180;
+  const Δλ = (coord2.longitude - coord1.longitude) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+};
+
+// Function to find the closest route point to current position
+const findClosestRoutePoint = (currentPos: Coordinate, routePoints: Coordinate[]): { distance: number, index: number } => {
+  let minDistance = Infinity;
+  let closestIndex = 0;
+
+  routePoints.forEach((point, index) => {
+    const distance = calculateDistance(currentPos, point);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestIndex = index;
+    }
+  });
+
+  return { distance: minDistance, index: closestIndex };
+};
+
 // Function to generate a color based on a value
 const generateColorFromValue = (value: string): string => {
   // Predefined distinct colors that are bright and easily distinguishable
@@ -86,13 +124,19 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
-  <View style={[
-    styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered,
-    isUndelivered && styles.markerContainerUndelivered
-  ]}>
-    {isDelivered ? (
+const CustomMarker = ({ number, isDelivered, isUndelivered, isWarehouse }: { number: number, isDelivered: boolean, isUndelivered: boolean, isWarehouse?: boolean }) => (
+  <View style={
+    isWarehouse
+      ? undefined
+      : [
+          styles.markerContainer,
+          isDelivered && styles.markerContainerDelivered,
+          isUndelivered && styles.markerContainerUndelivered
+        ]
+  }>
+    {isWarehouse ? (
+      <House width={24} height={24} />
+    ) : isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
     ) : isUndelivered ? (
       <MaterialIcons name="close" size={20} color="#FF4136" />
@@ -134,8 +178,200 @@ export default function TruckerViewScreen() {
   const [routePoints, setRoutePoints] = useState<Coordinate[]>([]);
   const [isReturnMode, setIsReturnMode] = useState(false);
   
-  const routeColor = generateColorFromValue(currentZone?.user || '');
+  // Deviation detection state
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [lastDeviationCheck, setLastDeviationCheck] = useState<number>(0);
+  const [deviationAlertShown, setDeviationAlertShown] = useState(false);
+  const deviationCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
+  // Test mode state
+  const [isTestModeVisible, setIsTestModeVisible] = useState(false);
+  
+  // Route view mode state
+  const [showFullJourney, setShowFullJourney] = useState(true);
+  
+  // Add state to track if camera should follow heading
+  const [isFollowingHeading, setIsFollowingHeading] = useState(false);
+  
+  const routeColor = generateColorFromValue(currentZone?.user || '');
+
+  // Function to get the next undelivered package
+  const getNextDeliveryPoint = (): RouteLocation | null => {
+    const undeliveredLocations = locations.filter(
+      (location: RouteLocation) => location.package_info.status !== 'delivered' && 
+                  location.package_info.status !== 'undelivered' && 
+                  location.package_info.packageID !== "ADMIN"
+    );
+    
+    if (undeliveredLocations.length === 0) return null;
+    
+    // If we have current position, find the closest undelivered package
+    if (position.latitude && position.longitude) {
+      const currentPos: Coordinate = {
+        latitude: position.latitude,
+        longitude: position.longitude
+      };
+      
+      let closestLocation = undeliveredLocations[0];
+      let minDistance = Infinity;
+      
+      undeliveredLocations.forEach((location: RouteLocation) => {
+        const distance = calculateDistance(currentPos, location);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestLocation = location;
+        }
+      });
+      
+      return closestLocation;
+    }
+    
+    // Otherwise return the first undelivered package
+    return undeliveredLocations[0];
+  };
+
+  // Function to get route points to next delivery
+  const getRouteToNextDelivery = (): Coordinate[] => {
+    if (!position.latitude || !position.longitude || !routePoints.length) {
+      return routePoints;
+    }
+
+    const nextDelivery = getNextDeliveryPoint();
+    if (!nextDelivery) {
+      return routePoints; // Return full route if no next delivery
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    // Find the closest point on the current route to our position
+    const { index: currentRouteIndex } = findClosestRoutePoint(currentPos, routePoints);
+    
+    // Find the closest point on the route to the next delivery
+    const nextDeliveryPos: Coordinate = {
+      latitude: nextDelivery.latitude,
+      longitude: nextDelivery.longitude
+    };
+    const { index: deliveryRouteIndex } = findClosestRoutePoint(nextDeliveryPos, routePoints);
+
+    // Get the route segment from current position to next delivery
+    const startIndex = Math.min(currentRouteIndex, deliveryRouteIndex);
+    const endIndex = Math.max(currentRouteIndex, deliveryRouteIndex);
+    
+    // Add current position at the beginning and next delivery at the end
+    const routeSegment = routePoints.slice(startIndex, endIndex + 1);
+    
+    return [currentPos, ...routeSegment, nextDeliveryPos];
+  };
+
+  // Function to check for route deviation and recalculate if necessary
+  const checkRouteDeviation = async () => {
+    if (!position.latitude || !position.longitude || !routePoints.length || isRecalculating || isReturnMode) {
+      return;
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    const { distance } = findClosestRoutePoint(currentPos, routePoints);
+    
+    // If deviation is significant, recalculate route
+    if (distance > MAX_DEVIATION_METERS) {
+      if (!deviationAlertShown) {
+        Alert.alert(
+          "Route Deviation Detected",
+          `You are ${distance.toFixed(0)} meters away from your planned route. Recalculating route...`,
+          [{ text: "OK" }]
+        );
+        setDeviationAlertShown(true);
+      }
+
+      try {
+        setIsRecalculating(true);
+        
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        const result = await recalculateRoute(
+          user.username,
+          position.latitude,
+          position.longitude
+        );
+
+        // Update route points with new route
+        const newRoutePoints = result.route.map(point => ({
+          latitude: point[1], // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        }));
+
+        setRoutePoints(newRoutePoints);
+        
+        // Refresh route data
+        const updatedRouteData = await getRoute(user.username);
+        setCurrentZone(updatedRouteData);
+
+        Alert.alert(
+          "Route Updated",
+          `New route calculated with ${result.remaining_packages} remaining deliveries.`,
+          [{ text: "OK" }]
+        );
+
+        setDeviationAlertShown(false);
+      } catch (error) {
+        console.error('Error recalculating route:', error);
+        Alert.alert(
+          "Route Recalculation Failed",
+          "Unable to recalculate route. Please continue following the original route.",
+          [{ text: "OK" }]
+        );
+        setDeviationAlertShown(false);
+      } finally {
+        setIsRecalculating(false);
+      }
+    } else if (distance > DEVIATION_THRESHOLD_METERS && !deviationAlertShown) {
+      // Show warning for minor deviation
+      Alert.alert(
+        "Route Deviation Warning",
+        `You are ${distance.toFixed(0)} meters away from your planned route. Please return to the route.`,
+        [{ text: "OK" }]
+      );
+      setDeviationAlertShown(true);
+    } else if (distance <= DEVIATION_THRESHOLD_METERS) {
+      // Reset alert flag when back on route
+      setDeviationAlertShown(false);
+    }
+  };
+
+  // Set up periodic deviation checking
+  useEffect(() => {
+    if (routePoints.length > 0 && !isReturnMode) {
+      // Clear any existing interval
+      if (deviationCheckIntervalRef.current) {
+        clearInterval(deviationCheckIntervalRef.current);
+      }
+
+      // Start checking for deviations
+      deviationCheckIntervalRef.current = setInterval(() => {
+        checkRouteDeviation();
+      }, CHECK_INTERVAL_MS);
+
+      // Initial check
+      checkRouteDeviation();
+    }
+
+    // Cleanup interval on unmount or when route changes
+    return () => {
+      if (deviationCheckIntervalRef.current) {
+        clearInterval(deviationCheckIntervalRef.current);
+      }
+    };
+  }, [routePoints, position.latitude, position.longitude, isReturnMode]);
+
   useEffect(() => {
     const fetchRoute = async () => {
       try {
@@ -317,18 +553,27 @@ export default function TruckerViewScreen() {
           longitude: position.longitude,
         },
         heading: position.heading || 0,
-        pitch: 0,
+        pitch: 60, // Tilt the camera to show more in front
         zoom: 17,
       }, { duration: 200 });
+      setIsFollowingHeading(true); // Now stays true forever after first click
     }
   };
 
   useEffect(() => {
-    // Initial centering on user's position when it becomes available
-    if (position.latitude && position.longitude) {
-      handleRecenter();
+    if (!isFollowingHeading) return;
+    if (mapRef.current && position.latitude && position.longitude && typeof position.heading === 'number') {
+      mapRef.current.animateCamera({
+        center: {
+          latitude: position.latitude,
+          longitude: position.longitude,
+        },
+        heading: position.heading,
+        pitch: 60,
+        zoom: 17,
+      }, { duration: 200 });
     }
-  }, []);
+  }, [isFollowingHeading, position.heading, position.latitude, position.longitude]);
 
   const handleDelivery = async (packageId: string) => {
     try {
@@ -535,10 +780,11 @@ export default function TruckerViewScreen() {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           } : initialRegion}
+          onPanDrag={() => setIsFollowingHeading(false)}
         >
           {!isReturnMode && (
             <Polyline
-              coordinates={routePoints}
+              coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
               strokeColor={routeColor}
               strokeWidth={3}
             />
@@ -564,6 +810,7 @@ export default function TruckerViewScreen() {
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
                 isUndelivered={location.package_info.status === 'undelivered'}
+                isWarehouse={location.package_info.packageID === "ADMIN"}
               />
             </Marker>
           ))}
@@ -580,6 +827,7 @@ export default function TruckerViewScreen() {
                 number={location.waypoint_index} 
                 isDelivered={location.package_info.status === 'delivered'}
                 isUndelivered={location.package_info.status === 'undelivered'}
+                isWarehouse={true}
               />
             </Marker>
           ))}
@@ -627,6 +875,75 @@ export default function TruckerViewScreen() {
             color="#FFFFFF" 
           />
         </TouchableOpacity>
+
+        {/* Route View Mode Switch */}
+        <View style={[styles.routeModeSwitch, { backgroundColor: theme.color.white }]}>
+          <TouchableOpacity 
+            style={[
+              styles.switchOption, 
+              styles.switchOptionLeft,
+              { 
+                backgroundColor: showFullJourney ? theme.color.darkPrimary : 'transparent',
+                borderColor: theme.color.darkPrimary
+              }
+            ]}
+            onPress={() => setShowFullJourney(true)}
+          >
+            <MaterialIcons 
+              name="timeline" 
+              size={14} 
+              color={showFullJourney ? "#FFFFFF" : theme.color.darkPrimary} 
+            />
+            <Text style={[
+              styles.switchText, 
+              { color: showFullJourney ? "#FFFFFF" : theme.color.darkPrimary }
+            ]}>
+              Full
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[
+              styles.switchOption, 
+              styles.switchOptionRight,
+              { 
+                backgroundColor: !showFullJourney ? theme.color.darkPrimary : 'transparent',
+                borderColor: theme.color.darkPrimary
+              }
+            ]}
+            onPress={() => setShowFullJourney(false)}
+          >
+            <MaterialIcons 
+              name="navigation" 
+              size={14} 
+              color={!showFullJourney ? "#FFFFFF" : theme.color.darkPrimary} 
+            />
+            <Text style={[
+              styles.switchText, 
+              { color: !showFullJourney ? "#FFFFFF" : theme.color.darkPrimary }
+            ]}>
+              Next
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Route recalculation indicator */}
+        {isRecalculating && (
+          <View style={[styles.recalculationIndicator, { backgroundColor: theme.color.darkPrimary }]}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.recalculationText}>Recalculating Route...</Text>
+          </View>
+        )}
+
+        {/* Route Mode Indicator */}
+        {!showFullJourney && !isReturnMode && (
+          <View style={[styles.routeModeIndicator, { backgroundColor: '#666666' }]}>
+            <MaterialIcons name="navigation" size={14} color="#FFFFFF" />
+            <Text style={styles.routeModeIndicatorText}>
+              {getNextDeliveryPoint() ? `Next: ${getNextDeliveryPoint()?.package_info.recipient}` : 'No more deliveries'}
+            </Text>
+          </View>
+        )}
       </View>
     </DrawerLayout>
   );
@@ -882,5 +1199,79 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
+  },
+  recalculationIndicator: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recalculationText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  routeModeSwitch: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    width: 120,
+    height: 40,
+    borderRadius: 20,
+    flexDirection: 'row',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  switchOption: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  switchOptionLeft: {
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderRightWidth: 0,
+  },
+  switchOptionRight: {
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderLeftWidth: 0,
+  },
+  switchText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  routeModeIndicator: {
+    position: 'absolute',
+    top: 50,
+    left: 100,
+    right: 100,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  routeModeIndicatorText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 }); 

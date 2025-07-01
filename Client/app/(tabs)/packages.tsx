@@ -152,6 +152,7 @@ export default function PackagesScreen() {
                         location={item.address}
                         phoneNumber={item.recipientPhoneNumber}
                         recipient={item.recipient}
+                        status={item.status}
                         onDelete={() => {
                           // Refresh the packages list after deletion
                           fetchPackages();

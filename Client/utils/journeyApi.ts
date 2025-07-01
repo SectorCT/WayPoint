@@ -160,4 +160,36 @@ export const markPackageAsUndelivered = async (packageID: string): Promise<Respo
   });
 };
 
+export const recalculateRoute = async (
+  username: string,
+  currentLat: number,
+  currentLng: number
+): Promise<{ route: [number, number][], message: string, remaining_packages: number }> => {
+  try {
+    const response = await makeAuthenticatedRequest('/delivery/route/recalculate/', {
+      method: "POST",
+      body: JSON.stringify({
+        username,
+        currentLat,
+        currentLng
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to recalculate route');
+    }
+    
+    const data = await response.json();
+    if (!data.route || !Array.isArray(data.route)) {
+      throw new Error('Invalid route data received from server');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in recalculateRoute:', error);
+    throw error;
+  }
+};
+
 

@@ -12,12 +12,14 @@ export default function PackageModule({
   phoneNumber,
   location,
   recipient,
+  status,
   onDelete,
 }: {
   id: string;
   phoneNumber: string;
   location: string;
   recipient: string;
+  status: 'pending' | 'in_transit' | 'delivered' | 'undelivered';
   onDelete?: () => void;
 }) {
   const styles = useStyles();
@@ -60,6 +62,26 @@ export default function PackageModule({
     );
   };
 
+  // Determine status label and color
+  let statusLabel = '';
+  let statusColor = '';
+  if (status === 'delivered') {
+    statusLabel = 'Delivered';
+    statusColor = '#27ae60'; // green
+  } else if (status === 'in_transit') {
+    statusLabel = 'In Transit';
+    statusColor = '#4A90E2'; // blue
+  } else if (status === 'undelivered') {
+    statusLabel = 'Not Delivered';
+    statusColor = '#e74c3c'; // red
+  } else if (status === 'pending') {
+    statusLabel = 'Pending';
+    statusColor = '#888'; // gray
+  } else {
+    statusLabel = 'Not Assigned';
+    statusColor = '#888'; // gray
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.firstRow}>
@@ -77,6 +99,11 @@ export default function PackageModule({
             <MaterialIcons name="phone" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
+      </View>
+      <View style={styles.statusRow}>
+        <Text style={[styles.statusText, { color: statusColor }]}> 
+          {statusLabel}
+        </Text>
       </View>
       <View style={styles.secondRow}>
         <Text style={styles.location}>{location}</Text>
