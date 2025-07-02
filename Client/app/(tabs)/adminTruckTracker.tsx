@@ -8,6 +8,7 @@ import { DrawerLayout } from 'react-native-gesture-handler';
 import { getAllRoutes, getUserByUsername } from "../../utils/journeyApi";
 import { useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import House from "@assets/icons/house.svg";
 
 interface Coordinate {
   latitude: number;
@@ -62,13 +63,19 @@ const generateColorFromValue = (value: string): string => {
   return colors[Math.abs(total)];
 };
 
-const CustomMarker = ({ number, isDelivered, isUndelivered }: { number: number, isDelivered: boolean, isUndelivered: boolean }) => (
-  <View style={[
-    styles.markerContainer,
-    isDelivered && styles.markerContainerDelivered,
-    isUndelivered && styles.markerContainerUndelivered
-  ]}>
-    {isDelivered ? (
+const CustomMarker = ({ number, isDelivered, isUndelivered, isWarehouse }: { number: number, isDelivered: boolean, isUndelivered: boolean, isWarehouse?: boolean }) => (
+  <View style={
+    isWarehouse
+      ? undefined
+      : [
+          styles.markerContainer,
+          isDelivered && styles.markerContainerDelivered,
+          isUndelivered && styles.markerContainerUndelivered
+        ]
+  }>
+    {isWarehouse ? (
+      <House width={24} height={24} />
+    ) : isDelivered ? (
       <MaterialIcons name="check" size={20} color="#4CAF50" />
     ) : isUndelivered ? (
       <MaterialIcons name="close" size={20} color="#FF4136" />
@@ -475,6 +482,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
                           number={location.waypoint_index} 
                           isDelivered={location.package_info.status === 'delivered'}
                           isUndelivered={location.package_info.status === 'undelivered'}
+                          isWarehouse={location.package_info.packageID === "ADMIN"}
                         />
                       </Marker>
                     ))}
