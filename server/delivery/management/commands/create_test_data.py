@@ -4,6 +4,7 @@ from delivery.models import Package, Truck
 from django.utils import timezone
 from datetime import timedelta
 import random
+from authentication.models import Company
 
 User = get_user_model()
 
@@ -30,34 +31,55 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Creating test data...')
         
-        # Create test users
-        users_data = [
-            {'email': 'r@r.com', 'username': 'r', 'is_staff': False},
-            {'email': 'b@b.com', 'username': 'b', 'is_staff': False},
-            {'email': 'c@c.com', 'username': 'c', 'is_staff': False},
-            {'email': 'v@v.com', 'username': 'v', 'is_staff': False},
-            {'email': 'z@z.com', 'username': 'z', 'is_staff': False},
-            {'email': 'a@a.com', 'username': 'manager', 'is_staff': True, 'isManager': True}
+        # Create manager first
+        manager_data = {'email': 'a@a.com', 'username': 'manager', 'is_staff': True, 'isManager': True}
+        manager, _ = User.objects.get_or_create(
+            email=manager_data['email'],
+            username=manager_data['username'],
+            defaults={
+                'is_staff': manager_data['is_staff'],
+                'is_active': True,
+                'isManager': True
+            }
+        )
+        manager.set_password('radiradi')
+        manager.save()
+        # Create company and assign manager
+        company, _ = Company.objects.get_or_create(
+            unique_id='COMPANY123',
+            defaults={
+                'name': 'Test Company',
+                'manager': manager
+            }
+        )
+        if company.manager != manager:
+            company.manager = manager
+            company.save()
+        # Create truckers and assign to company
+        trucker_users_data = [
+            {'email': 'r@r.com', 'username': 'r'},
+            {'email': 'b@b.com', 'username': 'b'},
+            {'email': 'c@c.com', 'username': 'c'},
+            {'email': 'v@v.com', 'username': 'v'},
+            {'email': 'z@z.com', 'username': 'z'},
         ]
-
-        created_users = []
-        for user_data in users_data:
-            user, created = User.objects.get_or_create(
+        for user_data in trucker_users_data:
+            user, _ = User.objects.get_or_create(
                 email=user_data['email'],
                 username=user_data['username'],
                 defaults={
-                    'is_staff': user_data['is_staff'],
+                    'is_staff': False,
                     'is_active': True,
-                    'isManager': user_data.get('isManager', False)
+                    'isManager': False,
+                    'company': company,
+                    'verified': False
                 }
             )
-            if created:
-                user.set_password('radiradi')
-                user.save()
-                created_users.append(user)
-                self.stdout.write(self.style.SUCCESS(f'Created user: {user.email}'))
-            else:
-                self.stdout.write(f'User {user.email} already exists')
+            user.set_password('radiradi')
+            user.company = company
+            user.verified = False
+            user.save()
+            self.stdout.write(self.style.SUCCESS(f'Created trucker: {user.email} (company: {company.unique_id})'))
 
         # Create trucks
         trucks_data = [
@@ -102,6 +124,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('Test data creation complete!'))
         self.stdout.write('\nCredentials:')
-        self.stdout.write('Driver 1: r@r.com / radiradi')
-        self.stdout.write('Driver 2: aa.com / radiradi')
-        self.stdout.write('Manager: a@a.com / radiradi') 
+        self.stdout.write(f'Company ID: {company.unique_id}')
+        for user_data in trucker_users_data:
+            self.stdout.write(f"Trucker: {user_data['email']} / radiradi")
+        self.stdout.write(f"Manager: {manager.email} / radiradi") 

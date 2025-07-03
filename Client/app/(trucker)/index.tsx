@@ -9,6 +9,7 @@ import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
 import House from "@assets/icons/house.svg";
+import { router } from 'expo-router';
 
 interface Coordinate {
   latitude: number;
@@ -25,6 +26,7 @@ interface User {
   username: string;
   phoneNumber: string;
   isManager: boolean;
+  verified: boolean;
 }
 
 interface Package {
@@ -756,6 +758,25 @@ export default function TruckerViewScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Text style={[styles.errorText, { color: '#FF4136' }]}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (user && user.verified === false) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.color.white }}>
+        <View style={{ position: 'absolute', top: 48, left: 20 }}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <MaterialIcons name="arrow-back" size={28} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        </View>
+        <MaterialIcons name="error-outline" size={64} color={theme.color.mediumPrimary} />
+        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 16, color: theme.color.black }}>
+          You need to get verified first
+        </Text>
+        <Text style={{ fontSize: 16, color: theme.color.lightGrey, marginTop: 8, textAlign: 'center', maxWidth: 300 }}>
+          Please wait for your manager to verify your account before you can deliver packages.
+        </Text>
       </View>
     );
   }

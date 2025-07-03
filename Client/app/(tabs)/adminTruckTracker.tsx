@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -9,6 +9,9 @@ import { getAllRoutes, getUserByUsername } from "../../utils/journeyApi";
 import { useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import House from "@assets/icons/house.svg";
+import { useAuth } from "@/context/AuthContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../../config/env';
 
 interface Coordinate {
   latitude: number;
@@ -138,6 +141,9 @@ const AdminTruckTrackerScreen: React.FC = () => {
   const [routeData, setRouteData] = useState<RouteData[]>([]);
   const [userData, setUserData] = useState<Map<string, any>>(new Map());
   const params = useLocalSearchParams<{ routes?: string }>();
+  const { user } = useAuth();
+  const [unverifiedTruckers, setUnverifiedTruckers] = useState<any[]>([]);
+  const [loadingTruckers, setLoadingTruckers] = useState(false);
 
   useEffect(() => {
     const initializeRouteData = async () => {
@@ -231,6 +237,45 @@ const AdminTruckTrackerScreen: React.FC = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (user?.isManager) {
+      fetchUnverifiedTruckers();
+    }
+  }, [user]);
+
+  const fetchUnverifiedTruckers = async () => {
+    setLoadingTruckers(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/auth/list-unverified-truckers/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setUnverifiedTruckers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setUnverifiedTruckers([]);
+    } finally {
+      setLoadingTruckers(false);
+    }
+  };
+
+  const handleVerifyTrucker = async (username: string) => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/auth/verify-trucker/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ username })
+      });
+      if (response.ok) {
+        setUnverifiedTruckers(prev => prev.filter(t => t.username !== username));
+      }
+    } catch (e) {}
+  };
 
   // Calculate initial region based on all locations or device position
   const allLocations = Array.from(zoneLocations.values()).flat();
@@ -427,6 +472,25 @@ const AdminTruckTrackerScreen: React.FC = () => {
             );
           })}
         </ScrollView>
+        {user?.isManager && (
+          <View style={{ padding: 20, backgroundColor: theme.color.white }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Unverified Truckers</Text>
+            {loadingTruckers ? (
+              <ActivityIndicator size="small" color={theme.color.mediumPrimary} />
+            ) : unverifiedTruckers.length === 0 ? (
+              <Text style={{ color: theme.color.lightGrey }}>No unverified truckers.</Text>
+            ) : (
+              unverifiedTruckers.map(trucker => (
+                <View key={trucker.username} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                  <Text style={{ flex: 1 }}>{trucker.username} ({trucker.email})</Text>
+                  <TouchableOpacity onPress={() => handleVerifyTrucker(trucker.username)} style={{ backgroundColor: theme.color.mediumPrimary, padding: 8, borderRadius: 6 }}>
+                    <Text style={{ color: '#fff' }}>Verify</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </View>
+        )}
       </View>
     );
   };
