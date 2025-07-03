@@ -63,7 +63,8 @@ class Command(BaseCommand):
             {'email': 'v@v.com', 'username': 'v'},
             {'email': 'z@z.com', 'username': 'z'},
         ]
-        for user_data in trucker_users_data:
+        for idx, user_data in enumerate(trucker_users_data):
+            is_verified = idx < 2  # First two are verified, rest are not
             user, _ = User.objects.get_or_create(
                 email=user_data['email'],
                 username=user_data['username'],
@@ -72,14 +73,14 @@ class Command(BaseCommand):
                     'is_active': True,
                     'isManager': False,
                     'company': company,
-                    'verified': False
+                    'verified': is_verified
                 }
             )
             user.set_password('radiradi')
             user.company = company
-            user.verified = False
+            user.verified = is_verified
             user.save()
-            self.stdout.write(self.style.SUCCESS(f'Created trucker: {user.email} (company: {company.unique_id})'))
+            self.stdout.write(self.style.SUCCESS(f'Created trucker: {user.email} (company: {company.unique_id}, verified: {is_verified})'))
 
         # Create trucks
         trucks_data = [
