@@ -69,8 +69,8 @@ export default function VerifyTruckersScreen() {
   };
 
   const handleBack = () => {
-    console.log('DEBUG: Back button pressed, navigating to /login');
-    router.push('/login');
+    console.log('DEBUG: Back button pressed, navigating to /(tabs)/home');
+    router.push('/(tabs)/home');
   };
 
   if (!user?.isManager) {
@@ -115,9 +115,6 @@ export default function VerifyTruckersScreen() {
               </View>
               <TouchableOpacity onPress={() => handleVerifyTrucker(trucker.username)} style={{ backgroundColor: theme.color.mediumPrimary, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 6, marginRight: 8 }}>
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>Verify</Text>
-              </TouchableOpacity>
-              <TouchableOpacity disabled style={{ backgroundColor: theme.color.lightGrey, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 6 }}>
-                <Text style={{ color: theme.color.black, fontWeight: 'bold' }}>Reject</Text>
               </TouchableOpacity>
             </View>
           ))
