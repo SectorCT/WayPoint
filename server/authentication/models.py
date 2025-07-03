@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, phoneNumber, password=None, **extra_fields):
@@ -31,5 +32,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     objects = UserManager()
     
+    company = models.ForeignKey('Company', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    verified = models.BooleanField(default=False)  # For truckers, managers are always verified
+    
     def __str__(self):
         return self.email
+
+class Company(models.Model):
+    unique_id = models.CharField(max_length=16, unique=True)  # You can use UUID or a short code
+    name = models.CharField(max_length=255)
+    manager = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='managed_company')
+
+    def __str__(self):
+        return f"{self.name} ({self.unique_id})"

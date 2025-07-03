@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string, phoneNumber: string, isManager: boolean) => Promise<void>;
+  register: (email: string, username: string, password: string, phoneNumber: string, isManager: boolean, companyId?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => Promise<void>;
 }
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, username: string, password: string, phoneNumber: string, isManager: boolean) => {
+  const register = async (email: string, username: string, password: string, phoneNumber: string, isManager: boolean, companyId?: string) => {
     try {
       const registerRequest: RegisterRequest = { 
         email, 
@@ -90,6 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phoneNumber,
         isManager 
       };
+      if (!isManager && companyId) {
+        registerRequest.company_id = companyId;
+      }
       const response = await fetch(`${API_BASE_URL}/auth/register/`, {
         method: 'POST',
         headers: {
