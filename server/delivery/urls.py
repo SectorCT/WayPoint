@@ -3,6 +3,7 @@ from .package import createPackage, deletePackage, createManyPackages, getAllPac
 from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
 from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
+from .authentication import ListUnverifiedTruckers, VerifyTrucker
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
@@ -36,4 +37,7 @@ urlpatterns = [
     path('history/', GetDeliveryHistoryView.as_view(), name='get-delivery-history'),
     path('history/detailed/', GetDetailedDeliveryHistoryView.as_view(), name='get-detailed-delivery-history'),
     path('history/create-today/', CreateTodayDeliveryHistoryView.as_view(), name='create-today-delivery-history'),
+
+    path('truckers/unverified/', ListUnverifiedTruckers.as_view(), name='list-unverified-truckers'),
+    path('truckers/verify/', VerifyTrucker.as_view(), name='verify-trucker'),
 ]

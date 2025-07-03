@@ -28,4 +28,8 @@ class Command(BaseCommand):
 
         company.manager = manager
         company.save()
+        # Ensure the manager's company field is set
+        if manager.company != company:
+            manager.company = company
+            manager.save()
         self.stdout.write(self.style.SUCCESS(f'Assigned manager {manager.email} to company {company.name} (ID: {company.unique_id})')) 

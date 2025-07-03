@@ -24,21 +24,23 @@ export default function VerifyTruckersScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      console.log('Token being sent:', token);
+      const url = `${API_BASE_URL}/delivery/truckers/unverified/`;
+      const headers = { 'Authorization': `Bearer ${token}` };
+      console.log('DEBUG: Fetching unverified truckers', { url, headers, token });
       if (!token) {
         console.warn('No access token found in AsyncStorage!');
         setUnverifiedTruckers([]);
         setLoading(false);
         return;
       }
-      const response = await fetch(`${API_BASE_URL}/auth/list-unverified-truckers/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await fetch(url, { headers });
+      console.log('DEBUG: Fetch response headers:', response.headers);
       console.log('Fetch response status:', response.status);
       const data = await response.json();
       console.log('Unverified truckers API response:', data);
       setUnverifiedTruckers(Array.isArray(data) ? data : []);
     } catch (e) {
+      console.error('DEBUG: Error fetching unverified truckers:', e);
       setUnverifiedTruckers([]);
     } finally {
       setLoading(false);
@@ -48,7 +50,7 @@ export default function VerifyTruckersScreen() {
   const handleVerifyTrucker = async (username: string) => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/auth/verify-trucker/`, {
+      const response = await fetch(`${API_BASE_URL}/delivery/truckers/verify/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,6 +68,11 @@ export default function VerifyTruckersScreen() {
     }
   };
 
+  const handleBack = () => {
+    console.log('DEBUG: Back button pressed, navigating to /login');
+    router.push('/login');
+  };
+
   if (!user?.isManager) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.color.white }}>
@@ -77,7 +84,7 @@ export default function VerifyTruckersScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.color.white }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 48, paddingBottom: 8, paddingHorizontal: 20, backgroundColor: theme.color.white, borderBottomWidth: 1, borderBottomColor: theme.color.lightGrey, elevation: 2 }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 16, padding: 4 }}>
+        <TouchableOpacity onPress={handleBack} style={{ marginRight: 16, padding: 4 }}>
           <MaterialIcons name="arrow-back" size={28} color={theme.color.darkPrimary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>

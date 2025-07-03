@@ -76,31 +76,3 @@ class getUser(APIView):
 class IsManager(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.isManager)
-
-class ListUnverifiedTruckers(APIView):
-    permission_classes = [IsAuthenticated, IsManager]
-    def get(self, request):
-        # Only show truckers in the manager's company
-        company = getattr(request.user, 'managed_company', None)
-        if not company:
-            return Response({'detail': 'Manager does not have a company.'}, status=status.HTTP_400_BAD_REQUEST)
-        truckers = User.objects.filter(company=company, isManager=False, verified=False)
-        serializer = UserSerializer(truckers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class VerifyTrucker(APIView):
-    permission_classes = [IsAuthenticated, IsManager]
-    def post(self, request):
-        username = request.data.get('username')
-        if not username:
-            return Response({'detail': 'Username is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            trucker = User.objects.get(username=username, isManager=False)
-        except User.DoesNotExist:
-            return Response({'detail': 'Trucker not found.'}, status=status.HTTP_404_NOT_FOUND)
-        # Only allow verifying truckers in the manager's company
-        if trucker.company != getattr(request.user, 'managed_company', None):
-            return Response({'detail': 'Trucker does not belong to your company.'}, status=status.HTTP_403_FORBIDDEN)
-        trucker.verified = True
-        trucker.save()
-        return Response({'detail': 'Trucker verified successfully.'}, status=status.HTTP_200_OK)
