@@ -8,6 +8,7 @@ export interface Package {
     weight: number;
     status: "pending" | "in_transit" | "delivered";
     packageID: string;
+    location_index: number;
 }
 
 export interface Truck {

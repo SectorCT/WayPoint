@@ -20,6 +20,7 @@ interface Coordinate {
 
 interface Package {
   packageID: string;
+  location_index: number;
   latitude: number;
   longitude: number;
   status: string;
@@ -191,13 +192,12 @@ const AdminTruckTrackerScreen: React.FC = () => {
               continue;
             }
           }
-
-          // Create locations array and ensure it's properly ordered
+          console.log("zoneData.packageSequence", zoneData.packageSequence);
           const locations = zoneData.packageSequence
             .map((packageInfo: Package, index: number) => ({
               latitude: packageInfo.latitude,
               longitude: packageInfo.longitude,
-              waypoint_index: index,
+              waypoint_index: packageInfo.location_index,
               package_info: {
                 ...packageInfo,
                 // Automatically mark ADMIN packages as delivered
