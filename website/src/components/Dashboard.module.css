@@ -1,4 +1,5 @@
 .dashboardContainer {
+  position: relative;
   min-height: 100vh;
   background: #f5f6fa;
   display: flex;
@@ -97,6 +98,19 @@
   text-align: center;
 }
 
+/* Position quick actions in the top left corner of the dashboard */
+.quickActionsCorner {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1000;
+}
+
+/* Remove or comment out the old .quickActions if not used */
+/*
 .quickActions {
   display: flex;
   gap: 18px;
@@ -105,25 +119,7 @@
   max-width: 900px;
   flex-wrap: wrap;
 }
-.quickActionButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(90deg, #F39358 0%, #F05033 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 22px;
-  font-size: 1rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
-}
-.quickActionButton:hover {
-  opacity: 0.85;
-  transform: translateY(-1px) scale(1.04);
-}
+*/
 
 .activityFeed {
   background: #fff;
@@ -283,4 +279,159 @@
   color: #B2B2B2;
   font-size: 1.1rem;
   margin-bottom: 16px;
+}
+
+.quickActionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F39358 0%, #F05033 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(243,147,88,0.13);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+  position: relative;
+}
+.quickActionButton:hover {
+  box-shadow: 0 6px 18px rgba(240,80,51,0.18);
+  transform: translateY(-2px) scale(1.07);
+  background: linear-gradient(135deg, #F05033 0%, #F39358 100%);
+}
+
+/* Tooltip label on hover */
+.quickActionButton span {
+  display: none;
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  color: #F05033;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  white-space: nowrap;
+  z-index: 10;
+}
+.quickActionButton:hover span {
+  display: block;
+}
+
+.fullScreenTwoCol {
+  min-height: 100vh;
+  width: 100vw;
+  background: #f5f6fa;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.columnsWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 64px;
+  position: relative;
+}
+.columnsTopRightButton {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  z-index: 10;
+}
+.leftCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 320px;
+}
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 400px;
+}
+.formCard {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  padding: 36px 48px 36px 32px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 32px;
+  position: relative;
+}
+.listCard {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 600px;
+}
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+.input {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #F8D5B0;
+  font-size: 1rem;
+  width: 100%;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.listItem {
+  padding: 14px 0;
+  border-bottom: 1px solid #F8D5B0;
+  font-size: 1.08rem;
+}
+.listItem:last-child {
+  border-bottom: none;
+}
+.backButton {
+  margin-bottom: 24px;
+  background: #F39358;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: opacity 0.2s;
+}
+.backButton:hover {
+  opacity: 0.85;
+}
+
+.topRightButton {
+  position: absolute;
+  top: 20px;
+  right: 32px;
+  z-index: 10;
+}
+
+.topRightScreenButton {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  z-index: 1100;
 } 
