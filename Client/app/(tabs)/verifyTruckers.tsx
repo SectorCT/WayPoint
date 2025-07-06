@@ -15,7 +15,6 @@ export default function VerifyTruckersScreen() {
 
   useEffect(() => {
     if (user?.isManager) {
-      console.log('Manager user object:', user);
       fetchUnverifiedTruckers();
     }
   }, [user]);
@@ -26,22 +25,14 @@ export default function VerifyTruckersScreen() {
       const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/delivery/truckers/unverified/`;
       const headers = { 'Authorization': `Bearer ${token}` };
-      console.log('DEBUG: Fetching unverified truckers', { url, headers, token });
       if (!token) {
-        console.warn('No access token found in AsyncStorage!');
         setUnverifiedTruckers([]);
         setLoading(false);
         return;
       }
       const response = await fetch(url, { headers });
-      console.log('DEBUG: Fetch response headers:', response.headers);
-      console.log('Fetch response status:', response.status);
       const data = await response.json();
-      console.log('Unverified truckers API response:', data);
       setUnverifiedTruckers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error('DEBUG: Error fetching unverified truckers:', e);
-      setUnverifiedTruckers([]);
     } finally {
       setLoading(false);
     }
@@ -69,7 +60,6 @@ export default function VerifyTruckersScreen() {
   };
 
   const handleBack = () => {
-    console.log('DEBUG: Back button pressed, navigating to /(tabs)/home');
     router.push('/(tabs)/home');
   };
 

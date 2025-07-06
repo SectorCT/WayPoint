@@ -556,7 +556,7 @@ export default function TruckerViewScreen() {
         },
         heading: position.heading || 0,
         pitch: 60, // Tilt the camera to show more in front
-        zoom: 17,
+        zoom: 18,
       }, { duration: 200 });
       setIsFollowingHeading(true); // Now stays true forever after first click
     }
@@ -572,7 +572,7 @@ export default function TruckerViewScreen() {
         },
         heading: position.heading,
         pitch: 60,
-        zoom: 17,
+        zoom: 18,
       }, { duration: 200 });
     }
   }, [isFollowingHeading, position.heading, position.latitude, position.longitude]);
