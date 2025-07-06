@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPackages } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import styles from './Dashboard.module.css';
+import { quickActions } from './Dashboard';
 
 const PackagesPage: React.FC = () => {
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -31,21 +35,69 @@ const PackagesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 700, margin: '40px auto', background: '#fff', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', padding: 32 }}>
-      <h2>Packages</h2>
-      <form onSubmit={handleAddPackage} style={{ marginBottom: 32 }}>
-        <h4>Add New Package</h4>
-        <input placeholder="Address" style={{ marginRight: 8, padding: 8 }} />
-        <input placeholder="Recipient" style={{ marginRight: 8, padding: 8 }} />
-        <button type="submit">Add Package</button>
-      </form>
-      {loading ? <div>Loading...</div> : error ? <div style={{ color: 'red' }}>{error}</div> : (
-        <ul>
-          {packages.map((p, idx) => (
-            <li key={idx}>{p.packageID} - {p.address} - {p.status}</li>
-          ))}
-        </ul>
-      )}
+    <div className={styles.fullScreenTwoCol}>
+      <div className={styles.topRightScreenButton}>
+        <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
+          ← Back to Dashboard
+        </button>
+      </div>
+      <div className={styles.quickActionsCorner}>
+        {quickActions.map((action) => {
+          const Icon = action.Icon as unknown as React.FC<any>;
+          let onClick;
+          switch (action.label) {
+            case 'Dashboard':
+              onClick = () => navigate('/dashboard');
+              break;
+            case 'Journeys':
+              onClick = () => navigate('/journeys');
+              break;
+            case 'Packages':
+              onClick = () => navigate('/packages');
+              break;
+            case 'Trucks':
+              onClick = () => navigate('/trucks');
+              break;
+            default:
+              onClick = () => {};
+          }
+          return (
+            <button className={styles.quickActionButton} key={action.label} onClick={onClick}>
+              <Icon />
+              <span>{action.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className={styles.columnsWrapper}>
+        <div className={styles.leftCol}>
+          <div className={styles.formCard}>
+            <h2>Packages</h2>
+            <form className={styles.addForm}>
+              <input placeholder="Delivery Address" className={styles.input} />
+              <input placeholder="Recipient Name" className={styles.input} />
+              <input placeholder="Recipient Phone Number" className={styles.input} />
+              <input placeholder="Delivery Date" className={styles.input} />
+              <input placeholder="Weight (kg)" className={styles.input} />
+              <button type="button" className={styles.gradientButton}>Add Package</button>
+            </form>
+          </div>
+        </div>
+        <div className={styles.rightCol}>
+          <div className={styles.listCard}>
+            <h3>All Packages</h3>
+            {loading ? <div>Loading...</div> : error ? <div style={{ color: 'red' }}>{error}</div> : (
+              <ul className={styles.list}>
+                {packages.map((p, idx) => (
+                  <li key={idx} className={styles.listItem}>
+                    <b>{p.packageID}</b> — {p.address} — <span style={{ color: p.status === 'delivered' ? '#4CAF50' : '#F39358' }}>{p.status}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

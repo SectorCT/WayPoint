@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
 // Import all icons from react-icons/fa for compatibility
-import { FaTruck, FaBoxOpen, FaRoute, FaUserCheck, FaHistory as FaHistoryRaw, FaSignOutAlt as FaSignOutAltRaw, FaUserTie as FaUserTieRaw } from 'react-icons/fa';
+import { FaTruck, FaBoxOpen, FaRoute, FaUserCheck, FaHistory as FaHistoryRaw, FaSignOutAlt as FaSignOutAltRaw, FaUserTie as FaUserTieRaw, FaTachometerAlt } from 'react-icons/fa';
 import { fetchPackages, fetchAvailableTrucks, fetchDeliveryHistory, fetchUnverifiedTruckers } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +18,30 @@ const TAB_TRUCKS = 'Trucks';
 const TAB_TRACKING = 'Truck Tracking';
 const TAB_VERIFY = 'Verify Truckers';
 const TABS = [TAB_JOURNEYS, TAB_PACKAGES, TAB_TRUCKS, TAB_TRACKING, TAB_VERIFY];
+
+export const quickActions = [
+  {
+    label: 'Dashboard',
+    Icon: FaTachometerAlt,
+  },
+  {
+    label: 'Journeys',
+    Icon: FaRoute,
+  },
+  {
+    label: 'Packages',
+    Icon: FaBoxOpen,
+  },
+  {
+    label: 'Trucks',
+    Icon: FaTruck,
+  },
+  {
+    label: 'Verify Users',
+    Icon: FaUserCheck,
+  },
+  // ... add more actions as needed
+];
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -55,6 +79,13 @@ const Dashboard: React.FC = () => {
     fetchAll();
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   // Summary card values
   const summaryData = [
     { label: 'Active Journeys', value: deliveryHistory.filter((h: any) => h.status === 'active').length, Icon: FaRoute, link: '/journeys' },
@@ -64,13 +95,6 @@ const Dashboard: React.FC = () => {
     }).length, Icon: FaBoxOpen, link: '/packages' },
     { label: 'Trucks Available', value: trucks.length, Icon: FaTruck, link: '/trucks' },
     { label: 'Pending Verifications', value: unverifiedTruckers.length, Icon: FaUserCheck, link: '/dashboard?tab=Verify Truckers' },
-  ];
-
-  const quickActions = [
-    { label: 'Go to Journeys', Icon: FaRoute, onClick: () => navigate('/journeys') },
-    { label: 'Go to Packages', Icon: FaBoxOpen, onClick: () => navigate('/packages') },
-    { label: 'Go to Trucks', Icon: FaTruck, onClick: () => navigate('/trucks') },
-    { label: 'Verify Truckers', Icon: FaUserCheck, onClick: () => setActiveTab(TAB_VERIFY) },
   ];
 
   const recentActivity = [
@@ -188,7 +212,33 @@ const Dashboard: React.FC = () => {
               <div className={styles.heroSubtitle}>Here's what's happening today:</div>
             </div>
           </div>
-          <button className={styles.logoutButton}><FaSignOutAlt style={{ marginRight: 8 }} />Logout</button>
+          <button className={styles.logoutButton} onClick={handleLogout}><FaSignOutAlt style={{ marginRight: 8 }} />Logout</button>
+        </div>
+        {/* Quick actions in top right corner */}
+        <div className={styles.quickActionsCorner}>
+          {quickActions.map((action) => {
+            const Icon = action.Icon as unknown as React.FC<any>;
+            let onClick;
+            switch (action.label) {
+              case 'Journeys':
+                onClick = () => navigate('/journeys');
+                break;
+              case 'Packages':
+                onClick = () => navigate('/packages');
+                break;
+              case 'Trucks':
+                onClick = () => navigate('/trucks');
+                break;
+              default:
+                onClick = () => {};
+            }
+            return (
+              <button className={styles.quickActionButton} key={action.label} onClick={onClick}>
+                <Icon />
+                <span>{action.label}</span> {/* Tooltip label, hidden by default, shown on hover */}
+              </button>
+            );
+          })}
         </div>
         <div className={styles.summaryGrid}>
           {summaryData.map((item) => {
@@ -207,17 +257,6 @@ const Dashboard: React.FC = () => {
             );
           })}
         </div>
-        <div className={styles.quickActions}>
-          {quickActions.map((action) => {
-            const Icon = action.Icon as unknown as React.FC<any>;
-            return (
-              <button className={styles.quickActionButton} key={action.label} onClick={action.onClick}>
-                <Icon />
-                <span>{action.label}</span>
-              </button>
-            );
-          })}
-        </div>
         <div className={styles.activityFeed}>
           <div className={styles.activityTitle}><FaHistory style={{ marginRight: 8 }} />Recent Activity</div>
           <ul className={styles.activityList}>
@@ -233,23 +272,6 @@ const Dashboard: React.FC = () => {
             })}
           </ul>
         </div>
-        <div className={styles.tabs}>
-          <button
-            className={styles.activeTab}
-            onClick={() => setActiveTab('Dashboard')}
-          >
-            Dashboard
-          </button>
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              className={activeTab === tab ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
       </div>
     );
   }
@@ -258,24 +280,7 @@ const Dashboard: React.FC = () => {
     <div className={styles.dashboardContainer}>
       <div className={styles.header}>
         <h2 className={styles.title}>Manager Dashboard</h2>
-        <button className={styles.logoutButton}><FaSignOutAlt style={{ marginRight: 8 }} />Logout</button>
-      </div>
-      <div className={styles.tabs}>
-        <button
-          className={activeTab === 'Dashboard' ? styles.activeTab : styles.tab}
-          onClick={() => setActiveTab('Dashboard')}
-        >
-          Dashboard
-        </button>
-        {TABS.map(tab => (
-          <button
-            key={tab}
-            className={activeTab === tab ? styles.activeTab : styles.tab}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
+        <button className={styles.logoutButton} onClick={handleLogout}><FaSignOutAlt style={{ marginRight: 8 }} />Logout</button>
       </div>
       <div className={styles.tabContent}>{renderTabContent()}</div>
     </div>

@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAvailableTrucks } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import styles from './Dashboard.module.css';
+import { quickActions } from './Dashboard';
 
 const TrucksPage: React.FC = () => {
   const [trucks, setTrucks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -31,21 +35,66 @@ const TrucksPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 700, margin: '40px auto', background: '#fff', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', padding: 32 }}>
-      <h2>Trucks</h2>
-      <form onSubmit={handleAddTruck} style={{ marginBottom: 32 }}>
-        <h4>Add New Truck</h4>
-        <input placeholder="License Plate" style={{ marginRight: 8, padding: 8 }} />
-        <input placeholder="Capacity (kg)" style={{ marginRight: 8, padding: 8 }} />
-        <button type="submit">Add Truck</button>
-      </form>
-      {loading ? <div>Loading...</div> : error ? <div style={{ color: 'red' }}>{error}</div> : (
-        <ul>
-          {trucks.map((t, idx) => (
-            <li key={idx}>{t.licensePlate} - {t.kilogramCapacity}kg - {t.isUsed ? 'In Use' : 'Available'}</li>
-          ))}
-        </ul>
-      )}
+    <div className={styles.fullScreenTwoCol}>
+      <div className={styles.topRightScreenButton}>
+        <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
+          ← Back to Dashboard
+        </button>
+      </div>
+      <div className={styles.quickActionsCorner}>
+        {quickActions.map((action) => {
+          const Icon = action.Icon as unknown as React.FC<any>;
+          let onClick;
+          switch (action.label) {
+            case 'Dashboard':
+              onClick = () => navigate('/dashboard');
+              break;
+            case 'Journeys':
+              onClick = () => navigate('/journeys');
+              break;
+            case 'Packages':
+              onClick = () => navigate('/packages');
+              break;
+            case 'Trucks':
+              onClick = () => navigate('/trucks');
+              break;
+            default:
+              onClick = () => {};
+          }
+          return (
+            <button className={styles.quickActionButton} key={action.label} onClick={onClick}>
+              <Icon />
+              <span>{action.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className={styles.columnsWrapper}>
+        <div className={styles.leftCol}>
+          <div className={styles.formCard}>
+            <h2>Trucks</h2>
+            <form className={styles.addForm}>
+              <input placeholder="License Plate" className={styles.input} />
+              <input placeholder="Max Capacity (kg)" className={styles.input} />
+              <button type="button" className={styles.gradientButton}>Add Truck</button>
+            </form>
+          </div>
+        </div>
+        <div className={styles.rightCol}>
+          <div className={styles.listCard}>
+            <h3>Available Trucks</h3>
+            {loading ? <div>Loading...</div> : error ? <div style={{ color: 'red' }}>{error}</div> : (
+              <ul className={styles.list}>
+                {trucks.map((t, idx) => (
+                  <li key={idx} className={styles.listItem}>
+                    <b>{t.licensePlate}</b> — {t.kilogramCapacity}kg — <span style={{ color: t.isUsed ? '#F39358' : '#4CAF50' }}>{t.isUsed ? 'In Use' : 'Available'}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
