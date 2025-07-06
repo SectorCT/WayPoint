@@ -66,7 +66,7 @@ const Login: React.FC = () => {
           </button>
         </form>
         <div className={styles.linkText}>
-          Don't have an account? <span className={styles.linkAction}>Sign up</span>
+          Don't have an account? Please contact your company administrator to request one.
         </div>
       </div>
     </div>

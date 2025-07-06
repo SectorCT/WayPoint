@@ -4,6 +4,9 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import JourneysPage from './components/JourneysPage';
+import PackagesPage from './components/PackagesPage';
+import TrucksPage from './components/TrucksPage';
 
 function ProtectedRoute({ children }: { children: ReactElement }): React.JSX.Element | null {
   const user = localStorage.getItem('user');
@@ -30,7 +33,10 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/journeys" element={<JourneysPage />} />
+        <Route path="/packages" element={<PackagesPage />} />
+        <Route path="/trucks" element={<TrucksPage />} />
+        <Route path="/" element={<Dashboard />} />
       </Routes>
     </Router>
   );
