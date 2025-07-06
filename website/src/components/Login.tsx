@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
+import styles from './Login.module.css';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,56 +15,60 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      console.log('[Login] Attempting login for', email);
       const data = await login(email, password);
       if (!data.user.isManager) {
         setError('Access denied: Only managers can log in.');
-        console.warn('[Login] Not a manager:', data.user);
         setLoading(false);
         return;
       }
       localStorage.setItem('access', data.access);
       localStorage.setItem('refresh', data.refresh);
       localStorage.setItem('user', JSON.stringify(data.user));
-      console.log('[Login] Login successful, redirecting to dashboard');
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
-      console.error('[Login] Login error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px #ccc', minWidth: 320 }}>
-      <h2>Manager Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 16 }}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-          />
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.headerContainer}>
+          <h2 className={styles.headerTitle}>Log in to your account</h2>
+          <div className={styles.headerSubtitle}>Welcome back! Please enter your details.</div>
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-          />
+        <form onSubmit={handleSubmit}>
+          <div className={styles.inputGroup}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.inputGroup}>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          {error && <div className={styles.error}>{error}</div>}
+          <button type="submit" className={styles.gradientButton} disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+        <div className={styles.linkText}>
+          Don't have an account? <span className={styles.linkAction}>Sign up</span>
         </div>
-        {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
-        <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 4, background: '#282c34', color: '#fff', border: 'none' }} disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 };
