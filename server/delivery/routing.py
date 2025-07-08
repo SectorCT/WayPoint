@@ -67,8 +67,9 @@ def create_routes_from_json(json_data):
 
         package_sequence = []
         map_route = []
-        for wp in sorted_waypoints:
+        for index, wp in enumerate(sorted_waypoints):
             pkg_info = wp.get("package_info")
+            pkg_info["location_index"] = index
             if pkg_info:
                 package_sequence.append(pkg_info)
             wp_route = wp.get("route", [])
@@ -196,7 +197,8 @@ class RoutePlannerView(APIView):
             "recipientPhoneNumber": pkg.recipientPhoneNumber,
             "deliveryDate": pkg.deliveryDate.isoformat(),
             "weight": float(pkg.weight),
-            "status": pkg.status
+            "status": pkg.status,
+            "location_index": 0
         } for pkg in packages_qs]
 
         drivers = request.data.get('drivers')
@@ -220,19 +222,19 @@ class RoutePlannerView(APIView):
 
         final_routes = connect_routes_and_assignments(clustered_data)
         
-        # try:
-        #     create_routes_from_json(final_routes)
-        # except ValueError as e:
-        #     return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            create_routes_from_json(final_routes)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         # Package.objects.filter(
         #     status="pending",
         #     deliveryDate__lte=tomorrow
         # ).update(status="in_tranzit")
         
-        # routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
-        # serializer = RouteAssignmentSerializer(routes_today, many=True)
-        return Response(final_routes)
+        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
+        serializer = RouteAssignmentSerializer(routes_today, many=True)
+        return Response(serializer.data)
 
 class getRoutingBasedOnDriver(APIView):
     # Uncomment when authentication is set up.

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView    
 from rest_framework import status, views
 from .models import User
+from rest_framework.permissions import BasePermission, IsAuthenticated
 
 class RegisterView(APIView):
     def post(self, request):
@@ -71,3 +72,7 @@ class getUser(APIView):
             'phoneNumber': user.phoneNumber,
             'isManager': user.isManager
         })
+
+class IsManager(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.isManager)

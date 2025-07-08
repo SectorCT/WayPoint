@@ -13,12 +13,17 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isManager, setIsManager] = useState(false);
+  const [companyId, setCompanyId] = useState("");
   const { register } = useAuth();
   const styles = useStyles();
 
   const handleRegister = async () => {
+    if (!isManager && !companyId) {
+      Alert.alert("Error", "Company ID is required for truckers.");
+      return;
+    }
     try {
-      await register(email, username, password, phoneNumber, isManager);
+      await register(email, username, password, phoneNumber, isManager, isManager ? undefined : companyId);
     } catch (error) {
       Alert.alert("Error", "Failed to register. Please try again.");
     }
@@ -63,6 +68,15 @@ export default function RegisterScreen() {
         keyboardType="phone-pad"
         icon="phone"
       />
+      {!isManager && (
+        <FormField
+          label="Company ID"
+          value={companyId}
+          onChangeText={setCompanyId}
+          placeholder="Enter your company ID"
+          icon="business"
+        />
+      )}
       <Text style={[styles.label, { marginBottom: 8 }]}>Account Type</Text>
       <ManagerToggle isManager={isManager} onToggle={setIsManager} />
       <GradientButton title="Register" onPress={handleRegister} />
