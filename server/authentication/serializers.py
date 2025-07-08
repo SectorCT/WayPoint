@@ -4,16 +4,22 @@ from django.contrib.auth import get_user_model, authenticate
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    company = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ('email', 'username', 'phoneNumber', 'isManager')
+        fields = ('email', 'username', 'phoneNumber', 'isManager', 'company', 'verified')
+    def get_company(self, obj):
+        if obj.company:
+            return {'unique_id': obj.company.unique_id, 'name': obj.company.name}
+        return None
 
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, label="Confirm Password")
+    company_id = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = User
-        fields = ('email', 'username', 'phoneNumber', 'password', 'password2', 'isManager')
+        fields = ('email', 'username', 'phoneNumber', 'password', 'password2', 'isManager', 'company_id')
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -40,20 +46,32 @@ class RegisterSerializer(serializers.ModelSerializer):
         if len(data.get('password')) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         
+        if not data.get('isManager'):
+            # Truckers must provide company_id
+            if not data.get('company_id'):
+                raise serializers.ValidationError("Company ID is required for truckers.")
+            from .models import Company
+            try:
+                company = Company.objects.get(unique_id=data['company_id'])
+            except Company.DoesNotExist:
+                raise serializers.ValidationError("Invalid company ID.")
+            data['company_obj'] = company
         return data
     
     def create(self, validated_data):
         validated_data.pop('password2')
-        try:
-            user = User.objects.create_user(
-                email=validated_data['email'],
-                username=validated_data['username'],
-                phoneNumber=validated_data.get('phoneNumber'),
-                password=validated_data['password'],
-                isManager = validated_data['isManager']
-            )
-        except Exception as e:
-            raise serializers.ValidationError(f"Error creating user: {str(e)}")
+        company = validated_data.pop('company_obj', None)
+        company_id = validated_data.pop('company_id', None)
+        is_manager = validated_data.get('isManager')
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            phoneNumber=validated_data.get('phoneNumber'),
+            password=validated_data['password'],
+            isManager=is_manager,
+            verified=is_manager,  # Managers are always verified
+            company=company if not is_manager else None
+        )
         return user
     
     def update(self, instance, validated_data):

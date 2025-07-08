@@ -9,5 +9,7 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('all/', getAllUsers.as_view(), name = 'get-all-users'),
-    path('getUser/', getUser.as_view(), name = 'getUser')
+    path('getUser/', getUser.as_view(), name = 'getUser'),
+    # path('list-unverified-truckers/', ListUnverifiedTruckers.as_view(), name='list-unverified-truckers'),
+    # path('verify-trucker/', VerifyTrucker.as_view(), name='verify-trucker'),
 ]

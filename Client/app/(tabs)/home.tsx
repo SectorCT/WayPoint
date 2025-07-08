@@ -37,7 +37,7 @@ interface PastEntryType {
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [pastEntries, setPastEntries] = useState<PastEntryType[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -79,6 +79,10 @@ export default function HomeScreen() {
     }
   };
 
+  const handleVerifyTruckers = () => {
+    router.push('/(tabs)/verifyTruckers');
+  };
+
   const renderPastEntry = ({ item }: { item: PastEntryType }) => (
     <PastEntry
       date={item.date}
@@ -96,16 +100,30 @@ export default function HomeScreen() {
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Journeys</Text>
-            <TouchableOpacity onPress={handleLogout}>
-              <LinearGradient
-                colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.logoutButton}
-              >
-                <MaterialIcons name="logout" size={24} color="#FFFFFF" />
-              </LinearGradient>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              {user?.isManager && (
+                <TouchableOpacity onPress={handleVerifyTruckers} style={{ marginRight: 8 }}>
+                  <LinearGradient
+                    colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.logoutButton}
+                  >
+                    <MaterialIcons name="verified-user" size={24} color="#FFFFFF" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={handleLogout}>
+                <LinearGradient
+                  colors={[theme.color.mediumPrimary, theme.color.darkPrimary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.logoutButton}
+                >
+                  <MaterialIcons name="logout" size={24} color="#FFFFFF" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {loading ? (

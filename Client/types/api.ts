@@ -1,3 +1,5 @@
+import { User } from './objects';
+
 export interface AuthResponse {
     access: string;
     refresh: string;
@@ -20,4 +22,5 @@ export interface RegisterRequest {
     password2: string;
     phoneNumber: string;
     isManager: boolean;
+    company_id?: string;
 } 

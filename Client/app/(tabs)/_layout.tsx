@@ -67,6 +67,7 @@ export default function TabLayout() {
       <Tabs.Screen name="styles/trucksStyles" options={{ href: null }} />
       <Tabs.Screen name="packagesHistory" options={{ href: null }} />
       <Tabs.Screen name="assignTrucks" options={{ href: null }} />
+      <Tabs.Screen name="verifyTruckers" options={{ href: null }} />
     </Tabs>
   );
 }
