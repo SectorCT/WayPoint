@@ -6,3 +6,4 @@ djangorestframework-simplejwt
 numpy
 scikit-learn
 requests
+django-cors-headers

@@ -1,0 +1,102 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f6fa;
+}
+
+.card {
+  background: #fff;
+  padding: 32px 28px 24px 28px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  min-width: 340px;
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.headerContainer {
+  margin-bottom: 32px;
+}
+
+.headerTitle {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+.headerSubtitle {
+  font-size: 1rem;
+  color: rgba(0,0,0,0.6);
+  line-height: 1.5;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #F8D5B0;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 1rem;
+  color: #000;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+.input:focus {
+  border-color: #F39358;
+  outline: none;
+}
+
+.gradientButton {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #F39358 0%, #F05033 100%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+}
+.gradientButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #F05033;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.linkText {
+  margin-top: 16px;
+  text-align: center;
+  color: #000;
+  font-size: 1rem;
+}
+
+.linkAction {
+  color: #F05033;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: text-decoration 0.2s;
+}
+.linkAction:hover {
+  text-decoration: underline;
+} 
