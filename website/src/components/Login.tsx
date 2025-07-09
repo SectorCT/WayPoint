@@ -24,6 +24,7 @@ const Login: React.FC = () => {
       localStorage.setItem('access', data.access);
       localStorage.setItem('refresh', data.refresh);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('loginTime', Date.now().toString());
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
