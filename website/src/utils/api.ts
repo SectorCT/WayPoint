@@ -182,4 +182,29 @@ export async function createTruck(token: string, licensePlate: string, kilogramC
     console.error('[API] Create truck error:', err);
     throw err;
   }
+}
+
+export async function createPackage(token: string, recipient: string, recipientPhoneNumber: string, weight: number, deliveryDate: string, address: string, lat: number, lng: number) {
+  try {
+    const res = await fetch(`${API_BASE}/delivery/packages/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipient, recipientPhoneNumber, weight, deliveryDate, address, latitude: lat, longitude: lng }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      let msg = 'Failed to create package';
+      if (data.detail) msg = data.detail;
+      else if (typeof data === 'string') msg = data;
+      else if (data && typeof data === 'object') msg = JSON.stringify(data);
+      throw new Error(msg);
+    }
+    return data;
+  } catch (err) {
+    console.error('[API] Create package error:', err);
+    throw err;
+  }
 } 

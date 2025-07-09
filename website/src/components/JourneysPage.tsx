@@ -112,29 +112,29 @@ const ActiveRoutesBar: React.FC<{ journeys: any[] }> = ({ journeys }) => {
     <div style={{
       width: '100%',
       marginBottom: 24,
-      display: 'flex',
-      flexDirection: 'row',
+        display: 'flex',
+        flexDirection: 'row',
       gap: 18,
       overflowX: 'auto',
       padding: '8px 0',
     }}>
-      {activeRoutes.map((j, idx) => {
+        {activeRoutes.map((j, idx) => {
         const delivered = j.deliveredTrucks || 0;
         const undelivered = j.undeliveredTrucks || 0;
         const pending = j.pendingTrucks || 0;
         const total = (j.numTrucks || 0);
         const progress = total > 0 ? delivered / total : 0;
-        return (
-          <div key={idx} style={{
+          return (
+            <div key={idx} style={{
             minWidth: 240,
-            background: '#fff',
+              background: '#fff',
             borderRadius: 14,
             boxShadow: '0 2px 8px rgba(240,80,51,0.10)',
             padding: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 8,
             border: '2px solid #F39358',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -143,14 +143,14 @@ const ActiveRoutesBar: React.FC<{ journeys: any[] }> = ({ journeys }) => {
             </div>
             <div style={{ fontSize: 15, color: '#F05033', fontWeight: 600 }}>
               {`Active route: ${delivered} delivered, ${undelivered} undelivered${pending > 0 ? `, ${pending} pending` : ''}`}
-            </div>
+              </div>
             <div style={{ width: '100%', height: 10, background: '#eee', borderRadius: 5, margin: '8px 0' }}>
               <div style={{ width: `${progress * 100}%`, height: '100%', background: 'linear-gradient(90deg, #F39358 0%, #F05033 100%)', borderRadius: 5 }} />
             </div>
             <span style={{ fontSize: 13, color: '#888' }}>{Math.round(progress * 100)}% complete</span>
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
     </div>
   );
 };
