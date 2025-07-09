@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { fetchDeliveryHistory, fetchDrivers, fetchAvailableTrucks, fetchPackages } from '../utils/api';
+import React, { useEffect, useState, useRef } from 'react';
+import { fetchDeliveryHistory, fetchDrivers, fetchAvailableTrucks, fetchPackages, fetchActiveRoutes } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { quickActions } from './Dashboard';
@@ -7,6 +7,82 @@ import { quickActions } from './Dashboard';
 import { Map, Marker, Source, Layer } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Feature, LineString } from 'geojson';
+
+// Function to generate a color based on a value (same as mobile app)
+const generateColorFromValue = (value: string): string => {
+  const colors = [
+    '#FF4136', // Red
+    '#2ECC40', // Green
+    '#0074D9', // Blue
+    '#FF851B', // Orange
+    '#B10DC9', // Purple
+    '#01FF70', // Neon Green
+    '#F012BE', // Magenta
+    '#7FDBFF', // Light Blue
+    '#FFD700', // Gold
+    '#39CCCC', // Teal
+  ];
+
+  let total = 0;
+  for (let i = 0; i < value.length; i++) {
+    total = (total + value.charCodeAt(i) * (i + 1)) % colors.length;
+  }
+
+  return colors[Math.abs(total)];
+};
+
+// Custom marker component for packages
+const PackageMarker: React.FC<{ 
+  number: number, 
+  isDelivered: boolean, 
+  isUndelivered: boolean, 
+  isWarehouse?: boolean 
+}> = ({ number, isDelivered, isUndelivered, isWarehouse }) => {
+  if (isWarehouse) {
+    return (
+      <div style={{
+        width: 30,
+        height: 30,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 20,
+      }}>
+        🏠
+      </div>
+    );
+  }
+
+  let backgroundColor = '#fff';
+  let borderColor = '#000';
+  let textColor = '#000';
+
+  if (isDelivered) {
+    backgroundColor = '#E8F5E9';
+    borderColor = '#4CAF50';
+  } else if (isUndelivered) {
+    backgroundColor = '#FFEBEE';
+    borderColor = '#FF4136';
+  }
+
+  return (
+    <div style={{
+      backgroundColor,
+      borderRadius: '50%',
+      width: 30,
+      height: 30,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: `2px solid ${borderColor}`,
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: textColor,
+    }}>
+      {isDelivered ? '✓' : isUndelivered ? '✗' : number}
+    </div>
+  );
+};
 
 // RouteSummaryBar component
 const RouteSummaryBar: React.FC<{ journeys: any[] }> = ({ journeys }) => {
@@ -74,14 +150,55 @@ const examplePath2: Feature<LineString> = {
 };
 
 // ActiveRoutesBar component
-const ActiveRoutesBar: React.FC<{ journeys: any[] }> = ({ journeys }) => {
-  console.log('ActiveRoutesBar journeys:', journeys);
-  // Filter for active routes (not completed/cancelled)
-  const activeRoutes = journeys.filter(j => {
-    const status = (j.status || '').toLowerCase();
-    return status !== 'completed' && status !== 'cancelled' && status !== 'finished' && status !== 'done';
-  });
-  if (activeRoutes.length === 0) {
+const ActiveRoutesBar: React.FC<{ routes: any[], selectedRoute: string | null, onRouteSelect: (routeId: string) => void }> = ({ routes, selectedRoute, onRouteSelect }) => {
+  const [packageStatuses, setPackageStatuses] = useState<{[key: string]: any}>({});
+  
+  // Fetch package statuses for all routes
+  useEffect(() => {
+    const fetchPackageStatuses = async () => {
+      try {
+        const token = localStorage.getItem('access');
+        if (!token) return;
+        
+        const packages = await fetchPackages(token);
+        const statusMap: {[key: string]: any} = {};
+        
+        packages.forEach((pkg: any) => {
+          statusMap[pkg.packageID] = pkg.status;
+        });
+        
+        setPackageStatuses(statusMap);
+      } catch (error) {
+        console.error('Failed to fetch package statuses:', error);
+      }
+    };
+    
+    fetchPackageStatuses();
+  }, []);
+
+  const getPackageCounts = (route: any) => {
+    if (!route.packageSequence) return { delivered: 0, undelivered: 0, total: 0 };
+    
+    let delivered = 0;
+    let undelivered = 0;
+    let total = 0;
+    
+    route.packageSequence.forEach((pkg: any) => {
+      if (pkg.packageID && pkg.packageID !== 'ADMIN') {
+        total++;
+        const status = packageStatuses[pkg.packageID];
+        if (status === 'delivered') {
+          delivered++;
+        } else if (status === 'undelivered') {
+          undelivered++;
+        }
+      }
+    });
+    
+    return { delivered, undelivered, total };
+  };
+
+  if (!routes || routes.length === 0) {
     return (
       <div style={{
         width: '100%',
@@ -112,45 +229,120 @@ const ActiveRoutesBar: React.FC<{ journeys: any[] }> = ({ journeys }) => {
     <div style={{
       width: '100%',
       marginBottom: 24,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '16px 0',
+    }}>
+      <div style={{
         display: 'flex',
         flexDirection: 'row',
-      gap: 18,
-      overflowX: 'auto',
-      padding: '8px 0',
-    }}>
-        {activeRoutes.map((j, idx) => {
-        const delivered = j.deliveredTrucks || 0;
-        const undelivered = j.undeliveredTrucks || 0;
-        const pending = j.pendingTrucks || 0;
-        const total = (j.numTrucks || 0);
-        const progress = total > 0 ? delivered / total : 0;
+        gap: 16,
+        overflowX: 'auto',
+        maxWidth: '100%',
+        padding: '0 20px',
+      }}>
+        {routes.map((route, idx) => {
+          const { delivered, undelivered, total } = getPackageCounts(route);
+          const isSelected = selectedRoute === route.routeID;
+          const routeColor = generateColorFromValue(route.user);
+
           return (
-            <div key={idx} style={{
-            minWidth: 240,
-              background: '#fff',
-            borderRadius: 14,
-            boxShadow: '0 2px 8px rgba(240,80,51,0.10)',
-            padding: 20,
+            <button
+              key={idx}
+              onClick={() => onRouteSelect(route.routeID)}
+              style={{
+                minWidth: 280,
+                maxWidth: 320,
+                background: isSelected 
+                  ? 'linear-gradient(135deg, #FF4136 0%, #DC143C 100%)' 
+                  : 'linear-gradient(135deg, #F39358 0%, #F05033 100%)',
+                borderRadius: 16,
+                padding: '12px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                boxShadow: isSelected 
+                  ? '0 6px 20px rgba(255,65,54,0.4)' 
+                  : '0 4px 12px rgba(240,80,51,0.25)',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                border: isSelected ? '2px solid #FF4136' : 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(240,80,51,0.35)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(240,80,51,0.25)';
+                }
+              }}
+            >
+              {/* Active indicator */}
+              <div style={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                width: 6,
+                height: 6,
+                background: '#4CAF50',
+                borderRadius: '50%',
+                boxShadow: '0 0 4px rgba(76,175,80,0.6)',
+              }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20, color: '#fff' }}>🚚</span>
+                <span style={{ 
+                  fontWeight: 700, 
+                  fontSize: 15, 
+                  color: '#fff',
+                  lineHeight: 1.2,
+                }}>
+                  {route.user || 'N/A'}
+                </span>
+              </div>
+              
+              <div style={{ 
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'flex-start',
+                alignItems: 'flex-end',
+                gap: 2,
+              }}>
+                <div style={{ 
+                  fontSize: 13, 
+                  color: '#fff', 
+                  fontWeight: 600,
+                  background: 'rgba(0,0,0,0.3)',
+                  padding: '3px 10px',
+                  borderRadius: 10,
+                  backdropFilter: 'blur(10px)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {total} Total
+                </div>
+                <div style={{
+                  display: 'flex',
               gap: 8,
-            border: '2px solid #F39358',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 22, color: '#F39358' }}>🚚</span>
-              <span style={{ fontWeight: 700, fontSize: 18 }}>{j.driver || 'N/A'}</span>
-            </div>
-            <div style={{ fontSize: 15, color: '#F05033', fontWeight: 600 }}>
-              {`Active route: ${delivered} delivered, ${undelivered} undelivered${pending > 0 ? `, ${pending} pending` : ''}`}
+                  fontSize: 11,
+                  color: '#fff',
+                  fontWeight: 500,
+                }}>
+                  <span style={{ color: '#fff' }}>✓ {delivered}</span>
+                  <span style={{ color: '#fff' }}>✗ {undelivered}</span>
+                </div>
               </div>
-            <div style={{ width: '100%', height: 10, background: '#eee', borderRadius: 5, margin: '8px 0' }}>
-              <div style={{ width: `${progress * 100}%`, height: '100%', background: 'linear-gradient(90deg, #F39358 0%, #F05033 100%)', borderRadius: 5 }} />
-            </div>
-            <span style={{ fontSize: 13, color: '#888' }}>{Math.round(progress * 100)}% complete</span>
-            </div>
+            </button>
           );
         })}
+      </div>
     </div>
   );
 };
@@ -227,8 +419,173 @@ const DriverCard: React.FC<{ driver: any, token: string }> = ({ driver, token })
   );
 };
 
+const TruckSelectionModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onAssign: (driverUsername: string, truck: any) => void;
+  drivers: any[];
+  assignments: {[key: string]: any};
+  remainingTrucks: any[];
+  setAssignments: React.Dispatch<React.SetStateAction<{[key: string]: any}>>;
+  setRemainingTrucks: React.Dispatch<React.SetStateAction<any[]>>;
+}> = ({ isOpen, onClose, onAssign, drivers, assignments, remainingTrucks, setAssignments, setRemainingTrucks }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredDrivers = drivers.filter(driver =>
+    driver.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (driver.email && driver.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredRemainingTrucks = remainingTrucks.filter(truck =>
+    truck.licensePlate.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 16,
+        padding: 24,
+        width: '90%',
+        maxWidth: 600,
+        maxHeight: '90%',
+        overflowY: 'auto',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+      }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ marginBottom: 20, textAlign: 'center' }}>Assign Trucks</h2>
+        <input
+          type="text"
+          placeholder="Search drivers or trucks..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 14px',
+            borderRadius: 8,
+            border: '1px solid #F8D5B0',
+            fontSize: '1rem',
+            marginBottom: 20,
+            marginTop: 0,
+          }}
+        />
+        <h3 style={{ marginBottom: 15 }}>Available Drivers</h3>
+        {filteredDrivers.length === 0 ? (
+          <p>No drivers found.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filteredDrivers.map(driver => (
+              <div key={driver.username} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                border: '1px solid #eee',
+                borderRadius: 12,
+                background: '#f9f9f9',
+              }}>
+                <span style={{ fontWeight: 600 }}>{driver.username}</span>
+                <span style={{ color: '#888', fontSize: 14 }}>{driver.email || 'N/A'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <h3 style={{ marginTop: 20, marginBottom: 15 }}>Available Trucks</h3>
+        {filteredRemainingTrucks.length === 0 ? (
+          <p>No trucks available.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filteredRemainingTrucks.map(truck => (
+              <div key={truck.licensePlate} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                border: '1px solid #eee',
+                borderRadius: 12,
+                background: '#f9f9f9',
+              }}>
+                <span style={{ fontWeight: 600 }}>{truck.licensePlate}</span>
+                <span style={{ color: '#888', fontSize: 14 }}>{truck.model || 'N/A'}</span>
+                <button
+                  onClick={() => onAssign(filteredDrivers[0].username, truck)} // Assuming the first driver is selected for assignment
+                  style={{
+                    background: '#4CAF50',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 6px rgba(76,175,80,0.3)',
+                  }}
+                >
+                  Assign
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 20 }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: '#f05033',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 12,
+              padding: '10px 20px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(240,80,51,0.2)',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              // This button should ideally trigger the final assignment logic
+              // For now, it just closes the modal
+              onClose();
+            }}
+            style={{
+              background: 'linear-gradient(90deg, #FF4136 0%, #DC143C 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 12,
+              padding: '10px 20px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(255,65,54,0.2)',
+            }}
+          >
+            Confirm Assignments
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const JourneysPage: React.FC = () => {
-  const [journeys, setJourneys] = useState<any[]>([]);
+  const [routes, setRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -239,24 +596,42 @@ const JourneysPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [availableTrucks, setAvailableTrucks] = useState<number>(0);
   const [todayPackages, setTodayPackages] = useState<number>(0);
+  const [packages, setPackages] = useState<any[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const mapRef = useRef<any>(null);
+  const [showTruckModal, setShowTruckModal] = useState(false);
+  const [assignments, setAssignments] = useState<{[key: string]: any}>({});
+  const [remainingTrucks, setRemainingTrucks] = useState<any[]>([]);
+  const [isStartingJourney, setIsStartingJourney] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [trucksData, setTrucksData] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchJourneys = async () => {
-      setLoading(true);
-      setError('');
+    const fetchRoutes = async () => {
       try {
         const token = localStorage.getItem('access');
         if (!token) throw new Error('Not authenticated');
-        const data = await fetchDeliveryHistory(token, 30);
-        setJourneys(data);
-        console.log('Fetched journeys:', data);
+        const data = await fetchActiveRoutes(token);
+        setRoutes(data);
       } catch (e: any) {
-        setError(e.message || 'Failed to fetch journeys');
-      } finally {
-        setLoading(false);
+        // Optionally handle error
       }
     };
-    fetchJourneys();
+    fetchRoutes();
+  }, []);
+
+  useEffect(() => {
+    const fetchPackagesData = async () => {
+      try {
+        const token = localStorage.getItem('access');
+        if (!token) return;
+        const packagesData = await fetchPackages(token);
+        setPackages(packagesData);
+      } catch (e) {
+        console.error('Failed to fetch packages:', e);
+      }
+    };
+    fetchPackagesData();
   }, []);
 
   useEffect(() => {
@@ -283,6 +658,7 @@ const JourneysPage: React.FC = () => {
         const token = localStorage.getItem('access');
         if (!token) return;
         const trucks = await fetchAvailableTrucks(token);
+        setTrucksData(trucks);
         setAvailableTrucks(trucks.length);
         const packages = await fetchPackages(token);
         setTodayPackages(packages.length);
@@ -295,9 +671,200 @@ const JourneysPage: React.FC = () => {
 
   // Start Journey logic
   const handleStartJourney = () => {
-    if (selectedDrivers.size === 0) return;
-    alert(`Start journey for drivers: ${Array.from(selectedDrivers).join(', ')}`);
-    // TODO: Implement backend call
+    if (selectedDrivers.size === 0) {
+      alert('Please select at least one driver');
+      return;
+    }
+    
+    // Initialize assignments and remaining trucks
+    const initialAssignments: {[key: string]: any} = {};
+    Array.from(selectedDrivers).forEach(driver => {
+      initialAssignments[driver] = null;
+    });
+    
+    setAssignments(initialAssignments);
+    setRemainingTrucks([...trucksData]);
+    setShowTruckModal(true);
+  };
+
+  const handleAssignTruck = (driverUsername: string, truck: any) => {
+    setAssignments(prev => ({
+      ...prev,
+      [driverUsername]: truck
+    }));
+    
+    setRemainingTrucks(prev => prev.filter(t => t.licensePlate !== truck.licensePlate));
+  };
+
+  const handleConfirmAssignments = async () => {
+    // Check if all drivers have trucks assigned
+    const unassignedDrivers = Array.from(selectedDrivers).filter(driver => !assignments[driver]);
+    if (unassignedDrivers.length > 0) {
+      alert(`Please assign trucks to: ${unassignedDrivers.join(', ')}`);
+      return;
+    }
+
+    setIsStartingJourney(true);
+    setLoadingMessage('Planning routes for your drivers...');
+
+    try {
+      // Get driver usernames
+      const driverUsernames = Array.from(selectedDrivers);
+      
+      // Start journey with selected drivers
+      const token = localStorage.getItem('access');
+      if (!token) throw new Error('Not authenticated');
+
+      // Step 1: Plan routes for the drivers
+      const routePlanningResponse = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:8000'}/delivery/route/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          drivers: driverUsernames,
+        }),
+      });
+
+      if (!routePlanningResponse.ok) {
+        const errorData = await routePlanningResponse.json();
+        throw new Error(errorData.error || 'Failed to plan routes');
+      }
+
+      const plannedRoutes = await routePlanningResponse.json();
+      console.log('Planned routes:', plannedRoutes);
+
+      setLoadingMessage('Assigning trucks and starting journeys...');
+      
+      // Step 2: For each driver, assign truck and start journey using the planned route data
+      for (const driverUsername of driverUsernames) {
+        const truck = assignments[driverUsername];
+        
+        // Find the planned route for this driver
+        const plannedRoute = plannedRoutes.find((route: any) => route.driverUsername === driverUsername);
+        if (!plannedRoute) {
+          throw new Error(`No planned route found for driver ${driverUsername}`);
+        }
+
+        // Call the backend to assign truck and start journey with the planned route data
+        const response = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:8000'}/delivery/route/assign/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            driverUsername,
+            truckLicensePlate: truck.licensePlate,
+            packageSequence: plannedRoute.route.map((wp: any) => wp.package_info),
+            mapRoute: plannedRoute.route.flatMap((wp: any) => wp.route),
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to assign truck and start journey for ${driverUsername}`);
+        }
+      }
+
+      // Success - close modal and refresh data
+      setShowTruckModal(false);
+      setIsStartingJourney(false);
+      setSelectedDrivers(new Set());
+      setAssignments({});
+      
+      // Refresh routes and trucks
+      if (token) {
+        const [routesData, trucksData] = await Promise.all([
+          fetchActiveRoutes(token),
+          fetchAvailableTrucks(token)
+        ]);
+        setRoutes(routesData);
+        setAvailableTrucks(trucksData.length);
+      }
+      
+      alert('Journey started successfully!');
+      
+    } catch (error: any) {
+      setIsStartingJourney(false);
+      alert(`Error starting journey: ${error.message}`);
+    }
+  };
+
+  // Create route polylines and markers
+  const createRouteFeatures = () => {
+    const features: any[] = [];
+    
+    routes.forEach((route, routeIndex) => {
+      if (route.mapRoute && route.mapRoute.length > 0) {
+        // Create polyline for the route
+        const isSelected = selectedRoute === route.routeID;
+        const routeColor = isSelected ? '#FF4136' : generateColorFromValue(route.user);
+        
+        const polylineFeature: Feature<LineString> = {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: route.mapRoute,
+          },
+          properties: {
+            routeId: route.routeID,
+            driver: route.user,
+            color: routeColor,
+            isSelected,
+          },
+        };
+        
+        features.push(polylineFeature);
+      }
+    });
+    
+    return features;
+  };
+
+  // Get package status by ID
+  const getPackageStatus = (packageId: string) => {
+    const pkg = packages.find(p => p.packageID === packageId);
+    return pkg ? pkg.status : 'pending';
+  };
+
+  // Focus map on selected route
+  const focusOnRoute = (routeId: string) => {
+    const route = routes.find(r => r.routeID === routeId);
+    if (route && route.mapRoute && route.mapRoute.length > 0 && mapRef.current) {
+      // Calculate bounds for the route
+      let minLat = route.mapRoute[0][1];
+      let maxLat = route.mapRoute[0][1];
+      let minLng = route.mapRoute[0][0];
+      let maxLng = route.mapRoute[0][0];
+
+      route.mapRoute.forEach((point: [number, number]) => {
+        minLat = Math.min(minLat, point[1]);
+        maxLat = Math.max(maxLat, point[1]);
+        minLng = Math.min(minLng, point[0]);
+        maxLng = Math.max(maxLng, point[0]);
+      });
+
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+      const latDelta = (maxLat - minLat) * 1.5;
+      const lngDelta = (maxLng - minLng) * 1.5;
+
+      mapRef.current.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat]
+        ],
+        { padding: 50, duration: 1000 }
+      );
+    }
+  };
+
+  // Handle route selection
+  const handleRouteSelect = (routeId: string) => {
+    setSelectedRoute(routeId);
+    focusOnRoute(routeId);
   };
 
   return (
@@ -311,7 +878,7 @@ const JourneysPage: React.FC = () => {
         alignItems: 'stretch',
       }}>
         {/* Top row: Active Routes */}
-        <ActiveRoutesBar journeys={journeys} />
+        <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
         {/* Main content: two columns */}
         <div className={styles.columnsWrapper} style={{ width: '100%', marginTop: 0 }}>
           {/* Left column: Tabs, driver selection, start journey */}
@@ -503,25 +1070,51 @@ const JourneysPage: React.FC = () => {
                 }}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+                ref={mapRef}
               >
-                {/* Marker at Sofia center */}
-                <Marker longitude={23.3219} latitude={42.6977} color="#d32f2f" />
-                {/* Path 1: Red */}
-                <Source id="path1" type="geojson" data={examplePath1}>
-                  <Layer
-                    id="line1"
-                    type="line"
-                    paint={{ 'line-color': '#d32f2f', 'line-width': 4 }}
-                  />
-                </Source>
-                {/* Path 2: Blue */}
-                <Source id="path2" type="geojson" data={examplePath2}>
-                  <Layer
-                    id="line2"
-                    type="line"
-                    paint={{ 'line-color': '#1976d2', 'line-width': 4, 'line-dasharray': [2,2] }}
-                  />
-                </Source>
+                {/* Render route polylines */}
+                {createRouteFeatures().map((feature, index) => (
+                  <Source key={`route-${index}`} id={`route-${index}`} type="geojson" data={feature}>
+                    <Layer
+                      id={`line-${index}`}
+                      type="line"
+                      paint={{ 
+                        'line-color': feature.properties.color, 
+                        'line-width': feature.properties.isSelected ? 6 : 4,
+                        'line-opacity': feature.properties.isSelected ? 1 : 0.8
+                      }}
+                    />
+                  </Source>
+                ))}
+                
+                {/* Render package markers */}
+                {routes.map((route, routeIndex) => {
+                  if (!route.packageSequence) return null;
+                  
+                  return route.packageSequence.map((pkg: any, pkgIndex: number) => {
+                    if (!pkg.latitude || !pkg.longitude) return null;
+                    
+                    const status = getPackageStatus(pkg.packageID);
+                    const isDelivered = status === 'delivered';
+                    const isUndelivered = status === 'undelivered';
+                    const isWarehouse = pkg.packageID === 'ADMIN';
+                    
+                    return (
+                      <Marker 
+                        key={`marker-${route.routeID}-${pkgIndex}`}
+                        longitude={pkg.longitude} 
+                        latitude={pkg.latitude}
+                      >
+                        <PackageMarker
+                          number={pkgIndex}
+                          isDelivered={isDelivered}
+                          isUndelivered={isUndelivered}
+                          isWarehouse={isWarehouse}
+                        />
+                      </Marker>
+                    );
+                  });
+                })}
               </Map>
             </div>
           </div>
@@ -544,8 +1137,265 @@ const JourneysPage: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Truck Selection Modal */}
+      {showTruckModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }} onClick={() => setShowTruckModal(false)}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 16,
+            padding: 24,
+            width: '90%',
+            maxWidth: 800,
+            maxHeight: '90%',
+            overflowY: 'auto',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+          }} onClick={(e) => e.stopPropagation()}>
+            
+            {isStartingJourney ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 20 }}>🚚</div>
+                <h2 style={{ marginBottom: 10 }}>Starting Journey...</h2>
+                <p style={{ color: '#666', marginBottom: 20 }}>{loadingMessage}</p>
+                <div style={{
+                  width: '100%',
+                  height: 4,
+                  background: '#eee',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: '60%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #F39358 0%, #F05033 100%)',
+                    borderRadius: 2,
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }} />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <h2 style={{ margin: 0 }}>Assign Trucks to Drivers</h2>
+                  <button
+                    onClick={() => setShowTruckModal(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: 24,
+                      cursor: 'pointer',
+                      color: '#666',
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  {/* Drivers Column */}
+                  <div>
+                    <h3 style={{ marginBottom: 15, color: '#333' }}>Selected Drivers</h3>
+                    {Array.from(selectedDrivers).map(driverUsername => {
+                      const driver = drivers.find(d => d.username === driverUsername);
+                      const assignedTruck = assignments[driverUsername];
+                      
+                      return (
+                        <div key={driverUsername} style={{
+                          padding: 16,
+                          border: '2px solid',
+                          borderColor: assignedTruck ? '#4CAF50' : '#ddd',
+                          borderRadius: 12,
+                          marginBottom: 12,
+                          background: assignedTruck ? '#f0f9f0' : '#f9f9f9',
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontWeight: 600, fontSize: 16 }}>{driverUsername}</span>
+                            {assignedTruck && (
+                              <span style={{ 
+                                background: '#4CAF50', 
+                                color: '#fff', 
+                                padding: '4px 8px', 
+                                borderRadius: 6, 
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}>
+                                ✓ Assigned
+                              </span>
+                            )}
+                          </div>
+                          {driver?.email && (
+                            <div style={{ color: '#666', fontSize: 14, marginBottom: 8 }}>
+                              {driver.email}
+                            </div>
+                          )}
+                          {assignedTruck ? (
+                            <div style={{ 
+                              background: '#4CAF50', 
+                              color: '#fff', 
+                              padding: '8px 12px', 
+                              borderRadius: 8,
+                              fontSize: 14,
+                              fontWeight: 600,
+                            }}>
+                              🚚 {assignedTruck.licensePlate} ({assignedTruck.kilogramCapacity} kg)
+                            </div>
+                          ) : (
+                            <div style={{ color: '#999', fontSize: 14, fontStyle: 'italic' }}>
+                              No truck assigned
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Available Trucks Column */}
+                  <div>
+                    <h3 style={{ marginBottom: 15, color: '#333' }}>
+                      Available Trucks ({remainingTrucks.length})
+                    </h3>
+                    {remainingTrucks.length === 0 ? (
+                      <div style={{ 
+                        padding: 20, 
+                        textAlign: 'center', 
+                        color: '#666',
+                        background: '#f9f9f9',
+                        borderRadius: 12,
+                      }}>
+                        <div style={{ fontSize: 32, marginBottom: 10 }}>🚚</div>
+                        <p>No trucks available</p>
+                        <p style={{ fontSize: 14, marginTop: 5 }}>All trucks have been assigned</p>
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                        {remainingTrucks.map(truck => (
+                          <div key={truck.licensePlate} style={{
+                            padding: 16,
+                            border: '1px solid #ddd',
+                            borderRadius: 12,
+                            marginBottom: 12,
+                            background: '#fff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }} 
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                          onClick={() => {
+                            // Find first unassigned driver
+                            const unassignedDriver = Array.from(selectedDrivers).find(driver => !assignments[driver]);
+                            if (unassignedDriver) {
+                              handleAssignTruck(unassignedDriver, truck);
+                            }
+                          }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                              <span style={{ fontWeight: 600, fontSize: 16 }}>🚚 {truck.licensePlate}</span>
+                              <span style={{ 
+                                background: '#2196F3', 
+                                color: '#fff', 
+                                padding: '4px 8px', 
+                                borderRadius: 6, 
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}>
+                                {truck.kilogramCapacity} kg
+                              </span>
+                            </div>
+                            <div style={{ color: '#666', fontSize: 14 }}>
+                              Click to assign to next available driver
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginTop: 30,
+                  paddingTop: 20,
+                  borderTop: '1px solid #eee',
+                }}>
+                  <div style={{ color: '#666' }}>
+                    {Object.values(assignments).filter(Boolean).length} of {selectedDrivers.size} drivers assigned
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => setShowTruckModal(false)}
+                      style={{
+                        background: '#f5f5f5',
+                        color: '#333',
+                        border: '1px solid #ddd',
+                        borderRadius: 12,
+                        padding: '12px 24px',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmAssignments}
+                      disabled={Object.values(assignments).some(a => !a)}
+                      style={{
+                        background: Object.values(assignments).every(a => a) 
+                          ? 'linear-gradient(90deg, #F39358 0%, #F05033 100%)' 
+                          : '#ccc',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 12,
+                        padding: '12px 24px',
+                        cursor: Object.values(assignments).every(a => a) ? 'pointer' : 'not-allowed',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        boxShadow: Object.values(assignments).every(a => a) 
+                          ? '0 4px 12px rgba(240,80,51,0.3)' 
+                          : 'none',
+                      }}
+                    >
+                      Start Journey
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default JourneysPage; 
+export default JourneysPage;
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+`;
+document.head.appendChild(style); 
