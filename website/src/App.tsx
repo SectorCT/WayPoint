@@ -7,6 +7,8 @@ import Dashboard from './components/Dashboard';
 import JourneysPage from './components/JourneysPage';
 import PackagesPage from './components/PackagesPage';
 import TrucksPage from './components/TrucksPage';
+import VerifyUsers from './components/VerifyUsers';
+import VerifyUsersPage from './components/VerifyUsersPage';
 
 function ProtectedRoute({ children }: { children: ReactElement }): React.JSX.Element | null {
   const user = localStorage.getItem('user');
@@ -118,6 +120,7 @@ function AppRoutes() {
           <Route path="/journeys" element={<ProtectedRoute><JourneysPage /></ProtectedRoute>} />
           <Route path="/packages" element={<ProtectedRoute><PackagesPage /></ProtectedRoute>} />
           <Route path="/trucks" element={<ProtectedRoute><TrucksPage /></ProtectedRoute>} />
+          <Route path="/verifyusers" element={<ProtectedRoute><VerifyUsersPage /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>

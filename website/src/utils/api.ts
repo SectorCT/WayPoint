@@ -119,4 +119,46 @@ export async function fetchDrivers(token: string) {
     console.error('[API] Fetch drivers error:', err);
     throw err;
   }
+}
+
+export async function verifyTrucker(token: string, username: string) {
+  try {
+    const res = await fetch(`${API_BASE}/delivery/truckers/verify/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to verify trucker');
+    }
+    return data;
+  } catch (err) {
+    console.error('[API] Verify trucker error:', err);
+    throw err;
+  }
+}
+
+export async function verifyUser(token: string, username: string) {
+  try {
+    const res = await fetch(`${API_BASE}/delivery/truckers/verify/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to verify user');
+    }
+    return data;
+  } catch (err) {
+    console.error('[API] Verify user error:', err);
+    throw err;
+  }
 } 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
 // Import all icons from react-icons/fa for compatibility
 import { FaTruck, FaBoxOpen, FaRoute, FaUserCheck, FaHistory as FaHistoryRaw, FaSignOutAlt as FaSignOutAltRaw, FaUserTie as FaUserTieRaw, FaTachometerAlt } from 'react-icons/fa';
+import { MdHome, MdLocalShipping, MdInventory, MdPersonAdd } from 'react-icons/md';
 import { fetchPackages, fetchAvailableTrucks, fetchDeliveryHistory, fetchUnverifiedTruckers } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,27 +21,11 @@ const TAB_VERIFY = 'Verify Truckers';
 const TABS = [TAB_JOURNEYS, TAB_PACKAGES, TAB_TRUCKS, TAB_TRACKING, TAB_VERIFY];
 
 export const quickActions = [
-  {
-    label: 'Dashboard',
-    Icon: FaTachometerAlt,
-  },
-  {
-    label: 'Journeys',
-    Icon: FaRoute,
-  },
-  {
-    label: 'Packages',
-    Icon: FaBoxOpen,
-  },
-  {
-    label: 'Trucks',
-    Icon: FaTruck,
-  },
-  {
-    label: 'Verify Users',
-    Icon: FaUserCheck,
-  },
-  // ... add more actions as needed
+  { label: 'Dashboard', Icon: MdHome, path: '/dashboard' },
+  { label: 'Journeys', Icon: MdLocalShipping, path: '/journeys' },
+  { label: 'Packages', Icon: MdInventory, path: '/packages' },
+  { label: 'Trucks', Icon: MdLocalShipping, path: '/trucks' },
+  { label: 'Verify Users', Icon: MdPersonAdd, path: '/verifyusers' },
 ];
 
 const Dashboard: React.FC = () => {
@@ -94,7 +79,7 @@ const Dashboard: React.FC = () => {
       return p.deliveryDate && p.deliveryDate.startsWith(today);
     }).length, Icon: FaBoxOpen, link: '/packages' },
     { label: 'Trucks Available', value: trucks.length, Icon: FaTruck, link: '/trucks' },
-    { label: 'Pending Verifications', value: unverifiedTruckers.length, Icon: FaUserCheck, link: '/dashboard?tab=Verify Truckers' },
+    { label: 'Pending User Verifications', value: unverifiedTruckers.length, Icon: FaUserCheck, link: '/verifyusers' },
   ];
 
   const recentActivity = [
@@ -218,24 +203,10 @@ const Dashboard: React.FC = () => {
         <div className={styles.quickActionsCorner}>
           {quickActions.map((action) => {
             const Icon = action.Icon as unknown as React.FC<any>;
-            let onClick;
-            switch (action.label) {
-              case 'Journeys':
-                onClick = () => navigate('/journeys');
-                break;
-              case 'Packages':
-                onClick = () => navigate('/packages');
-                break;
-              case 'Trucks':
-                onClick = () => navigate('/trucks');
-                break;
-              default:
-                onClick = () => {};
-            }
             return (
-              <button className={styles.quickActionButton} key={action.label} onClick={onClick}>
+              <button className={styles.quickActionButton} key={action.label} onClick={() => navigate(action.path)}>
                 <Icon />
-                <span>{action.label}</span> {/* Tooltip label, hidden by default, shown on hover */}
+                <span>{action.label}</span>
               </button>
             );
           })}

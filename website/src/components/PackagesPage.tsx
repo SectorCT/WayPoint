@@ -44,25 +44,8 @@ const PackagesPage: React.FC = () => {
       <div className={styles.quickActionsCorner}>
         {quickActions.map((action) => {
           const Icon = action.Icon as unknown as React.FC<any>;
-          let onClick;
-          switch (action.label) {
-            case 'Dashboard':
-              onClick = () => navigate('/dashboard');
-              break;
-            case 'Journeys':
-              onClick = () => navigate('/journeys');
-              break;
-            case 'Packages':
-              onClick = () => navigate('/packages');
-              break;
-            case 'Trucks':
-              onClick = () => navigate('/trucks');
-              break;
-            default:
-              onClick = () => {};
-          }
           return (
-            <button className={styles.quickActionButton} key={action.label} onClick={onClick}>
+            <button className={styles.quickActionButton} key={action.label} onClick={() => navigate(action.path)}>
               <Icon />
               <span>{action.label}</span>
             </button>
