@@ -161,4 +161,25 @@ export async function verifyUser(token: string, username: string) {
     console.error('[API] Verify user error:', err);
     throw err;
   }
+}
+
+export async function createTruck(token: string, licensePlate: string, kilogramCapacity: number) {
+  try {
+    const res = await fetch(`${API_BASE}/delivery/trucks/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ licensePlate, kilogramCapacity }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to create truck');
+    }
+    return data;
+  } catch (err) {
+    console.error('[API] Create truck error:', err);
+    throw err;
+  }
 } 
