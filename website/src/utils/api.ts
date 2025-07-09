@@ -207,4 +207,20 @@ export async function createPackage(token: string, recipient: string, recipientP
     console.error('[API] Create package error:', err);
     throw err;
   }
+}
+
+export async function fetchActiveRoutes(token: string) {
+  try {
+    const res = await fetch(`${API_BASE}/delivery/route/all/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to fetch active routes');
+    }
+    return data;
+  } catch (err) {
+    console.error('[API] Fetch active routes error:', err);
+    throw err;
+  }
 } 
