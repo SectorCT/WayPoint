@@ -10,6 +10,7 @@ import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
 import House from "@assets/icons/house.svg";
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface Coordinate {
   latitude: number;
@@ -48,6 +49,7 @@ interface RouteData {
   dateOfCreation: string;
   truck?: string;
   _id?: string;
+  route?: any[]; // OSRM route legs with steps
 }
 
 interface Theme {
@@ -164,6 +166,73 @@ const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
   </View>
 );
 
+// Add helper to get all steps from route legs
+function getAllStepsFromRoute(route: any[]): any[] {
+  if (!route || !Array.isArray(route)) return [];
+  let steps: any[] = [];
+  for (const leg of route) {
+    if (leg.steps && Array.isArray(leg.steps)) {
+      steps = steps.concat(leg.steps);
+    }
+  }
+  return steps;
+}
+
+// Helper to get icon for maneuver type/modifier
+function getManeuverIcon(type: string, modifier: string, theme: any): JSX.Element {
+  const iconColor = theme.color.darkPrimary;
+  if (type === 'arrive') return <MaterialCommunityIcons name="flag-checkered" size={28} color={iconColor} />;
+  if (type === 'depart') return <MaterialCommunityIcons name="car" size={28} color={iconColor} />;
+  if (type === 'turn') {
+    switch (modifier) {
+      case 'left': return <MaterialCommunityIcons name="arrow-left" size={28} color={iconColor} />;
+      case 'right': return <MaterialCommunityIcons name="arrow-right" size={28} color={iconColor} />;
+      case 'straight': return <MaterialCommunityIcons name="arrow-up" size={28} color={iconColor} />;
+      case 'slight left': return <MaterialCommunityIcons name="arrow-top-left" size={28} color={iconColor} />;
+      case 'slight right': return <MaterialCommunityIcons name="arrow-top-right" size={28} color={iconColor} />;
+      case 'sharp left': return <MaterialCommunityIcons name="arrow-left-bold" size={28} color={iconColor} />;
+      case 'sharp right': return <MaterialCommunityIcons name="arrow-right-bold" size={28} color={iconColor} />;
+      default: return <MaterialCommunityIcons name="arrow-up" size={28} color={iconColor} />;
+    }
+  }
+  if (type === 'roundabout') return <MaterialCommunityIcons name="rotate-3d-variant" size={28} color={iconColor} />;
+  return <MaterialCommunityIcons name="arrow-up" size={28} color={iconColor} />;
+}
+
+// Add helper to compute estimate (duration or distance) for full route or next package
+function getRouteEstimate(routeSteps: any[], mode: 'full' | 'next'): string | null {
+  if (!routeSteps || !routeSteps.length) return null;
+  if (mode === 'full') {
+    // Sum all durations
+    const totalSeconds = routeSteps.reduce((sum, step) => sum + (step.duration || 0), 0);
+    if (totalSeconds > 0) {
+      const mins = Math.round(totalSeconds / 60);
+      return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+    }
+  } else {
+    // Next mode: show duration for the next step only
+    const next = routeSteps[0];
+    if (next && next.duration) {
+      const mins = Math.round(next.duration / 60);
+      return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+    }
+  }
+  return null;
+}
+
+// Helper to offset the map center forward in the direction of travel
+function getOffsetCenter(position: Coordinate, offsetMeters = 120, heading = 0): Coordinate {
+  // Offset latitude/longitude by offsetMeters in the direction of heading
+  // Earth radius in meters
+  const R = 6378137;
+  const dLat = (offsetMeters * Math.cos((heading * Math.PI) / 180)) / R;
+  const dLng = (offsetMeters * Math.sin((heading * Math.PI) / 180)) / (R * Math.cos((position.latitude * Math.PI) / 180));
+  return {
+    latitude: position.latitude + (dLat * 180) / Math.PI,
+    longitude: position.longitude + (dLng * 180) / Math.PI,
+  };
+}
+
 export default function TruckerViewScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -194,6 +263,10 @@ export default function TruckerViewScreen() {
   
   // Add state to track if camera should follow heading
   const [isFollowingHeading, setIsFollowingHeading] = useState(false);
+  
+  // Add state for steps and next step
+  const [routeSteps, setRouteSteps] = useState<any[]>([]);
+  const [nextStep, setNextStep] = useState<any | null>(null);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
 
@@ -438,6 +511,39 @@ export default function TruckerViewScreen() {
     }
   }, [currentZone?.mapRoute, locations, isReturning]);
 
+  // Update steps when currentZone changes
+  useEffect(() => {
+    if (currentZone && currentZone.route && Array.isArray(currentZone.route)) {
+      setRouteSteps(getAllStepsFromRoute(currentZone.route));
+    } else {
+      setRouteSteps([]);
+    }
+  }, [currentZone]);
+
+  // Update next step as position changes
+  useEffect(() => {
+    if (!routeSteps.length || !position.latitude || !position.longitude) {
+      setNextStep(null);
+      return;
+    }
+    // Find the closest step ahead of the driver
+    let minDist = Infinity;
+    let closestStep = null;
+    for (const step of routeSteps) {
+      if (!step.maneuver || !step.maneuver.location) continue;
+      const [lng, lat] = step.maneuver.location;
+      const dist = calculateDistance(
+        { latitude: position.latitude, longitude: position.longitude },
+        { latitude: lat, longitude: lng }
+      );
+      if (dist < minDist && dist > 5) { // ignore steps already passed (within 5m)
+        minDist = dist;
+        closestStep = { ...step, distanceToManeuver: dist };
+      }
+    }
+    setNextStep(closestStep);
+  }, [routeSteps, position.latitude, position.longitude]);
+
   const handleReturnRoute = async () => {
     try {
       setIsReturnMode(true);
@@ -548,12 +654,18 @@ export default function TruckerViewScreen() {
   }, []);
 
   const handleRecenter = () => {
-    if (mapRef.current && position.latitude && position.longitude) {
+    if (
+      mapRef.current &&
+      typeof position.latitude === 'number' &&
+      typeof position.longitude === 'number'
+    ) {
+      const offsetCenter = getOffsetCenter(
+        { latitude: position.latitude, longitude: position.longitude },
+        120,
+        position.heading || 0
+      );
       mapRef.current.animateCamera({
-        center: {
-          latitude: position.latitude,
-          longitude: position.longitude,
-        },
+        center: offsetCenter,
         heading: position.heading || 0,
         pitch: 60, // Tilt the camera to show more in front
         zoom: 18,
@@ -564,12 +676,19 @@ export default function TruckerViewScreen() {
 
   useEffect(() => {
     if (!isFollowingHeading) return;
-    if (mapRef.current && position.latitude && position.longitude && typeof position.heading === 'number') {
+    if (
+      mapRef.current &&
+      typeof position.latitude === 'number' &&
+      typeof position.longitude === 'number' &&
+      typeof position.heading === 'number'
+    ) {
+      const offsetCenter = getOffsetCenter(
+        { latitude: position.latitude, longitude: position.longitude },
+        120,
+        position.heading
+      );
       mapRef.current.animateCamera({
-        center: {
-          latitude: position.latitude,
-          longitude: position.longitude,
-        },
+        center: offsetCenter,
         heading: position.heading,
         pitch: 60,
         zoom: 18,
@@ -791,6 +910,42 @@ export default function TruckerViewScreen() {
       renderNavigationView={renderDrawerContent}
     >
       <View style={styles.container}>
+        {nextStep && (
+          <View style={[styles.navigationBox, { backgroundColor: theme.color.white, shadowColor: theme.color.darkPrimary }]}> 
+            <View style={[styles.navigationIconBox, { backgroundColor: theme.color.lightPrimary }]}> 
+              {getManeuverIcon(nextStep.maneuver.type, nextStep.maneuver.modifier, theme)}
+            </View>
+            <View style={styles.navigationTextBox}>
+              <Text style={[styles.navigationDistance, { color: theme.color.mediumPrimary }]}>{nextStep.distanceToManeuver < 1000 ? `${Math.round(nextStep.distanceToManeuver)} m` : `${(nextStep.distanceToManeuver/1000).toFixed(1)} km`}</Text>
+              <Text style={[styles.navigationInstruction, { color: theme.color.darkPrimary }]}> 
+                {nextStep.maneuver.type === 'arrive' ? 'Arrive at destination' :
+                 nextStep.maneuver.type === 'depart' ? 'Start driving' :
+                 nextStep.maneuver.type === 'turn' ? `Turn ${nextStep.maneuver.modifier || ''}` :
+                 nextStep.maneuver.type === 'roundabout' ? 'Enter roundabout' :
+                 nextStep.maneuver.type === 'merge' ? 'Merge' :
+                 nextStep.maneuver.type === 'fork' ? 'Take fork' :
+                 nextStep.maneuver.type === 'end of road' ? 'End of road' :
+                 nextStep.maneuver.type === 'continue' ? 'Continue' :
+                 nextStep.maneuver.type}
+              </Text>
+              {nextStep.name ? (
+                <Text style={[styles.navigationStreet, { color: theme.color.black }]}>Street: {nextStep.name}</Text>
+              ) : null}
+              {typeof nextStep.waypoint_index === 'number' ? (
+                <Text style={[styles.navigationWaypoint, { color: theme.color.lightGrey }]}>Waypoint: {nextStep.waypoint_index + 1}</Text>
+              ) : null}
+            </View>
+            {/* Estimate bubble on the right */}
+            {(() => {
+              const estimate = getRouteEstimate(routeSteps, showFullJourney ? 'full' : 'next');
+              return estimate ? (
+                <View style={[styles.estimateBubble, { backgroundColor: theme.color.lightPrimary, borderColor: theme.color.mediumPrimary }]}> 
+                  <Text style={[styles.estimateBubbleText, { color: theme.color.darkPrimary }]}>⏱ {estimate}</Text>
+                </View>
+              ) : null;
+            })()}
+          </View>
+        )}
         <MapView
           ref={mapRef}
           style={styles.map}
@@ -1044,6 +1199,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1.41,
+    paddingTop: 50, // Add extra top padding to move header down
   },
   drawerTitle: {
     fontSize: 24,
@@ -1294,5 +1450,92 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  navigationBox: {
+    position: 'absolute',
+    top: 120, // More space from the top
+    left: '5%',
+    right: '5%',
+    zIndex: 10,
+    backgroundColor: '#fff', // will be overridden by theme
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 28,
+    borderRadius: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 8,
+    minHeight: 80,
+    maxWidth: 420,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#F8D5B0', // fallback, will be overridden by theme
+  },
+  navigationIconBox: {
+    marginRight: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8D5B0', // will be overridden by theme
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navigationTextBox: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  navigationDistance: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#F39358', // will be overridden by theme
+    marginBottom: 2,
+  },
+  navigationInstruction: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#F05033', // will be overridden by theme
+    marginBottom: 1,
+  },
+  navigationStreet: {
+    fontSize: 16,
+    color: '#000', // will be overridden by theme
+  },
+  navigationEstimate: {
+    fontSize: 14,
+    color: '#B2B2B2', // will be overridden by theme
+    marginTop: 2,
+  },
+  estimateBubble: {
+    marginLeft: 12,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(248,213,176,0.7)', // lighter, more subtle
+    borderWidth: 1,
+    borderColor: '#F8D5B0', // lighter border
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  estimateBubbleText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#F05033', // will be overridden by theme
+  },
+  navigationWaypoint: {
+    fontSize: 14,
+    color: '#B2B2B2', // will be overridden by theme
+    marginTop: 2,
   },
 }); 
