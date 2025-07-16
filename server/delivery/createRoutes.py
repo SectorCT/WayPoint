@@ -70,7 +70,7 @@ def _get_trip_service(data):
     profile = "car"
     base_url = (
         f"http://router.project-osrm.org/trip/v1/{profile}/{coordinates_str}"
-        "?steps=false&geometries=geojson&annotations=false&overview=full"
+        "?steps=true&geometries=geojson&annotations=false&overview=full"
     )
     response = requests.get(base_url)
     if response.status_code == 200:
@@ -124,7 +124,8 @@ def _extract_leg_routes(osrm_response, input_locations):
                 "package_info": input_locations[input_idx].get("package_info", {}) if input_idx is not None else {},
                 "route": [coords[0]],
                 "location": coords[0],
-                "duration": 0
+                "duration": 0,
+                "steps": []
             })
             continue
 
@@ -139,12 +140,16 @@ def _extract_leg_routes(osrm_response, input_locations):
         if input_idx is not None and 0 <= input_idx < len(input_locations):
             pkg_info = input_locations[input_idx].get("package_info", {})
 
+        # Extract steps for this leg (if present)
+        steps = leg_info.get("steps", [])
+
         output.append({
             "waypoint_index": input_idx,
             "package_info": pkg_info,
             "route": segment,
             "location": wp.get("location", []),
-            "duration": leg_info.get("duration", 0)
+            "duration": leg_info.get("duration", 0),
+            "steps": steps
         })
 
     return output
