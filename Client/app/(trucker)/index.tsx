@@ -976,7 +976,7 @@ export default function TruckerViewScreen() {
 
           {!isReturnMode && locations.map((location) => (
             <Marker
-              key={`marker-${location.package_info.packageID}`}
+              key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
               coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude
@@ -993,7 +993,7 @@ export default function TruckerViewScreen() {
 
           {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
             <Marker
-              key={`marker-${location.package_info.packageID}`}
+              key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
               coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude
