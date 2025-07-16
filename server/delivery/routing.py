@@ -34,25 +34,35 @@ from rest_framework import serializers
 
 User = get_user_model()
 
-def create_routes_from_json(json_data):
-    """
-    Given parsed JSON data (or a JSON string) that contains route information,
-    create a RouteAssignment instance for each route object.
-    """
+def create_routes_from_json(json_data, include_return_leg_in_sequence=False):
+    import json as _json
+
     if isinstance(json_data, str):
-        data = json.loads(json_data)
+        try:
+            data = _json.loads(json_data)
+        except _json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
     else:
         data = json_data
 
+    if not isinstance(data, list):
+        raise ValueError("Expected top-level list of route objects.")
+
     created_routes = []
+    response_payload = []
+
     for route_obj in data:
         driver_username = route_obj.get("driverUsername")
         truck_license_plate = route_obj.get("truckLicensePlate")
-        if not truck_license_plate:
-            raise ValueError("Truck license plate is required in the JSON data.")
-
         waypoints = route_obj.get("route", [])
+        trip_geom = route_obj.get("trip_geometry", [])
 
+        if not driver_username:
+            raise ValueError("Driver username is required in route object.")
+        if not truck_license_plate:
+            raise ValueError("Truck license plate is required in route object.")
+
+        # Lookups
         try:
             driver = User.objects.get(username=driver_username)
         except User.DoesNotExist:
@@ -61,21 +71,70 @@ def create_routes_from_json(json_data):
         try:
             truck = Truck.objects.get(licensePlate=truck_license_plate)
         except Truck.DoesNotExist:
-            raise ValueError(f"Truck with license plate '{truck_license_plate}' does not exist.")
+            raise ValueError(f"Truck '{truck_license_plate}' does not exist.")
 
-        sorted_waypoints = sorted(waypoints, key=lambda w: w.get("waypoint_index", 0))
+        # If no OSRM waypoint data at all -> ADMIN-only fallback
+        if not waypoints and not trip_geom:
+            admin_pkg = FACTORY_ADDRESS["package_info"].copy()
+            admin_pkg["location_index"] = 0
+            package_sequence = [admin_pkg]
+            map_route = []
+        else:
+            # split out return leg
+            seq_waypoints = []
+            return_leg_wp = None
+            saw_admin = False
+            for wp in waypoints:
+                pkg = wp.get("package_info") or {}
+                is_admin = pkg.get("packageID") == "ADMIN"
+                is_return_marked = bool(wp.get("_return_leg"))
+                if is_return_marked:
+                    return_leg_wp = wp
+                    continue
+                if is_admin:
+                    if not saw_admin:
+                        saw_admin = True
+                        seq_waypoints.append(wp)
+                    else:
+                        return_leg_wp = wp
+                    continue
+                seq_waypoints.append(wp)
 
-        package_sequence = []
-        map_route = []
-        for index, wp in enumerate(sorted_waypoints):
-            pkg_info = wp.get("package_info")
-            pkg_info["location_index"] = index
-            if pkg_info:
+            if not seq_waypoints or seq_waypoints[0].get("package_info", {}).get("packageID") != "ADMIN":
+                # locate ADMIN from any waypoint
+                admin_wp = next(
+                    (wp for wp in waypoints if (wp.get("package_info") or {}).get("packageID") == "ADMIN"),
+                    None
+                )
+                if admin_wp:
+                    seq_waypoints.insert(0, admin_wp)
+
+            if include_return_leg_in_sequence and return_leg_wp is not None:
+                seq_waypoints.append(return_leg_wp)
+
+            # Build packageSequence
+            package_sequence = []
+            for idx, wp in enumerate(seq_waypoints):
+                pkg_info = dict(wp.get("package_info") or {})
+                pkg_info["location_index"] = idx
                 package_sequence.append(pkg_info)
-            wp_route = wp.get("route", [])
-            if isinstance(wp_route, list):
-                map_route.extend(wp_route)
 
+            # Build mapRoute:
+            # Prefer trip_geom (full loop) if available; fallback to concatenating inbound segments.
+            if trip_geom:
+                map_route = trip_geom
+            else:
+                map_route = []
+                for wp in seq_waypoints[1:]:
+                    seg = wp.get("route", [])
+                    if isinstance(seg, list):
+                        map_route.extend(seg)
+                if return_leg_wp is not None:
+                    seg = return_leg_wp.get("route", [])
+                    if isinstance(seg, list):
+                        map_route.extend(seg)
+
+        # Persist
         route_instance = RouteAssignment.objects.create_route(
             driver=driver,
             packageSequence=package_sequence,
@@ -85,7 +144,18 @@ def create_routes_from_json(json_data):
         )
         created_routes.append(route_instance)
 
-    return created_routes
+        response_payload.append({
+            "user": driver_username,
+            "packageSequence": package_sequence,
+            "mapRoute": map_route,
+            "truck": truck_license_plate,
+            "dateOfCreation": route_instance.dateOfCreation.isoformat(),
+            "routeID": route_instance.routeID,
+        })
+
+    return created_routes, response_payload
+
+
 
 
 def update_clustered_data_with_truck_and_driver(clustered_data, drivers):
@@ -157,9 +227,9 @@ def connect_routes_and_assignments(clustered_data):
             "locations": locations
         }
         zones_for_routing.append(zone_dict)
-    
+    print("DEBUG zones_for_routing:", zones_for_routing)
     osrm_routes = create_routes(zones_for_routing)
-    
+    print("DEBUG osrm_routes:", osrm_routes)    
     truck_lookup = {zone["zone"]: zone.get("truckLicensePlate") for zone in zones_for_routing}
     final_routes = []
     for route in osrm_routes:
@@ -170,7 +240,6 @@ def connect_routes_and_assignments(clustered_data):
     return final_routes
 
 class RoutePlannerView(APIView):
-    # Uncomment when authentication is set up.
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
     def post(self, request, *args, **kwargs):
@@ -188,6 +257,7 @@ class RoutePlannerView(APIView):
                 output_field=IntegerField()
             )
         ).order_by('priority', 'deliveryDate')
+
         packages_data = [{
             "packageID": pkg.packageID,
             "address": pkg.address,
@@ -205,14 +275,14 @@ class RoutePlannerView(APIView):
         if not isinstance(drivers, list) or not drivers:
             return Response({"error": "No valid drivers provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Cluster the packages based on location and driver assignment.
+        # Cluster + assign trucks/drivers
         clustered_data = cluster_locations(
             packages_data=packages_data,
             driverUsernames=drivers
         )
-        
         clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers)
-        
+        print("DEBUG clustered_data:", clustered_data)
+
         missing_truck_zones = [zone.get("zone") for zone in clustered_data if not zone.get("truckLicensePlate")]
         if missing_truck_zones:
             return Response(
@@ -220,21 +290,21 @@ class RoutePlannerView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Build optimized OSRM routes
         final_routes = connect_routes_and_assignments(clustered_data)
-        
+        print("DEBUG final_routes:", final_routes)
+
         try:
-            create_routes_from_json(final_routes)
+            # IMPORTANT: include the closing return‑to‑factory ADMIN stop in the stored sequence
+            created_routes, response_payload = create_routes_from_json(
+                final_routes,
+                include_return_leg_in_sequence=True
+            )
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Package.objects.filter(
-        #     status="pending",
-        #     deliveryDate__lte=tomorrow
-        # ).update(status="in_tranzit")
-        
-        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
-        serializer = RouteAssignmentSerializer(routes_today, many=True)
-        return Response(serializer.data)
+
+        return Response(response_payload, status=status.HTTP_201_CREATED)
+
 
 def get_package_display_order(package_sequence):
     """
