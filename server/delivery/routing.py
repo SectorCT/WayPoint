@@ -236,6 +236,20 @@ class RoutePlannerView(APIView):
         serializer = RouteAssignmentSerializer(routes_today, many=True)
         return Response(serializer.data)
 
+def get_package_display_order(package_sequence):
+    """
+    Given a package sequence (list of dicts), return a mapping of {packageID: display_index}
+    for all real packages (excluding ADMIN/default location), in the order they appear.
+    Display index starts from 1.
+    """
+    display_order = {}
+    display_idx = 1
+    for pkg in package_sequence:
+        if pkg.get('packageID') != 'ADMIN':
+            display_order[pkg['packageID']] = display_idx
+            display_idx += 1
+    return display_order
+
 class getRoutingBasedOnDriver(APIView):
     # Uncomment when authentication is set up.
     # authentication_classes = [JWTAuthentication]
@@ -251,10 +265,30 @@ class getRoutingBasedOnDriver(APIView):
         except RouteAssignment.DoesNotExist:
             return Response({"error": "No route assignment found for this driver"}, status=status.HTTP_404_NOT_FOUND)
         
+        package_display_order = get_package_display_order(route.packageSequence)
+
+        # Build OSRM input from current package sequence
+        osrm_input = {"locations": []}
+        for pkg in route.packageSequence:
+            osrm_input["locations"].append({
+                "address": pkg.get("address", ""),
+                "latitude": pkg.get("latitude"),
+                "longitude": pkg.get("longitude"),
+                "package_info": pkg
+            })
+        # Only call OSRM if there are at least 2 locations
+        osrm_legs = []
+        if len(osrm_input["locations"]) >= 2:
+            osrm_response = _get_trip_service(osrm_input)
+            if "trips" in osrm_response and osrm_response["trips"]:
+                osrm_legs = osrm_response["trips"][0].get("legs", [])
+        
         return Response({
             "driver": driver.username,
             "packageSequence": route.packageSequence,
-            "mapRoute": route.mapRoute
+            "mapRoute": route.mapRoute,
+            "packageDisplayOrder": package_display_order,
+            "route": osrm_legs
         }, status=status.HTTP_200_OK)
 
 class getAllRoutings(APIView):
