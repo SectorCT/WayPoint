@@ -2,19 +2,13 @@ import requests
 
 def create_routes(zones):
     """
-    Expects `zones` to be a list of dicts, where each dict includes:
-        {
-            "zone": ...,
-            "driverUsername": ...,
-            "locations": [
-                { "address": "...",
-                  "latitude": ...,
-                  "longitude": ...,
-                  "package_info": ... (optional) }
-            ]
-        }
-    Returns a list of similar dictionaries but with a "route" field
-    describing OSRM-based route segments.
+    Call OSRM /trip for each zone and return per-zone routing payloads.
+
+    IMPORTANT CLARIFICATION:
+    OSRM /trip returns `waypoints` in *input* order. The optimization results
+    appear in each waypoint's `waypoint_index` (visit order) and `trips_index`.
+    `_extract_leg_routes()` sorts by visit order before building our internal list.
+    Do NOT assume the raw OSRM `waypoints` array is visit-ordered.
     """
     if not isinstance(zones, list):
         raise ValueError("Expected a list of zones.")
@@ -23,133 +17,220 @@ def create_routes(zones):
     for zone in zones:
         zone_label = zone.get("zone")
         driver_username = zone.get("driverUsername", "")
+        truck_lp = zone.get("truckLicensePlate")
         locations = zone.get("locations", [])
 
-        # Prepare OSRM input, storing both coordinate data & full package info
         osrm_input = {"locations": []}
         for loc in locations:
-            # We'll place entire package info in the 'package_info' field
             new_loc = {
                 "name": loc.get("address", ""),
                 "latitude": loc.get("latitude"),
                 "longitude": loc.get("longitude"),
-                "package_info": loc.get("package_info", loc)  # fallback to the entire loc if not present
+                "package_info": loc.get("package_info", loc),
             }
-            # Skip invalid entries
             if new_loc["latitude"] is None or new_loc["longitude"] is None:
                 continue
             osrm_input["locations"].append(new_loc)
 
-        # Skip zones with no valid locations
-        if not osrm_input["locations"]:
-            # Optionally: results.append(...) an empty route
+        loc_ct = len(osrm_input["locations"])
+        print(f"[create_routes] zone={zone_label} loc_ct={loc_ct}")
+
+        if loc_ct == 0:
             continue
 
-        # 1) Get OSRM trip result
+        if loc_ct == 1:
+            only = osrm_input["locations"][0]
+            wp = {
+                "waypoint_index": 0,
+                "package_info": only.get("package_info", {}),
+                "route": [],
+                "location": [only["longitude"], only["latitude"]],
+                "duration": 0,
+                "steps": [],
+            }
+            results.append({
+                "zone": zone_label,
+                "driverUsername": driver_username,
+                "truckLicensePlate": truck_lp,
+                "route": [wp],
+                "trip_geometry": [],
+            })
+            continue
+
         osrm_response = _get_trip_service(osrm_input)
 
-        # 2) Extract route segments, passing entire OSRM input for reference
-        routes = _extract_leg_routes(osrm_response, osrm_input["locations"])
+        if osrm_response.get("error"):
+            raise RuntimeError(f"OSRM HTTP/parse error for zone {zone_label}: {osrm_response}")
+
+        if osrm_response.get("code") and osrm_response["code"] != "Ok":
+            raise RuntimeError(f"OSRM returned {osrm_response['code']} for zone {zone_label}: {osrm_response}")
+
+        try:
+            trip_geom = osrm_response["trips"][0]["geometry"]["coordinates"]
+        except Exception:
+            trip_geom = []
+
+        routes = _extract_leg_routes(osrm_response, osrm_input["locations"]) or []
+
+        print("[DEBUG:OSRM_ORDER]", zone_label, [
+            wp["package_info"].get("packageID") for wp in routes
+        ])
+
+        if not routes:
+            print(f"[create_routes] WARNING: no per-leg routes extracted; will fall back to trip geometry only.")
+
 
         results.append({
             "zone": zone_label,
             "driverUsername": driver_username,
-            "route": routes
+            "truckLicensePlate": truck_lp,
+            "route": routes,
+            "trip_geometry": trip_geom,
         })
 
     return results
 
 
+
+
 def _get_trip_service(data):
     """
-    Calls OSRM's trip service with the provided location data.
-    Returns the OSRM JSON response or a dict with {'error': status_code}.
+    Call OSRM Trip service for a *loop* (start at first coord, return to start).
+
+    NOTE: Public OSRM demo server uses the 'driving' profile (NOT 'car').
     """
     coordinates = [f"{loc['longitude']},{loc['latitude']}" for loc in data['locations']]
     coordinates_str = ";".join(coordinates)
-    profile = "car"
-    base_url = (
+    profile = "driving"  # <-- FIXED
+    url = (
         f"http://router.project-osrm.org/trip/v1/{profile}/{coordinates_str}"
-        "?steps=true&geometries=geojson&annotations=false&overview=full"
+        "?source=first&roundtrip=true"
+        "&steps=true&geometries=geojson&annotations=false&overview=full"
     )
-    response = requests.get(base_url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.status_code}
+    print(f"[OSRM] GET ({len(url)} chars) {url[:200]}{'...' if len(url) > 200 else ''}")
+    try:
+        resp = requests.get(url, timeout=20)
+    except Exception as e:
+        print(f"[OSRM] REQUEST ERROR: {e}")
+        return {"error": "request-failed", "exception": str(e)}
+
+    print(f"[OSRM] HTTP status={resp.status_code} content-type={resp.headers.get('Content-Type')}")
+    body_sample = resp.text[:500]
+    if resp.status_code != 200:
+        print(f"[OSRM] NON-200 body sample:\n{body_sample}")
+        return {"error": resp.status_code, "body": body_sample}
+
+    try:
+        js = resp.json()
+    except ValueError as e:
+        print(f"[OSRM] JSON decode error: {e}. Body sample:\n{body_sample}")
+        return {"error": "json-decode", "body": body_sample}
+
+    print(f"[OSRM] parsed code={js.get('code')} trips={len(js.get('trips') or [])}")
+    return js
+
 
 
 def _extract_leg_routes(osrm_response, input_locations):
     """
-    OSRM returns "trips" with "waypoints" and "legs".
-    We match them back to the user-supplied data:
-      input_locations = [{"latitude": ..., "longitude": ..., "package_info": {...}}, ...]
-    Then we build a route list of segments.
+    Extract optimized visit order + per-leg metadata from an OSRM Trip response.
+
+    OSRM RESPONSE CONTRACT (Trip API):
+    - `waypoints` array == *input order* (same order you sent coordinates).
+    - Each waypoint has:
+        * `waypoint_index`  -> visit position within its assigned trip (0..N-1)
+        * `trips_index`     -> which trip (usually 0 unless OSRM split)
+        * `location`        -> snapped [lon, lat]
+    - Per-leg detail lives in `trips[TRIP].legs` (legs[i] goes from visit[i] -> visit[i+1]).
+
+    We must:
+      1. Capture the original input index (enumerate the raw waypoints list).
+      2. Sort by (trips_index, waypoint_index) to get visit order.
+      3. Use the *captured input index* to look up `input_locations` / package_info.
+      4. Emit a list of waypoints in VISIT order.
+      5. Append a synthetic closing return‑to‑factory marker (ADMIN) so downstream
+         code can show a closed loop sequence if desired.
+
+    Returns:
+        list[dict] of visit-waypoint records (+ closing return marker).
     """
-    # If OSRM didn't return a valid trip, bail out
-    if "trips" not in osrm_response or not osrm_response["trips"]:
+    trips = osrm_response.get("trips")
+    waypoints = osrm_response.get("waypoints")
+
+    if not trips or not waypoints:
+        print("[_extract_leg_routes] missing trips or waypoints.")
         return None
 
-    trip = osrm_response["trips"][0]
-    coords = trip["geometry"]["coordinates"]
-
-    def find_coord_index(target, coord_list, tol=1e-6):
-        for i, c in enumerate(coord_list):
-            if abs(c[0] - target[0]) < tol and abs(c[1] - target[1]) < tol:
-                return i
-        return None
-
-    # OSRM waypoints contain 'waypoint_index' that maps back to the input location order
-    wp_indices = []
-    for wp in osrm_response.get("waypoints", []):
-        # find index in coords
-        idx = find_coord_index(wp["location"], coords)
-        if idx is not None:
-            wp_indices.append((idx, wp))
-    # sort them by coordinate index to preserve path order
-    wp_indices.sort(key=lambda x: x[0])
-
+    trip = trips[0]
     legs = trip.get("legs", [])
-    output = []
 
-    # Build route segments
-    for i, _ in enumerate(wp_indices):
-        if i == 0:
-            # The first waypoint
-            first_wp = wp_indices[i][1]
-            input_idx = first_wp.get("waypoint_index")  # OSRM's reference to input loc index
-
-            output.append({
-                "waypoint_index": 0,
-                "package_info": input_locations[input_idx].get("package_info", {}) if input_idx is not None else {},
-                "route": [coords[0]],
-                "location": coords[0],
-                "duration": 0,
-                "steps": []
-            })
-            continue
-
-        start_idx = wp_indices[i-1][0]
-        end_idx = wp_indices[i][0]
-        segment = coords[start_idx:end_idx + 1]
-        leg_info = legs[i-1] if (i-1 < len(legs)) else {}
-        wp = wp_indices[i][1]
-
-        input_idx = wp.get("waypoint_index")
-        pkg_info = {}
-        if input_idx is not None and 0 <= input_idx < len(input_locations):
-            pkg_info = input_locations[input_idx].get("package_info", {})
-
-        # Extract steps for this leg (if present)
-        steps = leg_info.get("steps", [])
-
-        output.append({
-            "waypoint_index": input_idx,
-            "package_info": pkg_info,
-            "route": segment,
-            "location": wp.get("location", []),
-            "duration": leg_info.get("duration", 0),
-            "steps": steps
+    # 1. Capture input index
+    annotated = []
+    for input_idx, wp in enumerate(waypoints):
+        wi = wp.get("waypoint_index", 0)
+        ti = wp.get("trips_index", 0)
+        annotated.append({
+            "input_idx": input_idx,
+            "visit_idx": wi,
+            "trip_idx": ti,
+            "wp": wp,
         })
 
+    # 2. Sort to VISIT order
+    annotated.sort(key=lambda a: (a["trip_idx"], a["visit_idx"]))
+
+    # 3. Build visit‑ordered output
+    output = []
+    for visit_pos, rec in enumerate(annotated):
+        input_idx = rec["input_idx"]
+        wp = rec["wp"]
+        snapped_loc = wp.get("location", [])
+
+        # Guard: if something went wrong, clamp
+        if input_idx is None or input_idx < 0 or input_idx >= len(input_locations):
+            print(f"[WARN] visit_pos={visit_pos} had bad input_idx={input_idx}; clamping to 0.")
+            input_idx = 0
+
+        pkg_info = input_locations[input_idx].get("package_info", {})
+
+        # inbound leg (from previous visit) lives at legs[visit_pos-1]
+        if visit_pos == 0:
+            duration = 0
+            steps = []
+            leg_geom = []
+        else:
+            leg = legs[visit_pos - 1] if visit_pos - 1 < len(legs) else {}
+            duration = leg.get("duration", 0)
+            steps = leg.get("steps", [])
+            # OSRM Trip legs geometry may be absent/empty; we don't rely on it
+            leg_geom = []
+
+        output.append({
+            "waypoint_index": visit_pos,   # visit order for downstream display
+            "input_index": input_idx,      # ORIGINAL index into input_locations
+            "package_info": pkg_info,
+            "route": leg_geom,
+            "location": snapped_loc,
+            "duration": duration,
+            "steps": steps,
+        })
+
+    # 4. Append closing ADMIN return to start
+    # Use the *last* leg duration (legs[-1] is from last visit back to first when roundtrip=true)
+    if legs:
+        closing_leg = legs[-1]
+        factory_pkg = input_locations[0].get("package_info", {})  # assumes input_locations[0] = factory
+        factory_wp = annotated[0]["wp"]  # visit start
+        output.append({
+            "waypoint_index": len(output),   # last in sequence
+            "input_index": 0,
+            "package_info": factory_pkg,
+            "route": [],
+            "location": factory_wp.get("location", []),
+            "duration": closing_leg.get("duration", 0),
+            "steps": closing_leg.get("steps", []),
+            "_return_leg": True,
+        })
+
+    print(f"[_extract_leg_routes] produced {len(output)} waypoint records (incl. return).")
     return output
