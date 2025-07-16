@@ -544,6 +544,12 @@ def create_routes_from_json(
             truck=truck,
             dateOfCreation=timezone.now().date(),
         )
+        # Mark truck as in use
+        truck.isUsed = True
+        truck.save()
+        # Mark packages as in transit
+        package_ids = [pkg.get("packageID") for pkg in package_sequence if pkg.get("packageID") != "ADMIN"]
+        Package.objects.filter(packageID__in=package_ids).update(status="in_transit")
         created_routes.append(route_instance)
 
         response_payload.append({
