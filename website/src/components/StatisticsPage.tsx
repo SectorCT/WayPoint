@@ -3,6 +3,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, 
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { quickActions } from './Dashboard';
+import { Helmet } from 'react-helmet';
 
 const analyticsData = [
   {
@@ -45,6 +46,9 @@ const StatisticsPage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <div className={styles.fullScreenTwoCol}>
+      <Helmet>
+        <title>Waypoint - Statistics</title>
+      </Helmet>
       {/* Quick actions on the left */}
       <div className={styles.quickActionsCorner}>
         {quickActions.map((action) => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { quickActions } from './Dashboard';
 import { fetchDrivers, verifyUser } from '../utils/api';
+import { Helmet } from 'react-helmet';
 
 const AcceptButton: React.FC<{ onClick: () => void; loading?: boolean }> = ({ onClick, loading }) => (
   <button
@@ -68,6 +69,9 @@ const VerifyUsersPage: React.FC = () => {
 
   return (
     <div className={styles.fullScreenTwoCol}>
+      <Helmet>
+        <title>Waypoint - Verify Users</title>
+      </Helmet>
       <div style={{
         width: '100%',
         maxWidth: '900px',

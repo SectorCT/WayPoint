@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
 import styles from './Login.module.css';
+import { Helmet } from 'react-helmet';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -35,6 +36,9 @@ const Login: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <Helmet>
+        <title>Waypoint - Login</title>
+      </Helmet>
       <div className={styles.card}>
         <div className={styles.headerContainer}>
           <h2 className={styles.headerTitle}>Log in to your account</h2>

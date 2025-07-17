@@ -9,6 +9,7 @@ import { Map, Marker } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 // If you get a linter error for date-fns, run: npm install date-fns
 import { format, isToday, parseISO } from 'date-fns';
+import { Helmet } from 'react-helmet';
 
 const GEOAPIFY_API_KEY = process.env.REACT_APP_GEOAPIFY_API_KEY || '';
 
@@ -165,6 +166,9 @@ const PackagesPage: React.FC = () => {
 
   return (
     <div className={styles.fullScreenTwoCol}>
+      <Helmet>
+        <title>Waypoint - Packages</title>
+      </Helmet>
       <div className={styles.topRightScreenButton}>
         <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
           ← Back to Dashboard
