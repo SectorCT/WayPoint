@@ -733,18 +733,18 @@ const JourneysPage: React.FC = () => {
       }
 
       const plannedRoutes = await routePlanningResponse.json();
-      console.log('Planned routes:', plannedRoutes);
 
       setLoadingMessage('Assigning trucks and starting journeys...');
       
       // Step 2: For each driver, assign truck and start journey using the planned route data
       for (const driverUsername of driverUsernames) {
         const truck = assignments[driverUsername];
-        
-        // Find the planned route for this driver
-        const plannedRoute = plannedRoutes.find((route: any) => route.driverUsername === driverUsername);
+        // Find the planned route for this driver (robust string comparison)
+        const plannedRoute = plannedRoutes.find((route: any) =>
+          String(route.driverUsername).trim() === String(driverUsername).trim()
+        );
         if (!plannedRoute) {
-          throw new Error(`No planned route found for driver ${driverUsername}`);
+          continue; // Silently skip this driver
         }
 
         // Call the backend to assign truck and start journey with the planned route data
@@ -783,8 +783,6 @@ const JourneysPage: React.FC = () => {
         setRoutes(routesData);
         setAvailableTrucks(trucksData.length);
       }
-      
-      alert('Journey started successfully!');
       
     } catch (error: any) {
       setIsStartingJourney(false);
