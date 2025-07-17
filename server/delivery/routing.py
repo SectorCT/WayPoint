@@ -721,6 +721,10 @@ class RoutePlannerView(APIView):
         if not isinstance(drivers, list) or not drivers:
             return Response({"error": "No valid drivers provided."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Add check for empty packages_data
+        if not packages_data:
+            return Response({"error": "No packages available for the selected drivers."}, status=status.HTTP_400_BAD_REQUEST)
+
         # Cluster + assign trucks/drivers
         clustered_data = cluster_locations(packages_data=packages_data, driverUsernames=drivers)
         clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers)

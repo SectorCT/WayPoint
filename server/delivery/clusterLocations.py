@@ -12,6 +12,8 @@ def cluster_locations(packages_data, driverUsernames):
     # 2) Convert lat/long to arrays
     coords = np.array([[loc["latitude"], loc["longitude"]] for loc in packages_data])
     coords_rad = np.radians(coords)
+    if coords_rad.size == 0:
+        raise ValueError("No packages or locations to cluster. Please select drivers with available packages.")
     earth_radius = 6371.0
     eps_km = 1.5
     eps = eps_km / earth_radius

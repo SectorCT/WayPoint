@@ -6,6 +6,7 @@ import { MdHome, MdLocalShipping, MdInventory, MdPersonAdd } from 'react-icons/m
 import { fetchPackages, fetchAvailableTrucks, fetchDeliveryHistory, fetchUnverifiedTruckers } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Helmet } from 'react-helmet';
 
 // TypeScript fix for react-icons JSX compatibility
 const FaUserTie = FaUserTieRaw as unknown as React.FC<any>;
@@ -259,6 +260,9 @@ const Dashboard: React.FC = () => {
   if (activeTab === 'Dashboard') {
     return (
       <div className={styles.dashboardContainer}>
+        <Helmet>
+          <title>Waypoint - Dashboard</title>
+        </Helmet>
         <div className={styles.header}>
           <div className={styles.hero}>
             <div className={styles.heroIcon}><FaUserTie size={40} color="#F39358" /></div>

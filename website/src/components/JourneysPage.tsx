@@ -7,6 +7,7 @@ import { quickActions } from './Dashboard';
 import { Map, Marker, Source, Layer } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Feature, LineString } from 'geojson';
+import { Helmet } from 'react-helmet';
 
 // Function to generate a color based on a value (same as mobile app)
 const generateColorFromValue = (value: string): string => {
@@ -225,6 +226,8 @@ const ActiveRoutesBar: React.FC<{ routes: any[], selectedRoute: string | null, o
       </div>
     );
   }
+  // Only show horizontal scroll if more than 2 routes
+  const isScrollable = routes.length > 2;
   return (
     <div style={{
       width: '100%',
@@ -234,14 +237,20 @@ const ActiveRoutesBar: React.FC<{ routes: any[], selectedRoute: string | null, o
       alignItems: 'center',
       padding: '16px 0',
     }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 16,
-        overflowX: 'auto',
-        maxWidth: '100%',
-        padding: '0 20px',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: 16,
+          overflowX: isScrollable ? 'auto' : 'visible',
+          maxWidth: '100%',
+          padding: '0 20px',
+          scrollbarWidth: isScrollable ? 'thin' : undefined,
+          msOverflowStyle: isScrollable ? 'auto' : undefined,
+          WebkitOverflowScrolling: isScrollable ? 'touch' : undefined,
+          position: 'relative',
+        }}
+      >
         {routes.map((route, idx) => {
           const { delivered, undelivered, total } = getPackageCounts(route);
           const isSelected = selectedRoute === route.routeID;
@@ -584,6 +593,54 @@ const TruckSelectionModal: React.FC<{
   );
 };
 
+const ErrorModal = ({ open, message, onClose }: { open: boolean, message: string, onClose: () => void }) => {
+  if (!open) return null;
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0,0,0,0.35)',
+      zIndex: 2000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 14,
+        padding: '32px 32px 24px 32px',
+        minWidth: 320,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.13)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#F05033', marginBottom: 12 }}>Error</div>
+        <div style={{ color: '#333', fontSize: 16, marginBottom: 24, textAlign: 'center', maxWidth: 350 }}>{message}</div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'linear-gradient(90deg, #F39358 0%, #F05033 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '10px 32px',
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(240,80,51,0.13)',
+          }}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const JourneysPage: React.FC = () => {
   const [routes, setRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -605,6 +662,7 @@ const JourneysPage: React.FC = () => {
   const [isStartingJourney, setIsStartingJourney] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [trucksData, setTrucksData] = useState<any[]>([]);
+  const [errorModal, setErrorModal] = useState<{ open: boolean, message: string }>({ open: false, message: '' });
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -700,7 +758,7 @@ const JourneysPage: React.FC = () => {
     // Check if all drivers have trucks assigned
     const unassignedDrivers = Array.from(selectedDrivers).filter(driver => !assignments[driver]);
     if (unassignedDrivers.length > 0) {
-      alert(`Please assign trucks to: ${unassignedDrivers.join(', ')}`);
+      setErrorModal({ open: true, message: `Please assign trucks to: ${unassignedDrivers.join(', ')}` });
       return;
     }
 
@@ -763,8 +821,24 @@ const JourneysPage: React.FC = () => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to assign truck and start journey for ${driverUsername}`);
+          let errorMsg = '';
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || JSON.stringify(errorData);
+          } catch (jsonErr) {
+            // Try to parse as text (HTML error)
+            const text = await response.text();
+            if (text.includes('already assigned') || text.includes('already taken')) {
+              errorMsg = text;
+            } else if (text.includes('<!DOCTYPE')) {
+              errorMsg = 'A resource (driver, truck, or package) is already assigned or taken.';
+            } else {
+              errorMsg = text;
+            }
+          }
+          setErrorModal({ open: true, message: errorMsg });
+          setIsStartingJourney(false);
+          return;
         }
       }
 
@@ -786,7 +860,7 @@ const JourneysPage: React.FC = () => {
       
     } catch (error: any) {
       setIsStartingJourney(false);
-      alert(`Error starting journey: ${error.message}`);
+      setErrorModal({ open: true, message: `Error starting journey: ${error.message}` });
     }
   };
 
@@ -865,8 +939,20 @@ const JourneysPage: React.FC = () => {
     focusOnRoute(routeId);
   };
 
+  // In the journey start tab, filter out drivers with active routes (case-insensitive, trimmed)
+  const selectableDrivers = drivers.filter(driver => {
+    const routeAssigned = routes.some(route =>
+      String(route.user).trim().toLowerCase() === String(driver.username).trim().toLowerCase() &&
+      String(route.status).trim().toLowerCase() === 'active'
+    );
+    return !routeAssigned;
+  });
+
   return (
     <div className={styles.fullScreenTwoCol}>
+      <Helmet>
+        <title>Waypoint - Start a Journey</title>
+      </Helmet>
       <div style={{
         width: '100%',
         maxWidth: '1600px',
@@ -875,12 +961,10 @@ const JourneysPage: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'stretch',
       }}>
-        {/* Top row: Active Routes */}
-        <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
         {/* Main content: two columns */}
         <div className={styles.columnsWrapper} style={{ width: '100%', marginTop: 0 }}>
           {/* Left column: Tabs, driver selection, start journey */}
-          <div className={styles.leftCol}>
+          <div className={styles.leftCol} style={{ alignItems: 'flex-start', justifyContent: 'flex-start' }}>
             <div style={{ width: '100%', maxWidth: 400, marginTop: 0, paddingTop: 0 }}>
               {/* Counter row */}
               <div style={{ display: 'flex', flexDirection: 'row', gap: 18, marginBottom: 18, marginTop: 8 }}>
@@ -946,13 +1030,13 @@ const JourneysPage: React.FC = () => {
                     />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
                       {driversLoading ? <div>Loading drivers...</div> : (
-                        drivers
-                          .filter(driver =>
-                            driver.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (driver.email && driver.email.toLowerCase().includes(searchQuery.toLowerCase()))
-                          )
+                        selectableDrivers
                           .map(driver => {
                             const isSelected = selectedDrivers.has(driver.username);
+                            const routeAssigned = routes.some(route =>
+                              String(route.user).trim().toLowerCase() === String(driver.username).trim().toLowerCase() &&
+                              String(route.status).trim().toLowerCase() === 'active'
+                            );
                             return (
                               <div
                                 key={driver.username}
@@ -965,11 +1049,12 @@ const JourneysPage: React.FC = () => {
                                   boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                                   background: '#fff',
                                   padding: '14px 20px',
-                                  cursor: 'pointer',
+                                  cursor: routeAssigned ? 'not-allowed' : 'pointer',
                                   transition: 'border 0.2s',
                                   fontWeight: isSelected ? 600 : 500,
                                   color: isSelected ? '#F05033' : '#222',
                                   width: '100%',
+                                  opacity: routeAssigned ? 0.5 : 1,
                                 }}
                               >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
@@ -1001,24 +1086,25 @@ const JourneysPage: React.FC = () => {
                                     fontSize: 22,
                                     fontWeight: 700,
                                     boxShadow: isSelected ? '0 2px 8px rgba(240,80,51,0.13)' : 'none',
-                                    cursor: 'pointer',
+                                    cursor: routeAssigned ? 'not-allowed' : 'pointer',
                                     transition: 'background 0.2s, color 0.2s',
                                     outline: 'none',
                                   }}
                                   aria-label={isSelected ? 'Deselect driver' : 'Select driver'}
+                                  disabled={routeAssigned}
                                 >
                                   {isSelected ? '✓' : '+'}
-          </button>
-        </div>
+                                </button>
+                              </div>
                             );
                           })
                       )}
                     </div>
                     <button
                       className={styles.gradientButton}
-                      style={{ width: '100%', marginTop: 8, opacity: selectedDrivers.size > 0 ? 1 : 0.5, cursor: selectedDrivers.size > 0 ? 'pointer' : 'not-allowed' }}
+                      style={{ width: '100%', marginTop: 8, opacity: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 1 : 0.5, cursor: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 'pointer' : 'not-allowed' }}
                       onClick={handleStartJourney}
-                      disabled={selectedDrivers.size === 0}
+                      disabled={selectedDrivers.size === 0 || selectableDrivers.length === 0}
                     >Start Journey</button>
                   </div>
                 )}
@@ -1054,11 +1140,14 @@ const JourneysPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-        </div>
+              </div>
             </div>
           </div>
-          {/* Right column: Map */}
+          {/* Right column: Active routes bar above the map */}
           <div className={styles.rightCol}>
+            <div style={{ width: '100%', marginBottom: 16 }}>
+              <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
+            </div>
             <div style={{ height: '80vh', width: '80vh', maxWidth: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', margin: '0 auto' }}>
               <Map
                 initialViewState={{
@@ -1381,6 +1470,7 @@ const JourneysPage: React.FC = () => {
           </div>
         </div>
       )}
+      <ErrorModal open={errorModal.open} message={errorModal.message} onClose={() => setErrorModal({ open: false, message: '' })} />
     </div>
   );
 };

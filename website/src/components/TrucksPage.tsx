@@ -3,6 +3,7 @@ import { fetchAvailableTrucks, createTruck } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { quickActions } from './Dashboard';
+import { Helmet } from 'react-helmet';
 
 const TrucksPage: React.FC = () => {
   const [trucks, setTrucks] = useState<any[]>([]);
@@ -57,6 +58,9 @@ const TrucksPage: React.FC = () => {
 
   return (
     <div className={styles.fullScreenTwoCol}>
+      <Helmet>
+        <title>Waypoint - Trucks</title>
+      </Helmet>
       <div className={styles.topRightScreenButton}>
         <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
           ← Back to Dashboard
