@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './Dashboard.module.css';
 // Import all icons from react-icons/fa for compatibility
 import { FaTruck, FaBoxOpen, FaRoute, FaUserCheck, FaHistory as FaHistoryRaw, FaSignOutAlt as FaSignOutAltRaw, FaUserTie as FaUserTieRaw, FaTachometerAlt } from 'react-icons/fa';
 import { MdHome, MdLocalShipping, MdInventory, MdPersonAdd } from 'react-icons/md';
 import { fetchPackages, fetchAvailableTrucks, fetchDeliveryHistory, fetchUnverifiedTruckers } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 
 // TypeScript fix for react-icons JSX compatibility
 const FaUserTie = FaUserTieRaw as unknown as React.FC<any>;
@@ -88,6 +89,75 @@ const Dashboard: React.FC = () => {
     { Icon: FaBoxOpen, color: '#F05033', text: 'Package delivered to Alice', time: '10m ago' },
     { Icon: FaUserCheck, color: '#F05033', text: 'Trucker Mike verified', time: '1h ago' },
   ];
+
+  const analyticsData = [
+    {
+      title: 'Packages Delivered (Last 7 Days)',
+      type: 'line',
+      data: [
+        { day: 'Mon', value: 12 },
+        { day: 'Tue', value: 18 },
+        { day: 'Wed', value: 9 },
+        { day: 'Thu', value: 15 },
+        { day: 'Fri', value: 20 },
+        { day: 'Sat', value: 7 },
+        { day: 'Sun', value: 14 },
+      ],
+    },
+    {
+      title: 'Truck Usage',
+      type: 'bar',
+      data: [
+        { truck: 'A', used: 8 },
+        { truck: 'B', used: 5 },
+        { truck: 'C', used: 12 },
+        { truck: 'D', used: 3 },
+      ],
+    },
+    {
+      title: 'Package Status Distribution',
+      type: 'pie',
+      data: [
+        { name: 'Delivered', value: 60 },
+        { name: 'In Transit', value: 25 },
+        { name: 'Pending', value: 15 },
+      ],
+    },
+  ];
+
+  const COLORS = ['#F39358', '#F05033', '#B2B2B2'];
+
+  const [analyticsIndex, setAnalyticsIndex] = useState(0);
+  const analyticsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-advance the analytics slider every 7.5 seconds
+  useEffect(() => {
+    if (analyticsTimeoutRef.current) clearTimeout(analyticsTimeoutRef.current);
+    analyticsTimeoutRef.current = setTimeout(() => {
+      setAnalyticsIndex((prev) => (prev + 1) % analyticsData.length);
+    }, 7500);
+    return () => {
+      if (analyticsTimeoutRef.current) clearTimeout(analyticsTimeoutRef.current);
+    };
+  }, [analyticsIndex, analyticsData.length]);
+
+  // For sliding animation
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+  const prevIndex = useRef(analyticsIndex);
+  useEffect(() => {
+    setSlideDirection(analyticsIndex > prevIndex.current || (analyticsIndex === 0 && prevIndex.current === analyticsData.length - 1) ? 'right' : 'left');
+    prevIndex.current = analyticsIndex;
+  }, [analyticsIndex, analyticsData.length]);
+
+  const handleAnalyticsClick = useCallback(() => {
+    navigate('/statistics');
+  }, [navigate]);
+  const handleAnalyticsNext = useCallback(() => {
+    setAnalyticsIndex((prev) => (prev + 1) % analyticsData.length);
+  }, []);
+  const handleAnalyticsPrev = useCallback(() => {
+    setAnalyticsIndex((prev) => (prev - 1 + analyticsData.length) % analyticsData.length);
+  }, []);
 
   // Tab content
   const renderTabContent = () => {
@@ -228,20 +298,54 @@ const Dashboard: React.FC = () => {
             );
           })}
         </div>
-        <div className={styles.activityFeed}>
-          <div className={styles.activityTitle}><FaHistory style={{ marginRight: 8 }} />Recent Activity</div>
-          <ul className={styles.activityList}>
-            {recentActivity.map((item, idx) => {
-              const Icon = item.Icon as unknown as React.FC<any>;
-              return (
-                <li key={idx} className={styles.activityItem}>
-                  <span className={styles.activityIcon}><Icon color={item.color} /></span>
-                  <span className={styles.activityText}>{item.text}</span>
-                  <span className={styles.activityTime}>{item.time}</span>
-                </li>
-              );
-            })}
-          </ul>
+        {/* Analytics Slider Section */}
+        <div className={styles.analyticsSliderWrapper}>
+          <div
+            className={styles.analyticsSlider}
+            onClick={handleAnalyticsClick}
+            title="Click to view all statistics"
+            style={{ maxWidth: 380, minWidth: 260, width: '90%', transition: 'max-width 0.3s' }}
+          >
+            <div className={styles.analyticsChartContainer}>
+              <div className={styles.analyticsTitle}>{analyticsData[analyticsIndex].title}</div>
+              <div className={styles.analyticsChartSlide + ' ' + styles[`slide${slideDirection.charAt(0).toUpperCase() + slideDirection.slice(1)}`]} key={analyticsIndex}>
+                {analyticsData[analyticsIndex].type === 'line' && (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <LineChart data={analyticsData[analyticsIndex].data}>
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#F39358" strokeWidth={3} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+                {analyticsData[analyticsIndex].type === 'bar' && (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={analyticsData[analyticsIndex].data}>
+                      <XAxis dataKey="truck" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="used" fill="#F05033" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+                {analyticsData[analyticsIndex].type === 'pie' && (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <PieChart>
+                      <Pie data={analyticsData[analyticsIndex].data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={50} label>
+                        {analyticsData[analyticsIndex].data.map((entry, idx) => (
+                          <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className={styles.analyticsHint}>Click the square to view all statistics</div>
         </div>
       </div>
     );
