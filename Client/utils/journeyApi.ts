@@ -142,11 +142,12 @@ export const deleteTruck = async (licensePlate: string): Promise<Response> => {
   });
 };
 
-export const markPackageAsDelivered = async (packageID: string): Promise<Response> => {
+export const markPackageAsDelivered = async (packageID: string, signature?: string): Promise<Response> => {
   return makeAuthenticatedRequest(`/delivery/packages_mark/`, {
     method: "POST",
     body: JSON.stringify({
-      "packageID": packageID
+      packageID,
+      ...(signature ? { signature } : {})
     }),
   });
 };
