@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
@@ -11,6 +11,7 @@ import { makeAuthenticatedRequest } from "@/utils/api";
 import House from "@assets/icons/house.svg";
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import SignatureScreen from 'react-native-signature-canvas';
 
 interface Coordinate {
   latitude: number;
@@ -269,6 +270,7 @@ export default function TruckerViewScreen() {
   const [nextStep, setNextStep] = useState<any | null>(null);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
+  const signatureRef = React.useRef<any>(null);
 
   // Function to get the next undelivered package
   const getNextDeliveryPoint = (): RouteLocation | null => {
@@ -696,6 +698,71 @@ export default function TruckerViewScreen() {
     }
   }, [isFollowingHeading, position.heading, position.latitude, position.longitude]);
 
+  const [deliveryModalVisible, setDeliveryModalVisible] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [showSignature, setShowSignature] = useState(false);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
+  // Remove signaturePaths, currentPath, panResponder, handleClearSignature
+
+  // SignatureScreen handlers
+  const handleSignatureOK = async (signature: string) => {
+    if (!selectedPackageId) {
+      return;
+    }
+    // Prevent empty signature submission (check for very short base64 or empty string)
+    if (!signature || signature.replace(/^data:image\/png;base64,/, '').length < 100) {
+      Alert.alert('Signature Required', 'Please provide a signature before continuing.');
+      return;
+    }
+    setIsSavingSignature(true);
+    try {
+      const response = await markPackageAsDelivered(selectedPackageId, signature);
+      if (!response.ok) {
+        throw new Error('Failed to mark package as delivered');
+      }
+      // Refresh route data after marking as delivered
+      if (user) {
+        const data = await getRoute(user.username);
+        setCurrentZone(data);
+      }
+      setShowSignature(false);
+      setSelectedPackageId(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save signature and mark as delivered.');
+    } finally {
+      setIsSavingSignature(false);
+    }
+  };
+  const handleSignatureEmpty = () => {
+    // Optionally show a warning or just close
+    setShowSignature(false);
+    setSelectedPackageId(null);
+  };
+  const handleSignatureClear = () => {
+    // No-op, handled by SignatureScreen
+  };
+  const handleSignatureBack = () => {
+    setShowSignature(false);
+    setSelectedPackageId(null);
+  };
+
+  const handleDeliveryButton = (packageId: string) => {
+    setSelectedPackageId(packageId);
+    setDeliveryModalVisible(true);
+  };
+
+  // Modified delivery option handler
+  const handleDeliveryOption = (option: 'client' | 'smartbox') => {
+    setDeliveryModalVisible(false);
+    // Do not clear selectedPackageId here, keep it for signature info
+    if (option === 'client') {
+      setShowSignature(true);
+    }
+    // In the future, trigger smartbox flow here
+  };
+
+  // Remove handleDoneSignature
+
   const handleDelivery = async (packageId: string) => {
     try {
       const response = await markPackageAsDelivered(packageId);
@@ -851,17 +918,110 @@ export default function TruckerViewScreen() {
               </View>
               <TouchableOpacity 
                 style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]}
-                onPress={() => handleDelivery(location.package_info.packageID)}
+                onPress={() => handleDeliveryButton(location.package_info.packageID)}
               >
                 <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
-                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>
-                  Mark as Delivered
-                </Text>
+                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>Mark as Delivered</Text>
               </TouchableOpacity>
             </View>
           ))
         )}
       </ScrollView>
+      {/* Delivery Option Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deliveryModalVisible}
+        onRequestClose={() => setDeliveryModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}> 
+            <TouchableOpacity onPress={() => setDeliveryModalVisible(false)} style={styles.modalBackButton}>
+              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+              <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.color.black, textAlign: 'center', marginTop: 56 }]}>Who is receiving the package?</Text>
+            <View style={styles.optionsRow}>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.color.darkPrimary, marginRight: 8 }]}
+                onPress={() => handleDeliveryOption('client')}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Client</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.color.mediumPrimary, marginLeft: 8 }]}
+                onPress={() => handleDeliveryOption('smartbox')}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Smartbox</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Signature Modal */}
+      <Modal
+        animationType="fade"
+        transparent={false}
+        visible={showSignature}
+        onRequestClose={handleSignatureBack}
+      >
+        <View style={styles.signatureContainer}>
+          <TouchableOpacity onPress={handleSignatureBack} style={styles.signatureBackButton}>
+            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+            <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+          </TouchableOpacity>
+          <View style={styles.signatureTitleWrapper}>
+            <Text style={[styles.signatureTitle, { color: theme.color.black }]}>Client Signature</Text>
+          </View>
+          <View style={styles.signaturePadWrapper}>
+            <SignatureScreen
+              ref={signatureRef}
+              backgroundColor="#fff"
+              penColor={theme.color.darkPrimary}
+              onOK={handleSignatureOK}
+              onEmpty={handleSignatureEmpty}
+              onClear={handleSignatureClear}
+              autoClear={false}
+              webStyle={`.m-signature-pad--footer {display: none;}`}
+            />
+          </View>
+          {/* Package Info Card should be above the Done button, not after it */}
+          {selectedPackageId && (() => {
+            const pkg = (locations || []).find(loc => loc.package_info.packageID === selectedPackageId)?.package_info;
+            if (!pkg) return null;
+            return (
+              <>
+                <View style={styles.packageInfoDivider} />
+                <View style={styles.packageInfoCard}>
+                  <Text style={styles.packageInfoTitle}>Package Information</Text>
+                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Recipient:</Text><Text style={styles.packageInfoValue}>{pkg.recipient}</Text></View>
+                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Address:</Text><Text style={styles.packageInfoValue}>{pkg.address}</Text></View>
+                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Package ID:</Text><Text style={styles.packageInfoValue}>{pkg.packageID}</Text></View>
+                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Weight:</Text><Text style={styles.packageInfoValue}>{pkg.weight} kg</Text></View>
+                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Delivery Date:</Text><Text style={styles.packageInfoValue}>{pkg.deliveryDate}</Text></View>
+                </View>
+              </>
+            );
+          })()}
+          <View style={styles.signatureButtonRow}>
+            <TouchableOpacity
+              style={[styles.signatureButton, { backgroundColor: theme.color.darkPrimary }]}
+              onPress={() => {
+                if (signatureRef.current) {
+                  signatureRef.current.readSignature();
+                }
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {isSavingSignature && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+            <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+          </View>
+        )}
+      </Modal>
     </View>
   );
 
@@ -1537,5 +1697,158 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#B2B2B2', // will be overridden by theme
     marginTop: 2,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 10,
+    padding: 24,
+    maxHeight: '80%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    width: '100%',
+  },
+  optionButton: {
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 32,
+    width: '100%',
+  },
+  modalBackButton: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 2,
+    padding: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  signatureContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 90,
+    paddingHorizontal: 20,
+  },
+  signatureTitleWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  signatureBackButton: {
+    position: 'absolute',
+    top: 56,
+    left: 16,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  signatureTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  signaturePadWrapper: {
+    width: '100%',
+    height: 320,
+    borderWidth: 2,
+    borderColor: '#eee',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    marginBottom: 32,
+    overflow: 'hidden',
+  },
+  signatureButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 12,
+    gap: 16,
+  },
+  signatureButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  packageInfoBox: {
+    width: '100%',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 20,
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+  packageInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  packageInfoRow: {
+    fontSize: 14,
+    marginBottom: 4,
+    color: '#222',
+  },
+  packageInfoLabel: {
+    fontWeight: 'bold',
+    color: '#444',
+  },
+  packageInfoDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 8,
+  },
+  packageInfoCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  packageInfoGroupRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  packageInfoValue: {
+    color: '#222',
+    fontSize: 14,
+    flex: 2,
+    textAlign: 'right',
+    marginLeft: 8,
   },
 }); 

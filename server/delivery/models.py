@@ -70,6 +70,8 @@ class Package(models.Model):
         help_text="Package weight (e.g., in kilograms)"
     )
 
+    signature = models.TextField(blank=True, null=True)
+
     STATUS_CHOICES = [
         # ('canceled', 'Canceled'),
         ('pending', 'Pending'),
