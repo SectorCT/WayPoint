@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
@@ -696,6 +696,22 @@ export default function TruckerViewScreen() {
     }
   }, [isFollowingHeading, position.heading, position.latitude, position.longitude]);
 
+  const [deliveryModalVisible, setDeliveryModalVisible] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+
+  const handleDeliveryButton = (packageId: string) => {
+    setSelectedPackageId(packageId);
+    setDeliveryModalVisible(true);
+  };
+
+  // Modal option handlers
+  const handleDeliveryOption = (option: 'client' | 'smartbox') => {
+    // For now, just close the modal. Later, handle signature or smartbox logic.
+    setDeliveryModalVisible(false);
+    setSelectedPackageId(null);
+    // In the future, trigger signature or smartbox flow here
+  };
+
   const handleDelivery = async (packageId: string) => {
     try {
       const response = await markPackageAsDelivered(packageId);
@@ -851,17 +867,46 @@ export default function TruckerViewScreen() {
               </View>
               <TouchableOpacity 
                 style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]}
-                onPress={() => handleDelivery(location.package_info.packageID)}
+                onPress={() => handleDeliveryButton(location.package_info.packageID)}
               >
                 <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
-                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>
-                  Mark as Delivered
-                </Text>
+                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>Mark as Delivered</Text>
               </TouchableOpacity>
             </View>
           ))
         )}
       </ScrollView>
+      {/* Delivery Option Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deliveryModalVisible}
+        onRequestClose={() => setDeliveryModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}> 
+            <TouchableOpacity onPress={() => setDeliveryModalVisible(false)} style={styles.modalBackButton}>
+              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+              <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.color.black, textAlign: 'center', marginTop: 56 }]}>Who is receiving the package?</Text>
+            <View style={styles.optionsRow}>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.color.darkPrimary, marginRight: 8 }]}
+                onPress={() => handleDeliveryOption('client')}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Client</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.color.mediumPrimary, marginLeft: 8 }]}
+                onPress={() => handleDeliveryOption('smartbox')}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Smartbox</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 
@@ -1537,5 +1582,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#B2B2B2', // will be overridden by theme
     marginTop: 2,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 10,
+    padding: 24,
+    maxHeight: '80%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    width: '100%',
+  },
+  optionButton: {
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 32,
+    width: '100%',
+  },
+  modalBackButton: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 2,
+    padding: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 }); 
