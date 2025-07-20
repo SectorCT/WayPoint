@@ -823,7 +823,19 @@ export default function TruckerViewScreen() {
                   : location
               );
               setLocations(updatedLocations);
-              
+
+              // Fetch the office assignment for this package from the backend and log it
+              try {
+                const res = await makeAuthenticatedRequest(`/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
+                const pkg = await res.json();
+                if (pkg.office) {
+                  console.log(`Package ${packageId} is now assigned to office: ${pkg.office.name} (ID: ${pkg.office.id})`);
+                } else {
+                  console.log(`Package ${packageId} is not assigned to any office.`);
+                }
+              } catch (err) {
+                console.log('Could not fetch office assignment for package', packageId, err);
+              }
             } catch (error) {
               console.error('Error marking package as undelivered:', error);
             }

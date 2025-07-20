@@ -27,14 +27,21 @@ class RouteAssignmentSerializer(serializers.ModelSerializer):
 
 
 
+class OfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'company']
+
+
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
+    office = OfficeSerializer(read_only=True)
 
     class Meta:
         model = Package
         fields = [
             'address', 'deliveryDate', 'latitude', 'longitude', 
-            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight'
+            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight', 'office'
         ]
 
     def validate_latitude(self, value):
@@ -111,12 +118,6 @@ class TruckSerializer(serializers.ModelSerializer):
             return truck
         except Exception as e:
             raise serializers.ValidationError(f"Error creating truck: {str(e)}")
-
-
-class OfficeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Office
-        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'company']
 
 
 class DeliveryHistorySerializer(serializers.ModelSerializer):
