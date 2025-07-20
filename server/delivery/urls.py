@@ -1,5 +1,6 @@
 from django.urls import path
 from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered, mark_undelivered
+from .package import OfficeListCreate, OfficeDetail, UndeliveredPackagesByOffice, UndeliveredPackagesRouteSuggestion
 from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
 from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
@@ -40,4 +41,9 @@ urlpatterns = [
 
     path('truckers/unverified/', ListUnverifiedTruckers.as_view(), name='list-unverified-truckers'),
     path('truckers/verify/', VerifyTrucker.as_view(), name='verify-trucker'),
+
+    path('offices/', OfficeListCreate.as_view(), name='office-list-create'),
+    path('offices/<int:pk>/', OfficeDetail.as_view(), name='office-detail'),
+    path('offices/<int:office_id>/undelivered/', UndeliveredPackagesByOffice.as_view(), name='undelivered-packages-by-office'),
+    path('offices/undelivered_route/<str:driver_username>/', UndeliveredPackagesRouteSuggestion.as_view(), name='undelivered-packages-route-suggestion'),
 ]

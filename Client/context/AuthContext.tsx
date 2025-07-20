@@ -24,6 +24,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuthStatus();
   }, []);
 
+  useEffect(() => {
+    console.log('AuthContext user:', user);
+  }, [user]);
+
   const checkAuthStatus = async () => {
     try {
       const refreshToken = await AsyncStorage.getItem('refreshToken');
@@ -65,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Store user data
       await AsyncStorage.setItem('user', JSON.stringify(authResponse.user));
       setUser(authResponse.user);
+      console.log('Login user:', authResponse.user);
       
       setIsAuthenticated(true);
       
