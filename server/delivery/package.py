@@ -11,6 +11,7 @@ from .models import Office
 from .serializers import OfficeSerializer
 from rest_framework.generics import get_object_or_404
 import math
+import logging
 
 class createPackage(APIView):
     # authentication_classes = [JWTAuthentication]
@@ -125,25 +126,24 @@ def mark_delivered(request):
 
 @api_view(['POST'])
 def mark_undelivered(request):
+    import logging
+    logger = logging.getLogger(__name__)
     package_id = request.data.get('packageID')
     if not package_id:
+        logger.error('No packageID provided')
         return Response({"error": "packageID not provided"}, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
         package = Package.objects.get(packageID=package_id)
     except Package.DoesNotExist:
+        logger.error(f'Package {package_id} not found')
         return Response({"error": "Package not found"}, status=status.HTTP_404_NOT_FOUND)
-    
     if package.status == 'undelivered':
+        logger.warning(f'Package {package_id} already marked as undelivered')
         return Response({"error": "Package already marked as undelivered"}, status=status.HTTP_400_BAD_REQUEST)
-    
     # Mark package as undelivered
     package.status = 'undelivered'
-
-    # Assign to nearest office if possible
-    offices = Office.objects.filter(company__in=package.recipient and [package.recipient.company] or [])
-    if not offices.exists():
-        offices = Office.objects.all()  # fallback: any office
+    # Always assign to nearest office from all offices
+    offices = Office.objects.all()
     if offices.exists() and package.latitude and package.longitude:
         def haversine(lat1, lon1, lat2, lon2):
             R = 6371  # km
@@ -158,8 +158,10 @@ def mark_undelivered(request):
             key=lambda o: haversine(package.latitude, package.longitude, o.latitude, o.longitude)
         )
         package.office = min_office
+        logger.info(f'Package {package_id} assigned to office {min_office.id} ({min_office.name})')
+    else:
+        logger.warning(f'No office assigned to package {package_id}')
     package.save()
-
     # Update status in all active route assignments
     route_assignments = RouteAssignment.objects.filter(isActive=True)
     for route in route_assignments:
@@ -172,7 +174,6 @@ def mark_undelivered(request):
         if updated:
             route.packageSequence = sequence
             route.save()
-
     return Response({"detail": "Package marked as undelivered and assigned to nearest office if available"}, status=status.HTTP_200_OK)
 
 class OfficeListCreate(APIView):
@@ -259,3 +260,12 @@ class UndeliveredPackagesRouteSuggestion(APIView):
             "undelivered_offices": list(office_map.values()),
             "suggested_office_order": suggested_order
         }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_package(request, package_id):
+    try:
+        package = Package.objects.get(packageID=package_id)
+    except Package.DoesNotExist:
+        return Response({"error": "Package not found"}, status=404)
+    serializer = PackageSerializer(package)
+    return Response(serializer.data, status=200)
