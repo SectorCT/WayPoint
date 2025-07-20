@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Package, Truck
-from rest_framework import serializers
 from .models import Package, RouteAssignment, DeliveryHistory
+from .models import Office
 from datetime import date
 
 
@@ -111,6 +111,12 @@ class TruckSerializer(serializers.ModelSerializer):
             return truck
         except Exception as e:
             raise serializers.ValidationError(f"Error creating truck: {str(e)}")
+
+
+class OfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'company']
 
 
 class DeliveryHistorySerializer(serializers.ModelSerializer):

@@ -5,6 +5,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import * as Location from "expo-location";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from "@context/ThemeContext";
 
 interface LocationState {
   latitude?: string;
@@ -46,15 +47,35 @@ export default function PickLocationScreen() {
     }));
   };
 
-  const handleDone = () => {
-    // Return to the previous screen with all the original state plus the new location
-    const pathname = params.returnScreen === "addPackage" ? "/addPackage" : "/";
+  const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY;
+
+  const handleDone = async () => {
+    let address = params.address;
+    // Fetch address if not present
+    if ((!address || address === "") && selectedLocation.latitude && selectedLocation.longitude) {
+      try {
+        const response = await fetch(
+          `https://api.geoapify.com/v1/geocode/reverse?lat=${selectedLocation.latitude}&lon=${selectedLocation.longitude}&lang=bg&format=json&apiKey=${GEOAPIFY_API_KEY}`,
+        );
+        const data = await response.json();
+        if (data.results && data.results[0] && data.results[0].formatted) {
+          address = data.results[0].formatted;
+        }
+      } catch (error) {
+        // fallback: leave address blank
+      }
+    }
+    let pathname = "/";
+    if (params.returnScreen === "addPackage") pathname = "/addPackage";
+    else if (params.returnScreen === "addOffice") pathname = "/addOffice";
+    else if (params.returnScreen === "offices") pathname = "/(tabs)/offices";
     router.replace({
       pathname,
       params: {
         ...params,
         latitude: selectedLocation.latitude.toString(),
         longitude: selectedLocation.longitude.toString(),
+        address,
       },
     });
   };

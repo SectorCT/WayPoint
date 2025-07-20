@@ -22,7 +22,7 @@ export interface User {
     isManager: boolean;
     email: string;
     phoneNumber: string;
-    company?: { unique_id: string; name: string } | null;
+    company?: { id: number; unique_id: string; name: string } | null;
     verified?: boolean;
 }
 
