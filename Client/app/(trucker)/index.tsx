@@ -271,6 +271,17 @@ export default function TruckerViewScreen() {
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   const signatureRef = React.useRef<any>(null);
+  const [officeRoute, setOfficeRoute] = useState<Coordinate[] | null>(null);
+  const [officePackages, setOfficePackages] = useState<any[]>([]); // packages to deliver to offices
+  const [isOfficeDeliveryMode, setIsOfficeDeliveryMode] = useState(false);
+  const [showOfficePrompt, setShowOfficePrompt] = useState(false); // no longer used
+  const [undeliveredCount, setUndeliveredCount] = useState(0);
+  // Add state to store office marker coordinates in office delivery mode
+  const [officeMarkers, setOfficeMarkers] = useState<Coordinate[]>([]);
+  // Add state to track which offices are fully delivered
+  const [deliveredOffices, setDeliveredOffices] = useState<number[]>([]);
+  // Add state for loading office route
+  const [isOfficeRouteLoading, setIsOfficeRouteLoading] = useState(false);
 
   // Function to get the next undelivered package
   const getNextDeliveryPoint = (): RouteLocation | null => {
@@ -546,58 +557,58 @@ export default function TruckerViewScreen() {
     setNextStep(closestStep);
   }, [routeSteps, position.latitude, position.longitude]);
 
+  // Fix handleReturnRoute for office delivery mode
   const handleReturnRoute = async () => {
     try {
       setIsReturnMode(true);
-      // Close the drawer
       drawerRef.current?.closeDrawer();
-      
-      // Keep only the default location (ADMIN package)
-      const defaultLocation = locations.find(loc => loc.package_info.packageID === "ADMIN");
-      if (!defaultLocation || !position.latitude || !position.longitude) {
+      let startLat = position.latitude;
+      let startLng = position.longitude;
+      let destLat = 42.6666; // Default ADMIN lat
+      let destLng = 23.3750; // Default ADMIN lng
+      // If in office delivery mode and officeMarkers exist, use last office as start
+      if (isOfficeDeliveryMode && officeMarkers.length > 0) {
+        const lastOffice = officeMarkers[officeMarkers.length - 1];
+        startLat = lastOffice.latitude;
+        startLng = lastOffice.longitude;
+      }
+      // Try to get ADMIN/default location from locations if available
+      const adminLoc = locations.find(loc => loc.package_info && loc.package_info.packageID === 'ADMIN');
+      if (adminLoc) {
+        destLat = adminLoc.latitude;
+        destLng = adminLoc.longitude;
+      }
+      if (!startLat || !startLng || !destLat || !destLng) {
         throw new Error('Missing location data');
       }
-
-      setLocations([defaultLocation]);
-      
-      // Get the return route from current position to default location
+      setLocations([]); // clear markers
       if (!user) {
         throw new Error('User not found');
       }
       const returnRoute = await getReturnRoute(
-        position.latitude,
-        position.longitude,
-        defaultLocation.latitude,
-        defaultLocation.longitude,
+        startLat,
+        startLng,
+        destLat,
+        destLng,
         user.username
       );
-      
       if (!returnRoute || !Array.isArray(returnRoute) || returnRoute.length === 0) {
         throw new Error('Invalid route data received from OSRM');
       }
-
-      // Convert the route coordinates to the format expected by the map
-      // OSRM returns coordinates in [longitude, latitude] format
       const routePoints = returnRoute.map(point => {
         if (!Array.isArray(point) || point.length !== 2) {
           throw new Error('Invalid coordinate format in route data');
         }
         return {
-          latitude: point[1],  // OSRM returns [lng, lat]
-          longitude: point[0]  // OSRM returns [lng, lat]
+          latitude: point[1],
+          longitude: point[0]
         };
       });
-      
       if (routePoints.length < 2) {
         throw new Error('Route must contain at least 2 points');
       }
-
-      // Only keep the route points from current position to default location
-      // Remove any points that would create a return path
       const directRoutePoints = routePoints.slice(0, Math.ceil(routePoints.length / 2));
       setRoutePoints(directRoutePoints);
-      
-      // Center the map on the route
       if (mapRef.current && directRoutePoints.length > 0) {
         const bounds = directRoutePoints.reduce((acc, point) => ({
           minLat: Math.min(acc.minLat, point.latitude),
@@ -610,17 +621,14 @@ export default function TruckerViewScreen() {
           minLng: directRoutePoints[0].longitude,
           maxLng: directRoutePoints[0].longitude
         });
-
         const center = {
           latitude: (bounds.minLat + bounds.maxLat) / 2,
           longitude: (bounds.minLng + bounds.maxLng) / 2
         };
-
         const span = {
           latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
           longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5
         };
-
         mapRef.current.animateToRegion({
           ...center,
           ...span
@@ -628,14 +636,12 @@ export default function TruckerViewScreen() {
       }
     } catch (error) {
       console.error('Error getting return route:', error);
-      // Show error message to user
       Alert.alert(
         'Route Calculation Failed',
         error instanceof Error ? error.message : 'Unable to calculate the return route. Please try again.',
-        [{ 
+        [{
           text: 'OK',
           onPress: () => {
-            // Reset state on error
             setRoutePoints([]);
             setIsReturnMode(false);
           }
@@ -654,6 +660,110 @@ export default function TruckerViewScreen() {
     // Set drawer ready after initial render
     setIsDrawerReady(true);
   }, []);
+
+  useEffect(() => {
+    // Check if all packages are delivered/undelivered
+    if (locations.length > 0 && !isOfficeDeliveryMode) {
+      const undelivered = locations.filter(loc => loc.package_info.status === 'undelivered');
+      const allDone = locations.every(loc => loc.package_info.status === 'delivered' || loc.package_info.status === 'undelivered' || loc.package_info.packageID === 'ADMIN');
+      setUndeliveredCount(undelivered.length);
+      // Only show office delivery button if all client packages are done and there are undelivered
+      setShowOfficePrompt(false); // not used
+    }
+  }, [locations, officeRoute, isOfficeDeliveryMode]);
+
+  // Update handleShowOfficeRoute to show loading spinner and center modal
+  const handleShowOfficeRoute = async () => {
+    if (!user) return;
+    setIsOfficeRouteLoading(true);
+    try {
+      const res = await makeAuthenticatedRequest(`/delivery/offices/undelivered_route/${user.username}/`, { method: 'GET' });
+      const data = await res.json();
+      // Build route points from mapRoute (real route geometry)
+      let routePoints: Coordinate[] = [];
+      if (data.mapRoute && Array.isArray(data.mapRoute)) {
+        routePoints = data.mapRoute.map((point: [number, number]) => ({
+          latitude: point[1],
+          longitude: point[0],
+        }));
+      } else {
+        // fallback: connect offices directly if no geometry
+        const offices = data.undelivered_offices;
+        const order = data.suggested_office_order;
+        routePoints = order.map((oid: number) => {
+          const office = offices.find((o: any) => o.office.id === oid);
+          return office ? {
+            latitude: parseFloat(office.office.latitude),
+            longitude: parseFloat(office.office.longitude)
+          } : null;
+        }).filter(Boolean);
+      }
+      // Build office packages as before
+      const offices = data.undelivered_offices;
+      const order = data.suggested_office_order;
+      let pkgs: any[] = [];
+      // Build office marker coordinates (in order)
+      const officeMarkerCoords: Coordinate[] = order.map((oid: number) => {
+        const office = offices.find((o: any) => o.office.id === oid);
+        return office ? {
+          latitude: parseFloat(office.office.latitude),
+          longitude: parseFloat(office.office.longitude)
+        } : null;
+      }).filter(Boolean);
+      order.forEach((oid: number) => {
+        const office = offices.find((o: any) => o.office.id === oid);
+        if (office) {
+          pkgs = pkgs.concat(office.packages);
+        }
+      });
+      setOfficeRoute(routePoints);
+      setOfficeMarkers(officeMarkerCoords);
+      setOfficePackages(pkgs);
+      setIsOfficeDeliveryMode(true);
+      setLocations([]); // clear previous markers
+    } catch (err) {
+      Alert.alert('Error', 'Could not fetch office delivery route.');
+    } finally {
+      setIsOfficeRouteLoading(false);
+    }
+  };
+
+  // Update deliveredOffices when officePackages change
+  useEffect(() => {
+    if (!isOfficeDeliveryMode) return;
+    // Group packages by office
+    const officeIdToPackages: Record<number, any[]> = {};
+    officePackages.forEach(pkg => {
+      if (pkg.office && pkg.office.id) {
+        if (!officeIdToPackages[pkg.office.id]) officeIdToPackages[pkg.office.id] = [];
+        officeIdToPackages[pkg.office.id].push(pkg);
+      }
+    });
+    // Check which offices are fully delivered
+    const delivered: number[] = [];
+    Object.entries(officeIdToPackages).forEach(([oid, pkgs]) => {
+      if (pkgs.length > 0 && pkgs.every(pkg => pkg.status === 'delivered')) {
+        delivered.push(Number(oid));
+      }
+    });
+    setDeliveredOffices(delivered);
+  }, [officePackages, isOfficeDeliveryMode]);
+
+  // Fix Mark as Delivered button for office packages
+  const [officePackageLoading, setOfficePackageLoading] = useState<string | null>(null);
+  const handleOfficePackageDelivered = async (packageID: string) => {
+    setOfficePackageLoading(packageID);
+    // Simulate async delivery (replace with real API if needed)
+    setTimeout(() => {
+      setOfficePackages(prev => prev.map(pkg =>
+        pkg.packageID === packageID ? { ...pkg, status: 'delivered' } : pkg
+      ));
+      setOfficePackageLoading(null);
+    }, 600); // Simulate 600ms delay
+  };
+
+  // Show return route button only after all office packages are delivered
+  const showReturnRouteButton = isOfficeDeliveryMode && officePackages.length === 0;
 
   const handleRecenter = () => {
     if (
@@ -823,7 +933,7 @@ export default function TruckerViewScreen() {
                   : location
               );
               setLocations(updatedLocations);
-
+              
               // Fetch the office assignment for this package from the backend and log it
               try {
                 const res = await makeAuthenticatedRequest(`/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
@@ -857,10 +967,49 @@ export default function TruckerViewScreen() {
     longitudeDelta: 0.0421,
   };
 
+  // Helper to render a package card (used for both normal and office delivery)
+  const renderPackageCard = (pkg: any, index: number, isOffice: boolean = false) => (
+    <View key={pkg.packageID} style={styles.packageItem}>
+      <View style={styles.packageHeader}>
+        <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}> 
+          <Text style={styles.indexText}>{index + 1}</Text>
+        </View>
+        <Text style={[styles.recipientName, { color: theme.color.black }]}> 
+          {isOffice ? (pkg.office?.name || 'Office') : pkg.recipient}
+        </Text>
+      </View>
+      <View style={styles.addressRow}>
+        <Text style={styles.address}>{pkg.address}</Text>
+      </View>
+      {isOffice ? (
+        <TouchableOpacity 
+          style={[styles.completeButton, { borderColor: theme.color.darkPrimary, opacity: officePackageLoading && officePackageLoading === pkg.packageID ? 0.6 : 1 }]} 
+          onPress={() => !officePackageLoading && handleOfficePackageDelivered(pkg.packageID)}
+          disabled={!!officePackageLoading}
+        >
+          {officePackageLoading && officePackageLoading === pkg.packageID ? (
+            <ActivityIndicator size="small" color={theme.color.darkPrimary} />
+          ) : (
+            <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
+          )}
+          <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>Mark as Delivered</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity 
+          style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]} 
+          onPress={() => handleDeliveryButton(pkg.packageID)}
+        >
+          <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
+          <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>Mark as Delivered</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   const renderDrawerContent = () => (
-    <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}>
-      <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}>
-        <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text>
+    <View style={[styles.drawerContainer, { backgroundColor: theme.color.white }]}> 
+      <View style={[styles.drawerHeader, { backgroundColor: theme.color.white }]}> 
+        <Text style={[styles.drawerTitle, { color: theme.color.black }]}>Delivery Route</Text> 
         <TouchableOpacity 
           style={styles.closeButton} 
           onPress={() => drawerRef.current?.closeDrawer()}
@@ -868,172 +1017,59 @@ export default function TruckerViewScreen() {
           <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
         </TouchableOpacity>
       </View>
-
-      <ScrollView 
-        style={styles.packageList}
-        contentContainerStyle={styles.packageListContent}
-        showsVerticalScrollIndicator={true}
-      >
-        {activeLocations.length === 0 ? (
+      {/* Office delivery mode sidebar fully replaces normal sidebar */}
+      {isOfficeRouteLoading ? (
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+            <Text style={{ marginTop: 16, fontSize: 16, color: theme.color.darkPrimary }}>Loading office route...</Text>
+          </View>
+        </View>
+      ) : isOfficeDeliveryMode ? (
+        officePackages.length > 0 ? (
+          <ScrollView style={styles.packageList} contentContainerStyle={styles.packageListContent}>
+            {officePackages.map((pkg, idx) => renderPackageCard(pkg, idx, true))}
+          </ScrollView>
+        ) : (
           <View style={styles.emptyStateContainer}>
             <MaterialIcons name="check-circle" size={64} color={theme.color.darkPrimary} />
-            <Text style={[styles.emptyStateTitle, { color: theme.color.black }]}>
-              All Deliveries Complete!
+            <Text style={styles.emptyStateTitle}>All Deliveries Complete!</Text>
+            <Text style={styles.emptyStateSubtitle}>You have delivered all packages to the offices.</Text>
+          </View>
+        )
+      ) : (
+        // Normal sidebar: show Deliver to Offices button if all client packages are done
+        locations.length > 0 && locations.every(loc => loc.package_info.status === 'delivered' || loc.package_info.status === 'undelivered' || loc.package_info.packageID === 'ADMIN') && undeliveredCount > 0 ? (
+          <View style={{ padding: 20, backgroundColor: '#FFF8E1', borderRadius: 10, margin: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.color.darkPrimary, marginBottom: 8 }}>
+              There are {undeliveredCount} undelivered packages.
             </Text>
-            <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              {isReturning ? 
-                "Great job! Now return to the starting point to complete your journey." :
-                "Great job! You've completed all your deliveries for today."}
+            <Text style={{ fontSize: 15, color: theme.color.darkPrimary, marginBottom: 12 }}>
+              Do you want to deliver them to the nearest offices now?
             </Text>
-            {isReturning && (
-              <View style={styles.returnRouteContainer}>
-                <TouchableOpacity 
-                  style={styles.returnRouteButton}
-                  onPress={handleReturnRoute}
-                >
-                  <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
-                  <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
-                    Return Route Active
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <TouchableOpacity onPress={handleShowOfficeRoute} style={{ backgroundColor: theme.color.darkPrimary, padding: 10, borderRadius: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Deliver to Offices</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          activeLocations.map((location) => (
-            <View key={location.waypoint_index} style={styles.packageItem}>
-              <View style={styles.packageHeader}>
-                <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
-                  <Text style={styles.indexText}>{location.waypoint_index}</Text>
-                </View>
-                <Text style={[styles.recipientName, { color: theme.color.black }]}>
-                  {location.package_info.recipient}
-                </Text>
-                <TouchableOpacity 
-                  style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
-                  onPress={() => handleUndelivered(location.package_info.packageID)}
-                >
-                  <MaterialIcons name="close" size={16} color="#FF4136" />
-                  <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
-                    Didn't Deliver
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.addressRow}>
-                <Text style={styles.address}>{location.package_info.address}</Text>
-                <TouchableOpacity 
-                  style={[styles.callButton, { backgroundColor: theme.color.darkPrimary }]}
-                  onPress={() => Linking.openURL(`tel:${location.package_info.recipientPhoneNumber}`)}
-                >
-                  <MaterialIcons name="phone" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity 
-                style={[styles.completeButton, { borderColor: theme.color.darkPrimary }]}
-                onPress={() => handleDeliveryButton(location.package_info.packageID)}
-              >
-                <MaterialIcons name="check" size={20} color={theme.color.darkPrimary} />
-                <Text style={[styles.completeButtonText, { color: theme.color.darkPrimary }]}>Mark as Delivered</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-      </ScrollView>
-      {/* Delivery Option Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={deliveryModalVisible}
-        onRequestClose={() => setDeliveryModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}> 
-            <TouchableOpacity onPress={() => setDeliveryModalVisible(false)} style={styles.modalBackButton}>
-              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
-              <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.color.black, textAlign: 'center', marginTop: 56 }]}>Who is receiving the package?</Text>
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={[styles.optionButton, { backgroundColor: theme.color.darkPrimary, marginRight: 8 }]}
-                onPress={() => handleDeliveryOption('client')}
-              >
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Client</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.optionButton, { backgroundColor: theme.color.mediumPrimary, marginLeft: 8 }]}
-                onPress={() => handleDeliveryOption('smartbox')}
-              >
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>Smartbox</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      {/* Signature Modal */}
-      <Modal
-        animationType="fade"
-        transparent={false}
-        visible={showSignature}
-        onRequestClose={handleSignatureBack}
-      >
-        <View style={styles.signatureContainer}>
-          <TouchableOpacity onPress={handleSignatureBack} style={styles.signatureBackButton}>
-            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
-            <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+          <ScrollView style={styles.packageList} contentContainerStyle={styles.packageListContent}>
+            {locations.filter(loc => loc.package_info.status !== 'delivered' && loc.package_info.status !== 'undelivered' && loc.package_info.packageID !== 'ADMIN')
+              .map((location, idx) => renderPackageCard(location.package_info, idx, false))}
+          </ScrollView>
+        )
+      )}
+      {/* Return route button only after all office packages delivered */}
+      {showReturnRouteButton && (
+        <View style={styles.returnRouteContainer}>
+          <TouchableOpacity 
+            style={styles.returnRouteButton}
+            onPress={handleReturnRoute}
+          >
+            <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
+            <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>Return Route Active</Text>
           </TouchableOpacity>
-          <View style={styles.signatureTitleWrapper}>
-            <Text style={[styles.signatureTitle, { color: theme.color.black }]}>Client Signature</Text>
-          </View>
-          <View style={styles.signaturePadWrapper}>
-            <SignatureScreen
-              ref={signatureRef}
-              backgroundColor="#fff"
-              penColor={theme.color.darkPrimary}
-              onOK={handleSignatureOK}
-              onEmpty={handleSignatureEmpty}
-              onClear={handleSignatureClear}
-              autoClear={false}
-              webStyle={`.m-signature-pad--footer {display: none;}`}
-            />
-          </View>
-          {/* Package Info Card should be above the Done button, not after it */}
-          {selectedPackageId && (() => {
-            const pkg = (locations || []).find(loc => loc.package_info.packageID === selectedPackageId)?.package_info;
-            if (!pkg) return null;
-            return (
-              <>
-                <View style={styles.packageInfoDivider} />
-                <View style={styles.packageInfoCard}>
-                  <Text style={styles.packageInfoTitle}>Package Information</Text>
-                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Recipient:</Text><Text style={styles.packageInfoValue}>{pkg.recipient}</Text></View>
-                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Address:</Text><Text style={styles.packageInfoValue}>{pkg.address}</Text></View>
-                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Package ID:</Text><Text style={styles.packageInfoValue}>{pkg.packageID}</Text></View>
-                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Weight:</Text><Text style={styles.packageInfoValue}>{pkg.weight} kg</Text></View>
-                  <View style={styles.packageInfoGroupRow}><Text style={styles.packageInfoLabel}>Delivery Date:</Text><Text style={styles.packageInfoValue}>{pkg.deliveryDate}</Text></View>
-                </View>
-              </>
-            );
-          })()}
-          <View style={styles.signatureButtonRow}>
-            <TouchableOpacity
-              style={[styles.signatureButton, { backgroundColor: theme.color.darkPrimary }]}
-              onPress={() => {
-                if (signatureRef.current) {
-                  signatureRef.current.readSignature();
-                }
-              }}
-            >
-              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Done</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-        {isSavingSignature && (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-            <ActivityIndicator size="large" color={theme.color.darkPrimary} />
-          </View>
-        )}
-      </Modal>
+      )}
     </View>
   );
 
@@ -1130,38 +1166,54 @@ export default function TruckerViewScreen() {
           } : initialRegion}
           onPanDrag={() => setIsFollowingHeading(false)}
         >
-          {!isReturnMode && (
-            <Polyline
-              coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
-              strokeColor={routeColor}
-              strokeWidth={3}
-            />
-          )}
-
-          {isReturnMode && routePoints.length > 0 && (
-            <Polyline
-              coordinates={routePoints}
-              strokeColor="#0074D9"
-              strokeWidth={3}
-            />
-          )}
-
-          {!isReturnMode && locations.map((location) => (
-            <Marker
-              key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude
-              }}
-            >
-              <CustomMarker 
-                number={location.waypoint_index} 
-                isDelivered={location.package_info.status === 'delivered'}
-                isUndelivered={location.package_info.status === 'undelivered'}
-                isWarehouse={location.package_info.packageID === "ADMIN"}
+          {/* Show office route markers and polyline if in office delivery mode */}
+          {isOfficeDeliveryMode && officeRoute ? (
+            <>
+              <Polyline
+                coordinates={officeRoute}
+                strokeColor="#FFA726"
+                strokeWidth={4}
               />
-            </Marker>
-          ))}
+              {officeMarkers.map((coord, idx) => (
+                <Marker
+                  key={`office-marker-${idx}`}
+                  coordinate={coord}
+                >
+                  <View style={deliveredOffices.includes(idx + 1) ? [styles.markerContainer, styles.markerContainerDelivered] : styles.markerContainer}>
+                    {deliveredOffices.includes(idx + 1) ? (
+                      <MaterialIcons name="check" size={20} color="#4CAF50" />
+                    ) : (
+                      <Text style={styles.markerText}>{idx + 1}</Text>
+                    )}
+                  </View>
+                </Marker>
+              ))}
+            </>
+          ) : !isReturnMode && (
+            <>
+              <Polyline
+                coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
+                strokeColor={routeColor}
+                strokeWidth={3}
+              />
+              {locations.map((location, idx) => (
+                <Marker
+                  key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude
+                  }}
+                >
+                  <CustomMarker 
+                    number={location.waypoint_index} 
+                    isDelivered={location.package_info.status === 'delivered'}
+                    isUndelivered={location.package_info.status === 'undelivered'}
+                    isWarehouse={location.package_info.packageID === "ADMIN"}
+                  />
+                </Marker>
+              ))}
+            </>
+          )}
 
           {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
             <Marker

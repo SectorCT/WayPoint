@@ -217,6 +217,7 @@ class UndeliveredPackagesByOffice(APIView):
 
 class UndeliveredPackagesRouteSuggestion(APIView):
     def get(self, request, driver_username):
+        from .routing import osrm_trip, Location
         # Get all undelivered packages for this driver's active route
         try:
             route = RouteAssignment.objects.get(driver__username=driver_username, isActive=True)
@@ -256,9 +257,22 @@ class UndeliveredPackagesRouteSuggestion(APIView):
             suggested_order = [o.id for o in offices_sorted]
         else:
             suggested_order = []
+        # Build OSRM route geometry between offices in suggested order
+        office_points = []
+        for oid in suggested_order:
+            office = Office.objects.get(id=oid)
+            office_points.append(office)
+        # If there are at least 2 offices, build the route
+        map_route = []
+        if len(office_points) >= 2:
+            locations = [Location(lon=float(o.longitude), lat=float(o.latitude), package_info={"office_id": o.id, "name": o.name, "address": o.address}) for o in office_points]
+            osrm_js = osrm_trip(locations)
+            if "trips" in osrm_js and osrm_js["trips"]:
+                map_route = osrm_js["trips"][0]["geometry"]["coordinates"]
         return Response({
             "undelivered_offices": list(office_map.values()),
-            "suggested_office_order": suggested_order
+            "suggested_office_order": suggested_order,
+            "mapRoute": map_route
         }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
