@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -268,6 +268,16 @@ export default function TruckerViewScreen() {
   // Add state for steps and next step
   const [routeSteps, setRouteSteps] = useState<any[]>([]);
   const [nextStep, setNextStep] = useState<any | null>(null);
+  
+  // Add state for undelivered packages functionality
+  const [undeliveredPackagesCount, setUndeliveredPackagesCount] = useState(0);
+  const [isUndeliveredRouteMode, setIsUndeliveredRouteMode] = useState(false);
+  const [undeliveredRouteData, setUndeliveredRouteData] = useState<any>(null);
+  
+  // Add state for office package details modal
+  const [officePackageModalVisible, setOfficePackageModalVisible] = useState(false);
+  const [selectedOfficePackages, setSelectedOfficePackages] = useState<any[]>([]);
+  const [selectedOfficeName, setSelectedOfficeName] = useState<string>('');
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
   const signatureRef = React.useRef<any>(null);
@@ -644,16 +654,100 @@ export default function TruckerViewScreen() {
     }
   };
 
+  const handleUndeliveredPackagesRoute = async () => {
+    try {
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get undelivered packages route data
+      const undeliveredData = await getUndeliveredPackagesRoute(user.username);
+      
+      if (!undeliveredData.undelivered_offices || undeliveredData.undelivered_offices.length === 0) {
+        Alert.alert('No Undelivered Packages', 'There are no undelivered packages to deliver to offices.');
+        return;
+      }
+
+      // Set undelivered route mode
+      setIsUndeliveredRouteMode(true);
+      setIsReturnMode(false);
+      
+      // Clear current route and locations
+      setRoutePoints([]);
+      setLocations([]);
+      
+      // Store the undelivered route data
+      setUndeliveredRouteData(undeliveredData);
+      
+      // Create new locations from office data - just list offices without optimization
+      const newLocations: RouteLocation[] = [];
+      let waypointIndex = 1;
+      
+      // Just use the offices as they come from the server, no sorting/optimization
+      undeliveredData.undelivered_offices.forEach((officeData: any) => {
+        const office = officeData.office;
+        newLocations.push({
+          latitude: office.latitude,
+          longitude: office.longitude,
+          waypoint_index: waypointIndex,
+          package_info: {
+            packageID: `OFFICE_${office.id}`,
+            status: 'pending' as const,
+            weight: 0,
+            address: office.address,
+            latitude: office.latitude,
+            longitude: office.longitude,
+            recipient: office.name,
+            deliveryDate: new Date().toISOString().split('T')[0],
+            recipientPhoneNumber: 'N/A'
+          }
+        });
+        waypointIndex++;
+      });
+      
+      setLocations(newLocations);
+      
+    } catch (error) {
+      console.error('Error getting undelivered packages route:', error);
+      Alert.alert(
+        'Route Calculation Failed',
+        error instanceof Error ? error.message : 'Unable to calculate the undelivered packages route. Please try again.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            // Reset state on error
+            setIsUndeliveredRouteMode(false);
+            setUndeliveredRouteData(null);
+          }
+        }]
+      );
+    }
+  };
+
   const activeLocations = locations.filter(
     location => location.package_info.status !== 'delivered' && 
                 location.package_info.status !== 'undelivered' && 
                 location.package_info.packageID !== "ADMIN"
   );
 
+  // Function to count undelivered packages
+  const countUndeliveredPackages = () => {
+    return locations.filter(
+      location => location.package_info.status === 'undelivered' && 
+                  location.package_info.packageID !== "ADMIN"
+    ).length;
+  };
+
   useEffect(() => {
     // Set drawer ready after initial render
     setIsDrawerReady(true);
   }, []);
+
+  // Update undelivered packages count when locations change
+  useEffect(() => {
+    const count = countUndeliveredPackages();
+    setUndeliveredPackagesCount(count);
+  }, [locations]);
 
   const handleRecenter = () => {
     if (
@@ -746,9 +840,79 @@ export default function TruckerViewScreen() {
     setSelectedPackageId(null);
   };
 
+  const handleOfficeDelivery = async (packageId: string) => {
+    try {
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const officeIdNumber = parseInt(packageId.replace('OFFICE_', ''));
+      
+      // Get the office data to find the packages
+      const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+        office.office.id === officeIdNumber
+      );
+      
+      if (!officeData) {
+        throw new Error('Office data not found');
+      }
+      
+      // Get package IDs for this office
+      const packageIds = officeData.packages.map((pkg: any) => pkg.packageID);
+      
+      // Save office delivery to server
+      await saveOfficeDelivery(user.username, officeIdNumber, packageIds);
+      
+      console.log(`Office ${packageId} marked as delivered with ${packageIds.length} packages`);
+      
+      // Remove the office from the locations list
+      const updatedLocations = locations.filter(location => 
+        location.package_info.packageID !== packageId
+      );
+      setLocations(updatedLocations);
+      
+      // If no more offices, exit office delivery mode
+      if (updatedLocations.length === 0) {
+        setIsUndeliveredRouteMode(false);
+        setUndeliveredRouteData(null);
+        // Refresh the original route data
+        if (user) {
+          getRoute(user.username).then(setCurrentZone);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling office delivery:', error);
+      Alert.alert('Error', 'Failed to mark office as delivered.');
+    }
+  };
+
+  const handleOfficePackageDetails = (officeId: string) => {
+    const officeIdNumber = officeId.replace('OFFICE_', '');
+    console.log('Looking for office ID:', officeIdNumber);
+    console.log('Available offices:', undeliveredRouteData?.undelivered_offices);
+    
+    const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+      office.office.id === parseInt(officeIdNumber)
+    );
+    
+    console.log('Found office data:', officeData);
+    
+    if (officeData) {
+      setSelectedOfficePackages(officeData.packages || []);
+      setSelectedOfficeName(officeData.office.name);
+      setOfficePackageModalVisible(true);
+    }
+  };
+
   const handleDeliveryButton = (packageId: string) => {
-    setSelectedPackageId(packageId);
-    setDeliveryModalVisible(true);
+    if (isUndeliveredRouteMode) {
+      // For office delivery mode, directly mark as delivered
+      handleOfficeDelivery(packageId);
+    } else {
+      // For normal delivery mode, show the modal
+      setSelectedPackageId(packageId);
+      setDeliveryModalVisible(true);
+    }
   };
 
   // Modified delivery option handler
@@ -881,19 +1045,22 @@ export default function TruckerViewScreen() {
               All Deliveries Complete!
             </Text>
             <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              {isReturning ? 
-                "Great job! Now return to the starting point to complete your journey." :
-                "Great job! You've completed all your deliveries for today."}
+              Great job! You've completed all your deliveries for today.
             </Text>
-            {isReturning && (
-              <View style={styles.returnRouteContainer}>
+            
+            {/* Undelivered Packages Section */}
+            {undeliveredPackagesCount > 0 && !isUndeliveredRouteMode && (
+              <View style={styles.undeliveredSection}>
+                <Text style={[styles.undeliveredMessage, { color: theme.color.black }]}>
+                  There are {undeliveredPackagesCount} packages that were not delivered, you should deliver them to the assigned offices.
+                </Text>
                 <TouchableOpacity 
-                  style={styles.returnRouteButton}
-                  onPress={handleReturnRoute}
+                  style={[styles.undeliveredRouteButton, { backgroundColor: theme.color.darkPrimary }]}
+                  onPress={handleUndeliveredPackagesRoute}
                 >
-                  <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
-                  <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
-                    Return Route Active
+                  <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
+                  <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
+                    Deliver to Offices
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -909,15 +1076,31 @@ export default function TruckerViewScreen() {
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
                 </Text>
-                <TouchableOpacity 
-                  style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
-                  onPress={() => handleUndelivered(location.package_info.packageID)}
-                >
-                  <MaterialIcons name="close" size={16} color="#FF4136" />
-                  <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
-                    Didn't Deliver
-                  </Text>
-                </TouchableOpacity>
+                {isUndeliveredRouteMode ? (
+                  // Show package count for office delivery mode
+                  <TouchableOpacity 
+                    style={[styles.packageCountButton, { backgroundColor: theme.color.darkPrimary }]}
+                    onPress={() => handleOfficePackageDetails(location.package_info.packageID)}
+                  >
+                    <MaterialIcons name="inventory" size={16} color="#FFFFFF" />
+                    <Text style={[styles.packageCountButtonText, { color: '#FFFFFF' }]}>
+                      {undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+                        office.office.id === parseInt(location.package_info.packageID.replace('OFFICE_', ''))
+                      )?.packages?.length || 0} Packages
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  // Show "Didn't Deliver" button for normal delivery mode
+                  <TouchableOpacity 
+                    style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
+                    onPress={() => handleUndelivered(location.package_info.packageID)}
+                  >
+                    <MaterialIcons name="close" size={16} color="#FF4136" />
+                    <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
+                      Didn't Deliver
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <View style={styles.addressRow}>
                 <Text style={styles.address}>{location.package_info.address}</Text>
@@ -938,6 +1121,8 @@ export default function TruckerViewScreen() {
             </View>
           ))
         )}
+
+
       </ScrollView>
       {/* Delivery Option Modal */}
       <Modal
@@ -970,6 +1155,47 @@ export default function TruckerViewScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Office Package Details Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={officePackageModalVisible}
+        onRequestClose={() => setOfficePackageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}> 
+            <TouchableOpacity onPress={() => setOfficePackageModalVisible(false)} style={styles.modalBackButton}>
+              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+              <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.color.black, textAlign: 'center', marginTop: 56 }]}>
+              Packages at {selectedOfficeName}
+            </Text>
+            <ScrollView style={styles.packageListModal}>
+              {selectedOfficePackages.map((pkg: any, index: number) => (
+                <View key={pkg.packageID} style={styles.packageItemModal}>
+                  <View style={styles.packageHeaderModal}>
+                    <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
+                      <Text style={styles.indexText}>{index + 1}</Text>
+                    </View>
+                    <Text style={[styles.recipientName, { color: theme.color.black }]}>
+                      {pkg.recipient}
+                    </Text>
+                  </View>
+                  <View style={styles.packageDetailsModal}>
+                    <Text style={styles.packageDetailText}>Package ID: {pkg.packageID}</Text>
+                    <Text style={styles.packageDetailText}>Address: {pkg.address}</Text>
+                    <Text style={styles.packageDetailText}>Weight: {pkg.weight} kg</Text>
+                    <Text style={styles.packageDetailText}>Phone: {pkg.recipientPhoneNumber}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Signature Modal */}
       <Modal
         animationType="fade"
@@ -1130,13 +1356,15 @@ export default function TruckerViewScreen() {
           } : initialRegion}
           onPanDrag={() => setIsFollowingHeading(false)}
         >
-          {!isReturnMode && (
+          {!isReturnMode && !isUndeliveredRouteMode && (
             <Polyline
               coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
               strokeColor={routeColor}
               strokeWidth={3}
             />
           )}
+
+
 
           {isReturnMode && routePoints.length > 0 && (
             <Polyline
@@ -1146,7 +1374,7 @@ export default function TruckerViewScreen() {
             />
           )}
 
-          {!isReturnMode && locations.map((location) => (
+          {!isReturnMode && !isUndeliveredRouteMode && locations.map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
               coordinate={{
@@ -1162,6 +1390,8 @@ export default function TruckerViewScreen() {
               />
             </Marker>
           ))}
+
+
 
           {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
             <Marker
@@ -1284,7 +1514,7 @@ export default function TruckerViewScreen() {
         )}
 
         {/* Route Mode Indicator */}
-        {!showFullJourney && !isReturnMode && (
+        {!showFullJourney && !isReturnMode && !isUndeliveredRouteMode && (
           <View style={[styles.routeModeIndicator, { backgroundColor: '#666666' }]}>
             <MaterialIcons name="navigation" size={14} color="#FFFFFF" />
             <Text style={styles.routeModeIndicatorText}>
@@ -1292,6 +1522,8 @@ export default function TruckerViewScreen() {
             </Text>
           </View>
         )}
+
+
       </View>
     </DrawerLayout>
   );
@@ -1548,6 +1780,82 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
+  },
+  undeliveredSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  undeliveredMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  undeliveredRouteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  undeliveredRouteText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  packageCountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginLeft: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+  },
+  packageCountButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  packageListModal: {
+    maxHeight: 400,
+    marginTop: 20,
+  },
+  packageItemModal: {
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    marginBottom: 10,
+  },
+  packageHeaderModal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  packageDetailsModal: {
+    marginTop: 8,
+  },
+  packageDetailText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
   },
   recalculationIndicator: {
     position: 'absolute',
