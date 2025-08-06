@@ -268,3 +268,29 @@ class Office(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.address})"
+
+
+class OfficeDelivery(models.Model):
+    """Track when undelivered packages are delivered to offices"""
+    driver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='office_deliveries'
+    )
+    office = models.ForeignKey(
+        Office, on_delete=models.CASCADE, related_name='deliveries'
+    )
+    packages = models.ManyToManyField(
+        Package, related_name='office_deliveries',
+        help_text="Packages that were delivered to this office"
+    )
+    delivery_date = models.DateTimeField(auto_now_add=True)
+    route_assignment = models.ForeignKey(
+        RouteAssignment, on_delete=models.CASCADE, related_name='office_deliveries',
+        null=True, blank=True
+    )
+
+    class Meta:
+        unique_together = ['driver', 'office', 'delivery_date']
+        ordering = ['-delivery_date']
+
+    def __str__(self):
+        return f"Office delivery by {self.driver.username} to {self.office.name} on {self.delivery_date}"

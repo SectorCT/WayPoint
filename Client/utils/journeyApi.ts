@@ -193,4 +193,49 @@ export const recalculateRoute = async (
   }
 };
 
+export const getUndeliveredPackagesRoute = async (driverUsername: string): Promise<any> => {
+  try {
+    const response = await makeAuthenticatedRequest(`/delivery/offices/undelivered_route/${driverUsername}/`, {
+      method: "GET",
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to get undelivered packages route');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('Error in getUndeliveredPackagesRoute:', error);
+    throw error;
+  }
+};
+
+export const saveOfficeDelivery = async (
+  driverUsername: string,
+  officeId: number,
+  packageIds: string[]
+): Promise<any> => {
+  try {
+    const response = await makeAuthenticatedRequest('/delivery/office-delivery/', {
+      method: "POST",
+      body: JSON.stringify({
+        driver_username: driverUsername,
+        office_id: officeId,
+        package_ids: packageIds
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save office delivery');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('Error in saveOfficeDelivery:', error);
+    throw error;
+  }
+};
+
 

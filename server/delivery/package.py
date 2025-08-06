@@ -12,6 +12,8 @@ from .serializers import OfficeSerializer
 from rest_framework.generics import get_object_or_404
 import math
 import logging
+from .models import User, OfficeDelivery
+from .serializers import OfficeDeliverySerializer
 
 class createPackage(APIView):
     # authentication_classes = [JWTAuthentication]
@@ -222,9 +224,25 @@ class UndeliveredPackagesRouteSuggestion(APIView):
             route = RouteAssignment.objects.get(driver__username=driver_username, isActive=True)
         except RouteAssignment.DoesNotExist:
             return Response({"error": "No active route for this driver."}, status=status.HTTP_404_NOT_FOUND)
-        undelivered = [pkg for pkg in route.packageSequence if pkg.get('status') == 'undelivered']
+        
+        # Get packages that are still undelivered (not delivered to offices)
+        undelivered = []
+        for pkg in route.packageSequence:
+            if pkg.get('status') == 'undelivered':
+                try:
+                    db_pkg = Package.objects.get(packageID=pkg['packageID'])
+                    # Check if this package has already been delivered to an office
+                    if not OfficeDelivery.objects.filter(
+                        driver__username=driver_username,
+                        packages=db_pkg
+                    ).exists():
+                        undelivered.append(pkg)
+                except Package.DoesNotExist:
+                    continue
+        
         if not undelivered:
             return Response({"detail": "No undelivered packages for this driver."}, status=status.HTTP_200_OK)
+        
         # Group by office
         office_map = {}
         for pkg in undelivered:
@@ -236,6 +254,7 @@ class UndeliveredPackagesRouteSuggestion(APIView):
                     office_map[office.id]["packages"].append(PackageSerializer(db_pkg).data)
             except Package.DoesNotExist:
                 continue
+        
         # Suggest order: sort offices by distance from the first undelivered package
         if office_map:
             first_pkg = next(iter(undelivered))
@@ -256,6 +275,7 @@ class UndeliveredPackagesRouteSuggestion(APIView):
             suggested_order = [o.id for o in offices_sorted]
         else:
             suggested_order = []
+        
         return Response({
             "undelivered_offices": list(office_map.values()),
             "suggested_office_order": suggested_order
@@ -269,3 +289,60 @@ def get_package(request, package_id):
         return Response({"error": "Package not found"}, status=404)
     serializer = PackageSerializer(package)
     return Response(serializer.data, status=200)
+
+
+@api_view(['POST'])
+def save_office_delivery(request):
+    """Save office delivery information"""
+    try:
+        driver_username = request.data.get('driver_username')
+        office_id = request.data.get('office_id')
+        package_ids = request.data.get('package_ids', [])
+        
+        if not driver_username or not office_id:
+            return Response({"error": "driver_username and office_id are required"}, status=400)
+        
+        # Get the driver and office
+        try:
+            driver = User.objects.get(username=driver_username)
+            office = Office.objects.get(id=office_id)
+        except (User.DoesNotExist, Office.DoesNotExist):
+            return Response({"error": "Driver or office not found"}, status=404)
+        
+        # Get the active route for this driver
+        try:
+            route = RouteAssignment.objects.get(driver=driver, isActive=True)
+        except RouteAssignment.DoesNotExist:
+            return Response({"error": "No active route found for this driver"}, status=404)
+        
+        # Create office delivery record
+        office_delivery = OfficeDelivery.objects.create(
+            driver=driver,
+            office=office,
+            route_assignment=route
+        )
+        
+        # Add packages to the office delivery
+        if package_ids:
+            packages = Package.objects.filter(packageID__in=package_ids)
+            office_delivery.packages.set(packages)
+        
+        # Mark packages as delivered to office
+        packages.update(status='delivered')
+        
+        # Update the route sequence to reflect delivered packages
+        updated_sequence = []
+        for pkg in route.packageSequence:
+            if pkg.get('packageID') in package_ids:
+                # Update status to delivered in route sequence
+                pkg['status'] = 'delivered'
+            updated_sequence.append(pkg)
+        
+        route.packageSequence = updated_sequence
+        route.save()
+        
+        serializer = OfficeDeliverySerializer(office_delivery)
+        return Response(serializer.data, status=201)
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
