@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Package, Truck
-from rest_framework import serializers
 from .models import Package, RouteAssignment, DeliveryHistory
+from .models import Office, OfficeDelivery
 from datetime import date
 
 
@@ -27,14 +27,21 @@ class RouteAssignmentSerializer(serializers.ModelSerializer):
 
 
 
+class OfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'company']
+
+
 class PackageSerializer(serializers.ModelSerializer):
     packageID = serializers.ReadOnlyField()
+    office = OfficeSerializer(read_only=True)
 
     class Meta:
         model = Package
         fields = [
             'address', 'deliveryDate', 'latitude', 'longitude', 
-            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight'
+            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight', 'office'
         ]
 
     def validate_latitude(self, value):
@@ -181,3 +188,20 @@ class DeliveryHistorySummarySerializer(serializers.ModelSerializer):
         hours = int(obj.duration_hours)
         minutes = int((obj.duration_hours - hours) * 60)
         return f"{hours}:{minutes:02d}"
+
+
+class OfficeDeliverySerializer(serializers.ModelSerializer):
+    driver_username = serializers.CharField(source='driver.username', read_only=True)
+    office_name = serializers.CharField(source='office.name', read_only=True)
+    packages_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OfficeDelivery
+        fields = [
+            'id', 'driver_username', 'office_name', 'packages_count', 
+            'delivery_date', 'route_assignment'
+        ]
+        read_only_fields = ['id', 'delivery_date']
+
+    def get_packages_count(self, obj):
+        return obj.packages.count()
