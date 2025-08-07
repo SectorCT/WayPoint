@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('email', 'username', 'phoneNumber', 'isManager', 'company', 'verified')
     def get_company(self, obj):
         if obj.company:
-            return {'unique_id': obj.company.unique_id, 'name': obj.company.name}
+            return {'id': obj.company.id, 'unique_id': obj.company.unique_id, 'name': obj.company.name}
         return None
 
 class RegisterSerializer(serializers.ModelSerializer):

@@ -193,4 +193,76 @@ export const recalculateRoute = async (
   }
 };
 
+export const getUndeliveredPackagesRoute = async (driverUsername: string): Promise<any> => {
+  try {
+    const response = await makeAuthenticatedRequest(`/delivery/offices/undelivered_route/${driverUsername}/`, {
+      method: "GET",
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to get undelivered packages route');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('Error in getUndeliveredPackagesRoute:', error);
+    throw error;
+  }
+};
+
+export const saveOfficeDelivery = async (
+  driverUsername: string,
+  officeId: number,
+  packageIds: string[]
+): Promise<any> => {
+  try {
+    const response = await makeAuthenticatedRequest('/delivery/office-delivery/', {
+      method: "POST",
+      body: JSON.stringify({
+        driver_username: driverUsername,
+        office_id: officeId,
+        package_ids: packageIds
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save office delivery');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('Error in saveOfficeDelivery:', error);
+    throw error;
+  }
+};
+
+export const optimizeOfficeRoute = async (
+  driverUsername: string,
+  currentLat: number,
+  currentLng: number,
+  officeIds: number[]
+): Promise<any> => {
+  try {
+    const response = await makeAuthenticatedRequest('/delivery/route/optimize-office/', {
+      method: "POST",
+      body: JSON.stringify({
+        driver_username: driverUsername,
+        current_lat: currentLat,
+        current_lng: currentLng,
+        office_ids: officeIds
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to optimize office route');
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error in optimizeOfficeRoute:', error);
+    throw error;
+  }
+};
+
 

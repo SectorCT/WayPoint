@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery, optimizeOfficeRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -269,6 +269,21 @@ export default function TruckerViewScreen() {
   const [routeSteps, setRouteSteps] = useState<any[]>([]);
   const [nextStep, setNextStep] = useState<any | null>(null);
   
+  // Add state for undelivered packages functionality
+  const [undeliveredPackagesCount, setUndeliveredPackagesCount] = useState(0);
+  const [isUndeliveredRouteMode, setIsUndeliveredRouteMode] = useState(false);
+  const [undeliveredRouteData, setUndeliveredRouteData] = useState<any>(null);
+  
+  // Add state for office package details modal
+  const [officePackageModalVisible, setOfficePackageModalVisible] = useState(false);
+  const [selectedOfficePackages, setSelectedOfficePackages] = useState<any[]>([]);
+  const [selectedOfficeName, setSelectedOfficeName] = useState<string>('');
+  
+  // Add state for office delivery tracking
+  const [deliveredOffices, setDeliveredOffices] = useState<Set<string>>(new Set());
+  const [officeLocations, setOfficeLocations] = useState<RouteLocation[]>([]);
+  const [isOptimizingOfficeRoute, setIsOptimizingOfficeRoute] = useState(false);
+  
   const routeColor = generateColorFromValue(currentZone?.user || '');
   const signatureRef = React.useRef<any>(null);
 
@@ -491,6 +506,11 @@ export default function TruckerViewScreen() {
       return;
     }
 
+    // Don't override route points when in office delivery mode
+    if (isUndeliveredRouteMode) {
+      return;
+    }
+
     const allPackagesCompleted = locations.every(
       location => location.package_info.status === 'delivered' || 
                  location.package_info.status === 'undelivered' ||
@@ -511,7 +531,7 @@ export default function TruckerViewScreen() {
       setRoutePoints(baseRoutePoints);
       setIsReturning(false);
     }
-  }, [currentZone?.mapRoute, locations, isReturning]);
+  }, [currentZone?.mapRoute, locations, isReturning, isUndeliveredRouteMode]);
 
   // Update steps when currentZone changes
   useEffect(() => {
@@ -644,16 +664,163 @@ export default function TruckerViewScreen() {
     }
   };
 
+  const handleUndeliveredPackagesRoute = async () => {
+    try {
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Show loading state immediately and close sidebar
+      setIsOptimizingOfficeRoute(true);
+      if (drawerRef.current) {
+        drawerRef.current.closeDrawer();
+      }
+      console.log('Starting office route optimization...');
+
+      // Get undelivered packages route data
+      const undeliveredData = await getUndeliveredPackagesRoute(user.username);
+      
+      if (!undeliveredData.undelivered_offices || undeliveredData.undelivered_offices.length === 0) {
+        Alert.alert('No Undelivered Packages', 'There are no undelivered packages to deliver to offices.');
+        return;
+      }
+
+      // Store the undelivered route data
+      setUndeliveredRouteData(undeliveredData);
+      
+      // Get current position for optimization
+      if (!position.latitude || !position.longitude) {
+        throw new Error('Current position not available for route optimization');
+      }
+      
+      // Extract office IDs for optimization
+      const officeIds = undeliveredData.undelivered_offices.map((officeData: any) => officeData.office.id);
+      
+      // Call optimization API
+      console.log('Calling optimization API with office IDs:', officeIds);
+      const optimizedData = await optimizeOfficeRoute(
+        user.username,
+        position.latitude,
+        position.longitude,
+        officeIds
+      );
+      console.log('Optimization result:', {
+        message: optimizedData.message,
+        optimized_offices_count: optimizedData.optimized_offices?.length || 0,
+        route_coordinates_count: optimizedData.route_coordinates?.length || 0
+      });
+      
+      // Set undelivered route mode BEFORE setting route points
+      setIsUndeliveredRouteMode(true);
+      setIsReturnMode(false);
+      
+      // Force clear the old route immediately
+      setRoutePoints([]);
+      
+      // Create optimized locations from the response
+      const newLocations: RouteLocation[] = [];
+      const newOfficeLocations: RouteLocation[] = [];
+      
+      optimizedData.optimized_offices.forEach((officeData: any, index: number) => {
+        const officeLocation = {
+          latitude: officeData.latitude,
+          longitude: officeData.longitude,
+          waypoint_index: officeData.visit_order,
+          package_info: {
+            packageID: `OFFICE_${officeData.office_id}`,
+            status: 'pending' as const,
+            weight: 0,
+            address: officeData.address,
+            latitude: officeData.latitude,
+            longitude: officeData.longitude,
+            recipient: officeData.office_name,
+            deliveryDate: new Date().toISOString().split('T')[0],
+            recipientPhoneNumber: 'N/A'
+          }
+        };
+        
+        newLocations.push(officeLocation);
+        newOfficeLocations.push(officeLocation);
+      });
+      
+      // Set optimized route points
+      if (optimizedData.route_coordinates && optimizedData.route_coordinates.length > 0) {
+        const routePoints = optimizedData.route_coordinates.map((point: [number, number]) => ({
+          latitude: point[1], // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        }));
+        setRoutePoints(routePoints);
+      }
+      
+      // Set locations after optimization
+      setLocations(newLocations);
+      setOfficeLocations(newOfficeLocations);
+      
+    } catch (error) {
+      console.error('Error getting undelivered packages route:', error);
+      Alert.alert(
+        'Route Calculation Failed',
+        error instanceof Error ? error.message : 'Unable to calculate the undelivered packages route. Please try again.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            // Reset state on error
+            setIsUndeliveredRouteMode(false);
+            setUndeliveredRouteData(null);
+          }
+        }]
+      );
+    } finally {
+      setIsOptimizingOfficeRoute(false);
+    }
+  };
+
   const activeLocations = locations.filter(
-    location => location.package_info.status !== 'delivered' && 
-                location.package_info.status !== 'undelivered' && 
-                location.package_info.packageID !== "ADMIN"
+    location => {
+      // For office delivery mode, show all office locations
+      if (isUndeliveredRouteMode && location.package_info.packageID.startsWith('OFFICE_')) {
+        return true;
+      }
+      // For normal delivery mode, filter as before
+      return location.package_info.status !== 'delivered' && 
+             location.package_info.status !== 'undelivered' && 
+             location.package_info.packageID !== "ADMIN";
+    }
   );
+
+  // Function to count undelivered packages
+  const countUndeliveredPackages = () => {
+    return locations.filter(
+      location => location.package_info.status === 'undelivered' && 
+                  location.package_info.packageID !== "ADMIN"
+    ).length;
+  };
 
   useEffect(() => {
     // Set drawer ready after initial render
     setIsDrawerReady(true);
   }, []);
+
+  // Update undelivered packages count when locations change
+  useEffect(() => {
+    const count = countUndeliveredPackages();
+    setUndeliveredPackagesCount(count);
+  }, [locations]);
+
+  // Check if all office deliveries are complete and reset mode
+  useEffect(() => {
+    if (isUndeliveredRouteMode && officeLocations.length > 0) {
+      const allOfficesDelivered = officeLocations.every(location => 
+        deliveredOffices.has(location.package_info.packageID)
+      );
+      
+      if (allOfficesDelivered) {
+        setIsUndeliveredRouteMode(false);
+        setRoutePoints([]);
+        setOfficeLocations([]);
+      }
+    }
+  }, [deliveredOffices, officeLocations, isUndeliveredRouteMode]);
 
   const handleRecenter = () => {
     if (
@@ -746,9 +913,82 @@ export default function TruckerViewScreen() {
     setSelectedPackageId(null);
   };
 
+  const handleOfficeDelivery = async (packageId: string) => {
+    try {
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const officeIdNumber = parseInt(packageId.replace('OFFICE_', ''));
+      
+      // Get the office data to find the packages
+      const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+        office.office.id === officeIdNumber
+      );
+      
+      if (!officeData) {
+        throw new Error('Office data not found');
+      }
+      
+      // Get package IDs for this office
+      const packageIds = officeData.packages.map((pkg: any) => pkg.packageID);
+      
+      // Save office delivery to server
+      await saveOfficeDelivery(user.username, officeIdNumber, packageIds);
+      
+      console.log(`Office ${packageId} marked as delivered with ${packageIds.length} packages`);
+      
+      // Mark office as delivered
+      setDeliveredOffices(prev => new Set([...prev, packageId]));
+      
+      // Remove the office from the locations list
+      const updatedLocations = locations.filter(location => 
+        location.package_info.packageID !== packageId
+      );
+      setLocations(updatedLocations);
+      
+      // If no more offices, exit office delivery mode
+      if (updatedLocations.length === 0) {
+        setIsUndeliveredRouteMode(false);
+        setUndeliveredRouteData(null);
+        // Refresh the original route data
+        if (user) {
+          getRoute(user.username).then(setCurrentZone);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling office delivery:', error);
+      Alert.alert('Error', 'Failed to mark office as delivered.');
+    }
+  };
+
+  const handleOfficePackageDetails = (officeId: string) => {
+    const officeIdNumber = officeId.replace('OFFICE_', '');
+    console.log('Looking for office ID:', officeIdNumber);
+    console.log('Available offices:', undeliveredRouteData?.undelivered_offices);
+    
+    const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+      office.office.id === parseInt(officeIdNumber)
+    );
+    
+    console.log('Found office data:', officeData);
+    
+    if (officeData) {
+      setSelectedOfficePackages(officeData.packages || []);
+      setSelectedOfficeName(officeData.office.name);
+      setOfficePackageModalVisible(true);
+    }
+  };
+
   const handleDeliveryButton = (packageId: string) => {
-    setSelectedPackageId(packageId);
-    setDeliveryModalVisible(true);
+    if (isUndeliveredRouteMode) {
+      // For office delivery mode, directly mark as delivered
+      handleOfficeDelivery(packageId);
+    } else {
+      // For normal delivery mode, show the modal
+      setSelectedPackageId(packageId);
+      setDeliveryModalVisible(true);
+    }
   };
 
   // Modified delivery option handler
@@ -823,7 +1063,19 @@ export default function TruckerViewScreen() {
                   : location
               );
               setLocations(updatedLocations);
-              
+
+              // Fetch the office assignment for this package from the backend and log it
+              try {
+                const res = await makeAuthenticatedRequest(`/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
+                const pkg = await res.json();
+                if (pkg.office) {
+                  console.log(`Package ${packageId} is now assigned to office: ${pkg.office.name} (ID: ${pkg.office.id})`);
+                } else {
+                  console.log(`Package ${packageId} is not assigned to any office.`);
+                }
+              } catch (err) {
+                console.log('Could not fetch office assignment for package', packageId, err);
+              }
             } catch (error) {
               console.error('Error marking package as undelivered:', error);
             }
@@ -869,19 +1121,49 @@ export default function TruckerViewScreen() {
               All Deliveries Complete!
             </Text>
             <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              {isReturning ? 
-                "Great job! Now return to the starting point to complete your journey." :
-                "Great job! You've completed all your deliveries for today."}
+              Great job! You've completed all your deliveries for today.
             </Text>
-            {isReturning && (
+            
+            {/* Undelivered Packages Section */}
+            {undeliveredPackagesCount > 0 && !isUndeliveredRouteMode && (
+              <View style={styles.undeliveredSection}>
+                <Text style={[styles.undeliveredMessage, { color: theme.color.black }]}>
+                  There are {undeliveredPackagesCount} packages that were not delivered, you should deliver them to the assigned offices.
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.undeliveredRouteButton, { backgroundColor: theme.color.darkPrimary }]}
+                  onPress={handleUndeliveredPackagesRoute}
+                  disabled={isOptimizingOfficeRoute}
+                >
+                  {isOptimizingOfficeRoute ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
+                        Optimizing Route...
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
+                      <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
+                        Deliver to Offices
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Return Route Button - Only show when no undelivered packages */}
+            {undeliveredPackagesCount === 0 && (
               <View style={styles.returnRouteContainer}>
                 <TouchableOpacity 
-                  style={styles.returnRouteButton}
+                  style={[styles.returnRouteButton, { backgroundColor: theme.color.darkPrimary }]}
                   onPress={handleReturnRoute}
                 >
-                  <MaterialIcons name="directions" size={24} color={theme.color.darkPrimary} />
-                  <Text style={[styles.returnRouteText, { color: theme.color.darkPrimary }]}>
-                    Return Route Active
+                  <MaterialIcons name="home" size={24} color="#FFFFFF" />
+                  <Text style={[styles.returnRouteText, { color: "#FFFFFF" }]}>
+                    Return Route
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -897,15 +1179,31 @@ export default function TruckerViewScreen() {
                 <Text style={[styles.recipientName, { color: theme.color.black }]}>
                   {location.package_info.recipient}
                 </Text>
-                <TouchableOpacity 
-                  style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
-                  onPress={() => handleUndelivered(location.package_info.packageID)}
-                >
-                  <MaterialIcons name="close" size={16} color="#FF4136" />
-                  <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
-                    Didn't Deliver
-                  </Text>
-                </TouchableOpacity>
+                {isUndeliveredRouteMode ? (
+                  // Show package count for office delivery mode
+                  <TouchableOpacity 
+                    style={[styles.packageCountButton, { backgroundColor: theme.color.darkPrimary }]}
+                    onPress={() => handleOfficePackageDetails(location.package_info.packageID)}
+                  >
+                    <MaterialIcons name="inventory" size={16} color="#FFFFFF" />
+                    <Text style={[styles.packageCountButtonText, { color: '#FFFFFF' }]}>
+                      {undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+                        office.office.id === parseInt(location.package_info.packageID.replace('OFFICE_', ''))
+                      )?.packages?.length || 0} Packages
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  // Show "Didn't Deliver" button for normal delivery mode
+                  <TouchableOpacity 
+                    style={[styles.undeliveredButton, { borderColor: '#FF4136' }]}
+                    onPress={() => handleUndelivered(location.package_info.packageID)}
+                  >
+                    <MaterialIcons name="close" size={16} color="#FF4136" />
+                    <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
+                      Didn't Deliver
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <View style={styles.addressRow}>
                 <Text style={styles.address}>{location.package_info.address}</Text>
@@ -926,6 +1224,8 @@ export default function TruckerViewScreen() {
             </View>
           ))
         )}
+
+
       </ScrollView>
       {/* Delivery Option Modal */}
       <Modal
@@ -958,6 +1258,47 @@ export default function TruckerViewScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Office Package Details Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={officePackageModalVisible}
+        onRequestClose={() => setOfficePackageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: theme.color.white }]}> 
+            <TouchableOpacity onPress={() => setOfficePackageModalVisible(false)} style={styles.modalBackButton}>
+              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+              <Text style={{color: theme.color.darkPrimary, marginLeft: 6, fontSize: 16, fontWeight: 'bold'}}>Back</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.color.black, textAlign: 'center', marginTop: 56 }]}>
+              Packages at {selectedOfficeName}
+            </Text>
+            <ScrollView style={styles.packageListModal}>
+              {selectedOfficePackages.map((pkg: any, index: number) => (
+                <View key={pkg.packageID} style={styles.packageItemModal}>
+                  <View style={styles.packageHeaderModal}>
+                    <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
+                      <Text style={styles.indexText}>{index + 1}</Text>
+                    </View>
+                    <Text style={[styles.recipientName, { color: theme.color.black }]}>
+                      {pkg.recipient}
+                    </Text>
+                  </View>
+                  <View style={styles.packageDetailsModal}>
+                    <Text style={styles.packageDetailText}>Package ID: {pkg.packageID}</Text>
+                    <Text style={styles.packageDetailText}>Address: {pkg.address}</Text>
+                    <Text style={styles.packageDetailText}>Weight: {pkg.weight} kg</Text>
+                    <Text style={styles.packageDetailText}>Phone: {pkg.recipientPhoneNumber}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Signature Modal */}
       <Modal
         animationType="fade"
@@ -1118,13 +1459,28 @@ export default function TruckerViewScreen() {
           } : initialRegion}
           onPanDrag={() => setIsFollowingHeading(false)}
         >
-          {!isReturnMode && (
+          {/* Only show normal route when NOT in office delivery mode */}
+          {!isReturnMode && !isUndeliveredRouteMode && routePoints.length > 0 && (
             <Polyline
+              key="normal-route-polyline"
               coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
               strokeColor={routeColor}
               strokeWidth={3}
             />
           )}
+
+          {/* Office Route Polyline */}
+          {isUndeliveredRouteMode && routePoints.length > 0 && (
+            <Polyline
+              key="office-route-polyline"
+              coordinates={routePoints}
+              strokeColor="#0074D9"
+              strokeWidth={3}
+              zIndex={1000}
+            />
+          )}
+
+
 
           {isReturnMode && routePoints.length > 0 && (
             <Polyline
@@ -1134,7 +1490,12 @@ export default function TruckerViewScreen() {
             />
           )}
 
-          {!isReturnMode && locations.map((location) => (
+          {/* Only show package markers in normal delivery mode, not in office delivery mode */}
+          {!isReturnMode && !isUndeliveredRouteMode && locations.filter(location => 
+            location.package_info.packageID !== "ADMIN" && 
+            location.package_info.status !== 'delivered' &&
+            location.package_info.status !== 'undelivered'
+          ).map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
               coordinate={{
@@ -1150,6 +1511,8 @@ export default function TruckerViewScreen() {
               />
             </Marker>
           ))}
+
+
 
           {isReturnMode && locations.filter(loc => loc.package_info.packageID === "ADMIN").map((location) => (
             <Marker
@@ -1168,6 +1531,24 @@ export default function TruckerViewScreen() {
             </Marker>
           ))}
 
+          {/* Office Markers for Undelivered Route Mode */}
+          {isUndeliveredRouteMode && officeLocations.map((location) => (
+            <Marker
+              key={`marker-office-${location.package_info.packageID}-${location.waypoint_index}`}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index} 
+                isDelivered={deliveredOffices.has(location.package_info.packageID)}
+                isUndelivered={false}
+                isWarehouse={false}
+              />
+            </Marker>
+          ))}
+
           {position.latitude && position.longitude && (
             <Marker
               coordinate={{
@@ -1181,6 +1562,18 @@ export default function TruckerViewScreen() {
             </Marker>
           )}
         </MapView>
+
+        {/* Loading Overlay for Office Route Optimization */}
+        {isOptimizingOfficeRoute && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+              <Text style={[styles.loadingText, { color: theme.color.black }]}>
+                Optimizing Office Route...
+              </Text>
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity 
           style={[styles.logoutButton, { backgroundColor: theme.color.darkPrimary }]} 
@@ -1272,7 +1665,7 @@ export default function TruckerViewScreen() {
         )}
 
         {/* Route Mode Indicator */}
-        {!showFullJourney && !isReturnMode && (
+        {!showFullJourney && !isReturnMode && !isUndeliveredRouteMode && (
           <View style={[styles.routeModeIndicator, { backgroundColor: '#666666' }]}>
             <MaterialIcons name="navigation" size={14} color="#FFFFFF" />
             <Text style={styles.routeModeIndicatorText}>
@@ -1280,6 +1673,8 @@ export default function TruckerViewScreen() {
             </Text>
           </View>
         )}
+
+
       </View>
     </DrawerLayout>
   );
@@ -1529,6 +1924,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  returnRouteContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
   returnRouteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1536,6 +1935,82 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
+  },
+  undeliveredSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  undeliveredMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  undeliveredRouteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  undeliveredRouteText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  packageCountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginLeft: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+  },
+  packageCountButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  packageListModal: {
+    maxHeight: 400,
+    marginTop: 20,
+  },
+  packageItemModal: {
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    marginBottom: 10,
+  },
+  packageHeaderModal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  packageDetailsModal: {
+    marginTop: 8,
+  },
+  packageDetailText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
   },
   recalculationIndicator: {
     position: 'absolute',
@@ -1850,5 +2325,33 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
     marginLeft: 8,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 12,
+    textAlign: 'center',
   },
 }); 

@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from delivery.models import Package, Truck
+from delivery.models import Office
 from django.utils import timezone
 from datetime import timedelta
 import random
@@ -122,6 +123,30 @@ class Command(BaseCommand):
                 status='pending'
             )
             self.stdout.write(self.style.SUCCESS(f'Created package: {package.packageID}'))
+
+        # Create offices for the company
+        office_data = [
+            {"name": "Central Office", "address": "bul. Vitosha 1, Sofia, Bulgaria", "latitude": 42.695, "longitude": 23.320, "company": company},
+            {"name": "East Office", "address": "bul. Tsarigradsko Shose 200, Sofia, Bulgaria", "latitude": 42.670, "longitude": 23.400, "company": company},
+        ]
+        offices = []
+        for od in office_data:
+            office, _ = Office.objects.get_or_create(
+                name=od["name"],
+                address=od["address"],
+                latitude=od["latitude"],
+                longitude=od["longitude"],
+                company=od["company"]
+            )
+            offices.append(office)
+            self.stdout.write(self.style.SUCCESS(f'Created office: {office.name}'))
+
+        # Assign some packages as undelivered and to offices
+        for i, package in enumerate(Package.objects.all()[:4]):
+            package.status = 'undelivered'
+            package.office = offices[i % len(offices)]
+            package.save()
+            self.stdout.write(self.style.SUCCESS(f'Assigned package {package.packageID} as undelivered to office {package.office.name}'))
 
         self.stdout.write(self.style.SUCCESS('Test data creation complete!'))
         self.stdout.write('\nCredentials:')

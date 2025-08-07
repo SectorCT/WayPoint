@@ -53,6 +53,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="offices"
+        options={{
+          title: "Offices",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="business" size={ICON_SIZE} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="adminTruckTracker"
         options={{
           title: "Admin",

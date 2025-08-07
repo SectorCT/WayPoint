@@ -3,6 +3,7 @@ from rest_framework import serializers
 from datetime import timedelta
 from django.db import models
 import secrets
+from authentication.models import Company
 
 User = get_user_model()
 
@@ -82,6 +83,8 @@ class Package(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='pending'
     )
+
+    office = models.ForeignKey('Office', null=True, blank=True, on_delete=models.SET_NULL, related_name='packages', help_text='Office where the package is currently stored (if undelivered)')
 
     objects = PackageManager()
 
@@ -255,3 +258,39 @@ class DeliveryHistory(models.Model):
         )['total_weight'] or 0.00
         
         self.save()
+
+class Office(models.Model):
+    name = models.CharField(max_length=100)
+    address = models.CharField(max_length=255)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='offices')
+
+    def __str__(self):
+        return f"{self.name} ({self.address})"
+
+
+class OfficeDelivery(models.Model):
+    """Track when undelivered packages are delivered to offices"""
+    driver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='office_deliveries'
+    )
+    office = models.ForeignKey(
+        Office, on_delete=models.CASCADE, related_name='deliveries'
+    )
+    packages = models.ManyToManyField(
+        Package, related_name='office_deliveries',
+        help_text="Packages that were delivered to this office"
+    )
+    delivery_date = models.DateTimeField(auto_now_add=True)
+    route_assignment = models.ForeignKey(
+        RouteAssignment, on_delete=models.CASCADE, related_name='office_deliveries',
+        null=True, blank=True
+    )
+
+    class Meta:
+        unique_together = ['driver', 'office', 'delivery_date']
+        ordering = ['-delivery_date']
+
+    def __str__(self):
+        return f"Office delivery by {self.driver.username} to {self.office.name} on {self.delivery_date}"
