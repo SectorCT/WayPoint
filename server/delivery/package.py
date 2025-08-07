@@ -346,3 +346,93 @@ def save_office_delivery(request):
         
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+
+@api_view(['POST'])
+def optimize_office_route(request):
+    """Optimize route for office deliveries using OSRM"""
+    try:
+        driver_username = request.data.get('driver_username')
+        current_lat = float(request.data.get('current_lat'))
+        current_lng = float(request.data.get('current_lng'))
+        office_ids = request.data.get('office_ids', [])
+        
+        if not driver_username or not office_ids:
+            return Response({"error": "driver_username and office_ids are required"}, status=400)
+        
+        # Get the driver
+        try:
+            driver = User.objects.get(username=driver_username)
+        except User.DoesNotExist:
+            return Response({"error": "Driver not found"}, status=404)
+        
+        # Get the offices
+        try:
+            offices = Office.objects.filter(id__in=office_ids)
+            if len(offices) != len(office_ids):
+                return Response({"error": "Some offices not found"}, status=404)
+        except Exception:
+            return Response({"error": "Invalid office IDs"}, status=400)
+        
+        # Import OSRM functions
+        from .routing import osrm_trip, Location, extract_visit_plan
+        
+        # Create locations for OSRM: current position + offices
+        locations = [
+            Location(lon=current_lng, lat=current_lat, package_info={"address": "Current Position"})
+        ]
+        
+        for office in offices:
+            locations.append(Location(
+                lon=float(office.longitude), 
+                lat=float(office.latitude), 
+                package_info={
+                    "office_id": office.id,
+                    "office_name": office.name,
+                    "address": office.address,
+                    "latitude": float(office.latitude),
+                    "longitude": float(office.longitude)
+                }
+            ))
+        
+        # Call OSRM for optimization
+        osrm_result = osrm_trip(locations)
+        if "error" in osrm_result:
+            return Response({"error": f"OSRM optimization failed: {osrm_result['error']}"}, status=500)
+        
+        # Extract optimized route and waypoints using the proper function
+        visit_records = extract_visit_plan(osrm_result, locations)
+        if not visit_records:
+            return Response({"error": "Failed to extract visit plan from OSRM response"}, status=500)
+        
+        # Extract route coordinates
+        route_coordinates = []
+        if "trips" in osrm_result and osrm_result["trips"]:
+            trip = osrm_result["trips"][0]
+            if "geometry" in trip and "coordinates" in trip["geometry"]:
+                route_coordinates = trip["geometry"]["coordinates"]
+        
+        # Create optimized office sequence from visit records
+        optimized_offices = []
+        for record in visit_records:
+            # Skip the first record (current position) and any return legs
+            if record.visit_order > 0 and not record.is_return_leg:
+                office_info = record.package_info
+                if "office_id" in office_info:
+                    optimized_offices.append({
+                        "office_id": office_info["office_id"],
+                        "office_name": office_info["office_name"],
+                        "address": office_info["address"],
+                        "latitude": office_info["latitude"],
+                        "longitude": office_info["longitude"],
+                        "visit_order": record.visit_order
+                    })
+        
+        return Response({
+            "route_coordinates": route_coordinates,
+            "optimized_offices": optimized_offices,
+            "message": "Office route optimized successfully"
+        }, status=200)
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
