@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery } from "../../utils/journeyApi";
+import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery, optimizeOfficeRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -279,6 +279,11 @@ export default function TruckerViewScreen() {
   const [selectedOfficePackages, setSelectedOfficePackages] = useState<any[]>([]);
   const [selectedOfficeName, setSelectedOfficeName] = useState<string>('');
   
+  // Add state for office delivery tracking
+  const [deliveredOffices, setDeliveredOffices] = useState<Set<string>>(new Set());
+  const [officeLocations, setOfficeLocations] = useState<RouteLocation[]>([]);
+  const [isOptimizingOfficeRoute, setIsOptimizingOfficeRoute] = useState(false);
+  
   const routeColor = generateColorFromValue(currentZone?.user || '');
   const signatureRef = React.useRef<any>(null);
 
@@ -501,6 +506,11 @@ export default function TruckerViewScreen() {
       return;
     }
 
+    // Don't override route points when in office delivery mode
+    if (isUndeliveredRouteMode) {
+      return;
+    }
+
     const allPackagesCompleted = locations.every(
       location => location.package_info.status === 'delivered' || 
                  location.package_info.status === 'undelivered' ||
@@ -521,7 +531,7 @@ export default function TruckerViewScreen() {
       setRoutePoints(baseRoutePoints);
       setIsReturning(false);
     }
-  }, [currentZone?.mapRoute, locations, isReturning]);
+  }, [currentZone?.mapRoute, locations, isReturning, isUndeliveredRouteMode]);
 
   // Update steps when currentZone changes
   useEffect(() => {
@@ -660,6 +670,13 @@ export default function TruckerViewScreen() {
         throw new Error('User not found');
       }
 
+      // Show loading state immediately and close sidebar
+      setIsOptimizingOfficeRoute(true);
+      if (drawerRef.current) {
+        drawerRef.current.closeDrawer();
+      }
+      console.log('Starting office route optimization...');
+
       // Get undelivered packages route data
       const undeliveredData = await getUndeliveredPackagesRoute(user.username);
       
@@ -668,44 +685,76 @@ export default function TruckerViewScreen() {
         return;
       }
 
-      // Set undelivered route mode
-      setIsUndeliveredRouteMode(true);
-      setIsReturnMode(false);
-      
-      // Don't clear the map - keep existing icons and driver location visible
-      // setRoutePoints([]);
-      // setLocations([]);
-      
       // Store the undelivered route data
       setUndeliveredRouteData(undeliveredData);
       
-      // Create new locations from office data - just list offices without optimization
-      const newLocations: RouteLocation[] = [];
-      let waypointIndex = 1;
+      // Get current position for optimization
+      if (!position.latitude || !position.longitude) {
+        throw new Error('Current position not available for route optimization');
+      }
       
-      // Just use the offices as they come from the server, no sorting/optimization
-      undeliveredData.undelivered_offices.forEach((officeData: any) => {
-        const office = officeData.office;
-        newLocations.push({
-          latitude: office.latitude,
-          longitude: office.longitude,
-          waypoint_index: waypointIndex,
+      // Extract office IDs for optimization
+      const officeIds = undeliveredData.undelivered_offices.map((officeData: any) => officeData.office.id);
+      
+      // Call optimization API
+      console.log('Calling optimization API with office IDs:', officeIds);
+      const optimizedData = await optimizeOfficeRoute(
+        user.username,
+        position.latitude,
+        position.longitude,
+        officeIds
+      );
+      console.log('Optimization result:', {
+        message: optimizedData.message,
+        optimized_offices_count: optimizedData.optimized_offices?.length || 0,
+        route_coordinates_count: optimizedData.route_coordinates?.length || 0
+      });
+      
+      // Set undelivered route mode BEFORE setting route points
+      setIsUndeliveredRouteMode(true);
+      setIsReturnMode(false);
+      
+      // Force clear the old route immediately
+      setRoutePoints([]);
+      
+      // Create optimized locations from the response
+      const newLocations: RouteLocation[] = [];
+      const newOfficeLocations: RouteLocation[] = [];
+      
+      optimizedData.optimized_offices.forEach((officeData: any, index: number) => {
+        const officeLocation = {
+          latitude: officeData.latitude,
+          longitude: officeData.longitude,
+          waypoint_index: officeData.visit_order,
           package_info: {
-            packageID: `OFFICE_${office.id}`,
+            packageID: `OFFICE_${officeData.office_id}`,
             status: 'pending' as const,
             weight: 0,
-            address: office.address,
-            latitude: office.latitude,
-            longitude: office.longitude,
-            recipient: office.name,
+            address: officeData.address,
+            latitude: officeData.latitude,
+            longitude: officeData.longitude,
+            recipient: officeData.office_name,
             deliveryDate: new Date().toISOString().split('T')[0],
             recipientPhoneNumber: 'N/A'
           }
-        });
-        waypointIndex++;
+        };
+        
+        newLocations.push(officeLocation);
+        newOfficeLocations.push(officeLocation);
       });
       
+      // Set optimized route points
+      if (optimizedData.route_coordinates && optimizedData.route_coordinates.length > 0) {
+        const routePoints = optimizedData.route_coordinates.map((point: [number, number]) => ({
+          latitude: point[1], // OSRM returns [lng, lat]
+          longitude: point[0]  // OSRM returns [lng, lat]
+        }));
+        setRoutePoints(routePoints);
+      }
+      
+      // Set locations after optimization
       setLocations(newLocations);
+      setOfficeLocations(newOfficeLocations);
       
     } catch (error) {
       console.error('Error getting undelivered packages route:', error);
@@ -721,13 +770,22 @@ export default function TruckerViewScreen() {
           }
         }]
       );
+    } finally {
+      setIsOptimizingOfficeRoute(false);
     }
   };
 
   const activeLocations = locations.filter(
-    location => location.package_info.status !== 'delivered' && 
-                location.package_info.status !== 'undelivered' && 
-                location.package_info.packageID !== "ADMIN"
+    location => {
+      // For office delivery mode, show all office locations
+      if (isUndeliveredRouteMode && location.package_info.packageID.startsWith('OFFICE_')) {
+        return true;
+      }
+      // For normal delivery mode, filter as before
+      return location.package_info.status !== 'delivered' && 
+             location.package_info.status !== 'undelivered' && 
+             location.package_info.packageID !== "ADMIN";
+    }
   );
 
   // Function to count undelivered packages
@@ -748,6 +806,8 @@ export default function TruckerViewScreen() {
     const count = countUndeliveredPackages();
     setUndeliveredPackagesCount(count);
   }, [locations]);
+
+
 
   const handleRecenter = () => {
     if (
@@ -864,6 +924,9 @@ export default function TruckerViewScreen() {
       await saveOfficeDelivery(user.username, officeIdNumber, packageIds);
       
       console.log(`Office ${packageId} marked as delivered with ${packageIds.length} packages`);
+      
+      // Mark office as delivered
+      setDeliveredOffices(prev => new Set([...prev, packageId]));
       
       // Remove the office from the locations list
       const updatedLocations = locations.filter(location => 
@@ -1057,11 +1120,23 @@ export default function TruckerViewScreen() {
                 <TouchableOpacity 
                   style={[styles.undeliveredRouteButton, { backgroundColor: theme.color.darkPrimary }]}
                   onPress={handleUndeliveredPackagesRoute}
+                  disabled={isOptimizingOfficeRoute}
                 >
-                  <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
-                  <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
-                    Deliver to Offices
-                  </Text>
+                  {isOptimizingOfficeRoute ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
+                        Optimizing Route...
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <MaterialIcons name="local-shipping" size={24} color="#FFFFFF" />
+                      <Text style={[styles.undeliveredRouteText, { color: "#FFFFFF" }]}>
+                        Deliver to Offices
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             )}
@@ -1356,11 +1431,24 @@ export default function TruckerViewScreen() {
           } : initialRegion}
           onPanDrag={() => setIsFollowingHeading(false)}
         >
-          {!isReturnMode && !isUndeliveredRouteMode && (
+          {/* Only show normal route when NOT in office delivery mode */}
+          {!isReturnMode && !isUndeliveredRouteMode && routePoints.length > 0 && (
             <Polyline
+              key="normal-route-polyline"
               coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
               strokeColor={routeColor}
               strokeWidth={3}
+            />
+          )}
+
+          {/* Office Route Polyline */}
+          {isUndeliveredRouteMode && routePoints.length > 0 && (
+            <Polyline
+              key="office-route-polyline"
+              coordinates={routePoints}
+              strokeColor="#0074D9"
+              strokeWidth={3}
+              zIndex={1000}
             />
           )}
 
@@ -1410,6 +1498,24 @@ export default function TruckerViewScreen() {
             </Marker>
           ))}
 
+          {/* Office Markers for Undelivered Route Mode */}
+          {isUndeliveredRouteMode && officeLocations.map((location) => (
+            <Marker
+              key={`marker-office-${location.package_info.packageID}-${location.waypoint_index}`}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index} 
+                isDelivered={deliveredOffices.has(location.package_info.packageID)}
+                isUndelivered={false}
+                isWarehouse={false}
+              />
+            </Marker>
+          ))}
+
           {position.latitude && position.longitude && (
             <Marker
               coordinate={{
@@ -1423,6 +1529,18 @@ export default function TruckerViewScreen() {
             </Marker>
           )}
         </MapView>
+
+        {/* Loading Overlay for Office Route Optimization */}
+        {isOptimizingOfficeRoute && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color={theme.color.darkPrimary} />
+              <Text style={[styles.loadingText, { color: theme.color.black }]}>
+                Optimizing Office Route...
+              </Text>
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity 
           style={[styles.logoutButton, { backgroundColor: theme.color.darkPrimary }]} 
@@ -2170,5 +2288,33 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
     marginLeft: 8,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 12,
+    textAlign: 'center',
   },
 }); 
