@@ -672,9 +672,9 @@ export default function TruckerViewScreen() {
       setIsUndeliveredRouteMode(true);
       setIsReturnMode(false);
       
-      // Clear current route and locations
-      setRoutePoints([]);
-      setLocations([]);
+      // Don't clear the map - keep existing icons and driver location visible
+      // setRoutePoints([]);
+      // setLocations([]);
       
       // Store the undelivered route data
       setUndeliveredRouteData(undeliveredData);
