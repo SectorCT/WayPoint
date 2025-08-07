@@ -807,7 +807,20 @@ export default function TruckerViewScreen() {
     setUndeliveredPackagesCount(count);
   }, [locations]);
 
-
+  // Check if all office deliveries are complete and reset mode
+  useEffect(() => {
+    if (isUndeliveredRouteMode && officeLocations.length > 0) {
+      const allOfficesDelivered = officeLocations.every(location => 
+        deliveredOffices.has(location.package_info.packageID)
+      );
+      
+      if (allOfficesDelivered) {
+        setIsUndeliveredRouteMode(false);
+        setRoutePoints([]);
+        setOfficeLocations([]);
+      }
+    }
+  }, [deliveredOffices, officeLocations, isUndeliveredRouteMode]);
 
   const handleRecenter = () => {
     if (
@@ -1140,6 +1153,21 @@ export default function TruckerViewScreen() {
                 </TouchableOpacity>
               </View>
             )}
+
+            {/* Return Route Button - Only show when no undelivered packages */}
+            {undeliveredPackagesCount === 0 && (
+              <View style={styles.returnRouteContainer}>
+                <TouchableOpacity 
+                  style={[styles.returnRouteButton, { backgroundColor: theme.color.darkPrimary }]}
+                  onPress={handleReturnRoute}
+                >
+                  <MaterialIcons name="home" size={24} color="#FFFFFF" />
+                  <Text style={[styles.returnRouteText, { color: "#FFFFFF" }]}>
+                    Return Route
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           activeLocations.map((location) => (
@@ -1462,7 +1490,12 @@ export default function TruckerViewScreen() {
             />
           )}
 
-          {!isReturnMode && !isUndeliveredRouteMode && locations.map((location) => (
+          {/* Only show package markers in normal delivery mode, not in office delivery mode */}
+          {!isReturnMode && !isUndeliveredRouteMode && locations.filter(location => 
+            location.package_info.packageID !== "ADMIN" && 
+            location.package_info.status !== 'delivered' &&
+            location.package_info.status !== 'undelivered'
+          ).map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
               coordinate={{
@@ -1890,6 +1923,10 @@ const styles = StyleSheet.create({
   returnRouteText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  returnRouteContainer: {
+    alignItems: 'center',
+    marginTop: 20,
   },
   returnRouteButton: {
     flexDirection: 'row',
