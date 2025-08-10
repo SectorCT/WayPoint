@@ -12,7 +12,7 @@ User = get_user_model()
 # Sofia, Bulgaria coordinates with slight variations for packages
 SOFIA_CENTER = (42.6977, 23.3219)
 
-# Sample addresses in Sofia
+# Sample addresses in Sofia - extended to support 12 packages
 SOFIA_ADDRESSES = [
     "bul. Vitosha 89, Sofia, Bulgaria",
     "ul. Graf Ignatiev 6, Sofia, Bulgaria",
@@ -23,7 +23,9 @@ SOFIA_ADDRESSES = [
     "bul. Bulgaria 102, Sofia, Bulgaria",
     "ul. Rakovski 96, Sofia, Bulgaria",
     "bul. Todor Aleksandrov 14, Sofia, Bulgaria",
-    "ul. Pirotska 5, Sofia, Bulgaria"
+    "ul. Pirotska 5, Sofia, Bulgaria",
+    "ul. Shipka 6, Sofia, Bulgaria",
+    "ul. Oborishte 5, Sofia, Bulgaria"
 ]
 
 class Command(BaseCommand):
@@ -120,14 +122,18 @@ class Command(BaseCommand):
                 recipientPhoneNumber=f'+359888{100000 + i}',
                 deliveryDate=delivery_date,
                 weight=random.uniform(1.0, 20.0),
-                status='pending'
+                status='pending',
+                delivered_to_office=False
             )
             self.stdout.write(self.style.SUCCESS(f'Created package: {package.packageID}'))
 
-        # Create offices for the company
+        # Create offices for the company - extended to 5 offices
         office_data = [
             {"name": "Central Office", "address": "bul. Vitosha 1, Sofia, Bulgaria", "latitude": 42.695, "longitude": 23.320, "company": company},
             {"name": "East Office", "address": "bul. Tsarigradsko Shose 200, Sofia, Bulgaria", "latitude": 42.670, "longitude": 23.400, "company": company},
+            {"name": "West Office", "address": "ul. Graf Ignatiev 50, Sofia, Bulgaria", "latitude": 42.700, "longitude": 23.300, "company": company},
+            {"name": "North Office", "address": "bul. Cherni Vrah 50, Sofia, Bulgaria", "latitude": 42.720, "longitude": 23.320, "company": company},
+            {"name": "South Office", "address": "ul. Alabin 100, Sofia, Bulgaria", "latitude": 42.680, "longitude": 23.320, "company": company}
         ]
         offices = []
         for od in office_data:
@@ -145,6 +151,7 @@ class Command(BaseCommand):
         for i, package in enumerate(Package.objects.all()[:4]):
             package.status = 'undelivered'
             package.office = offices[i % len(offices)]
+            package.delivered_to_office = True
             package.save()
             self.stdout.write(self.style.SUCCESS(f'Assigned package {package.packageID} as undelivered to office {package.office.name}'))
 
