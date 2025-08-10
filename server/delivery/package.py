@@ -14,6 +14,7 @@ import math
 import logging
 from .models import User, OfficeDelivery
 from .serializers import OfficeDeliverySerializer
+from .email_service import DeliveryEmailService
 
 class createPackage(APIView):
     # authentication_classes = [JWTAuthentication]
@@ -99,18 +100,42 @@ class MarkAsDelivsered(APIView):
 def mark_delivered(request):
     package_id = request.data.get('packageID')
     signature = request.data.get('signature')  # base64 string
+    driver_username = request.data.get('driver_username')  # Get driver username for email
+    
     if not package_id:
         return Response({"error": "packageID not provided"}, status=400)
+    
     try:
         package = Package.objects.get(packageID=package_id)
     except Package.DoesNotExist:
         return Response({"error": "Package not found"}, status=404)
+    
     if package.status == 'delivered':
         return Response({"error": "Package already delivered"}, status=400)
+    
+    # Get driver name for email notification
+    driver_name = None
+    if driver_username:
+        try:
+            driver = User.objects.get(username=driver_username)
+            driver_name = f"{driver.first_name} {driver.last_name}".strip() or driver.username
+        except User.DoesNotExist:
+            driver_name = driver_username
+    
     package.status = 'delivered'
     if signature:
         package.signature = signature
     package.save()
+    
+    # Send email notification to recipient
+    try:
+        DeliveryEmailService.send_delivery_notification(package, driver_name)
+    except Exception as e:
+        # Log error but don't fail the delivery
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send delivery email for package {package_id}: {str(e)}")
+    
     # Намираме всички активни route assignments, в които се съдържа тази пратка,
     # и актуализираме статуса ѝ в packageSequence
     route_assignments = RouteAssignment.objects.filter(isActive=True)
@@ -124,6 +149,7 @@ def mark_delivered(request):
         if updated:
             route.packageSequence = sequence
             route.save()
+    
     return Response({"detail": "Package marked as delivered"}, status=200)
 
 @api_view(['POST'])
@@ -329,6 +355,21 @@ def save_office_delivery(request):
         
         # Mark packages as delivered to office
         packages.update(status='delivered')
+        
+        # Send email notifications to recipients about office delivery
+        driver_name = f"{driver.first_name} {driver.last_name}".strip() or driver.username
+        for package in packages:
+            try:
+                DeliveryEmailService.send_office_delivery_notification(
+                    package, 
+                    office.name, 
+                    driver_name
+                )
+            except Exception as e:
+                # Log error but don't fail the office delivery
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send office delivery email for package {package.packageID}: {str(e)}")
         
         # Update the route sequence to reflect delivered packages
         updated_sequence = []

@@ -1005,7 +1005,11 @@ export default function TruckerViewScreen() {
 
   const handleDelivery = async (packageId: string) => {
     try {
-      const response = await markPackageAsDelivered(packageId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      const response = await markPackageAsDelivered(packageId, user.username);
 
       if (!response.ok) {
         console.error('Failed to mark package as delivered:', response);

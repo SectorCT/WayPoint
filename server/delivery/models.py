@@ -24,7 +24,7 @@ class PackageManager(models.Manager):
         from django.utils.timezone import now
         return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
     
-    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending'):
+    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending', recipientEmail=None):
         package = self.model(
             address=address,
             latitude=latitude,
@@ -33,7 +33,8 @@ class PackageManager(models.Manager):
             deliveryDate=deliveryDate,
             longitude=longitude,
             weight=weight,
-            status=status
+            status=status,
+            recipientEmail=recipientEmail
         )
         package.save(using=self._db)
         return package
@@ -62,6 +63,12 @@ class Package(models.Model):
         max_length=15,
         # validators=[RegexValidator(regex=r'^\+?\d{9,15}$', message="Enter a valid phone number.")],
         blank=False, null=False
+    )
+
+    recipientEmail = models.EmailField(
+        max_length=254,
+        blank=True, null=True,
+        help_text="Email address of the package recipient for notifications"
     )
 
     deliveryDate = models.DateField(blank=False, null=False)
