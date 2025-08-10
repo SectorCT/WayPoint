@@ -86,6 +86,8 @@ class Package(models.Model):
 
     office = models.ForeignKey('Office', null=True, blank=True, on_delete=models.SET_NULL, related_name='packages', help_text='Office where the package is currently stored (if undelivered)')
 
+    delivered_to_office = models.BooleanField(default=False, null=False, help_text='Whether the package was delivered to an office instead of the recipient')
+
     objects = PackageManager()
 
     def __str__(self):
