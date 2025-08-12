@@ -63,7 +63,7 @@ python manage.py migrate
 
 1. Driver delivers undelivered packages to office
 2. System sends pickup notification to recipients
-3. Email includes office location and pickup instructions
+3. Email includes office location, address, and pickup instructions
 
 ### 3. Email Templates
 

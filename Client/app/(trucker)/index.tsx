@@ -883,7 +883,7 @@ export default function TruckerViewScreen() {
     }
     setIsSavingSignature(true);
     try {
-      const response = await markPackageAsDelivered(selectedPackageId, signature);
+      const response = await markPackageAsDelivered(selectedPackageId, user.username, signature);
       if (!response.ok) {
         throw new Error('Failed to mark package as delivered');
       }
