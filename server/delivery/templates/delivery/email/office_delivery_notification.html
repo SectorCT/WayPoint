@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Package Available for Pickup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #FF9800;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+        }
+        .package-info {
+            background-color: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #FF9800;
+        }
+        .office-info {
+            background-color: #fff3e0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: 1px solid #ffcc80;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+        .highlight {
+            color: #FF9800;
+            font-weight: bold;
+        }
+        .important {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #FF9800;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 Package Available for Pickup</h1>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ package.recipient }},</p>
+        
+        <p>Your package has been delivered to our office by {{ driver_name }} and is now available for pickup.</p>
+        
+        <div class="package-info">
+            <h3>Package Details:</h3>
+            <p><strong>Package ID:</strong> <span class="highlight">{{ package.packageID }}</span></p>
+            <p><strong>Original Delivery Address:</strong> {{ package.address }}</p>
+            <p><strong>Weight:</strong> {{ package.weight }} kg</p>
+            <p><strong>Delivery Date:</strong> {{ package.deliveryDate|date:"F j, Y" }}</p>
+        </div>
+        
+        <div class="office-info">
+            <h3>Pickup Location:</h3>
+            <p><strong>Office:</strong> {{ office_name }}</p>
+            <p><strong>Address:</strong> {{ office_address }}</p>
+        </div>
+        
+        <div class="important">
+            <p><strong>Important:</strong> Please bring a valid ID when picking up your package. You may also be asked to provide the package ID or your phone number for verification.</p>
+        </div>
+        
+        <p>If you have any questions about pickup arrangements or need to schedule a different delivery time, please contact our customer service team.</p>
+        
+        <p>Thank you for choosing {{ company_name }}!</p>
+        
+        <p>Best regards,<br>
+        The {{ company_name }} Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification. Please do not reply to this email.</p>
+        <p>&copy; 2024 {{ company_name }}. All rights reserved.</p>
+    </div>
+</body>
+</html>

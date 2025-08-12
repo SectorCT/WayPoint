@@ -7,3 +7,5 @@ numpy
 scikit-learn
 requests
 django-cors-headers
+# Email support requires python-dotenv for environment variable loading
+python-dotenv

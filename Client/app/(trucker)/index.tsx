@@ -883,7 +883,7 @@ export default function TruckerViewScreen() {
     }
     setIsSavingSignature(true);
     try {
-      const response = await markPackageAsDelivered(selectedPackageId, signature);
+      const response = await markPackageAsDelivered(selectedPackageId, user.username, signature);
       if (!response.ok) {
         throw new Error('Failed to mark package as delivered');
       }
@@ -1005,7 +1005,11 @@ export default function TruckerViewScreen() {
 
   const handleDelivery = async (packageId: string) => {
     try {
-      const response = await markPackageAsDelivered(packageId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      const response = await markPackageAsDelivered(packageId, user.username);
 
       if (!response.ok) {
         console.error('Failed to mark package as delivered:', response);
@@ -1492,9 +1496,7 @@ export default function TruckerViewScreen() {
 
           {/* Only show package markers in normal delivery mode, not in office delivery mode */}
           {!isReturnMode && !isUndeliveredRouteMode && locations.filter(location => 
-            location.package_info.packageID !== "ADMIN" && 
-            location.package_info.status !== 'delivered' &&
-            location.package_info.status !== 'undelivered'
+            location.package_info.packageID !== "ADMIN"
           ).map((location) => (
             <Marker
               key={`marker-${location.package_info.packageID}-${location.waypoint_index}`}
@@ -1508,6 +1510,26 @@ export default function TruckerViewScreen() {
                 isDelivered={location.package_info.status === 'delivered'}
                 isUndelivered={location.package_info.status === 'undelivered'}
                 isWarehouse={location.package_info.packageID === "ADMIN"}
+              />
+            </Marker>
+          ))}
+
+          {/* Show warehouse marker in normal delivery mode */}
+          {!isReturnMode && !isUndeliveredRouteMode && locations.filter(location => 
+            location.package_info.packageID === "ADMIN"
+          ).map((location) => (
+            <Marker
+              key={`marker-warehouse-${location.package_info.packageID}-${location.waypoint_index}`}
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude
+              }}
+            >
+              <CustomMarker 
+                number={location.waypoint_index} 
+                isDelivered={location.package_info.status === 'delivered'}
+                isUndelivered={location.package_info.status === 'undelivered'}
+                isWarehouse={true}
               />
             </Marker>
           ))}
