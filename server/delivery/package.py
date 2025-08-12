@@ -118,7 +118,7 @@ def mark_delivered(request):
     if driver_username:
         try:
             driver = User.objects.get(username=driver_username)
-            driver_name = f"{driver.first_name} {driver.last_name}".strip() or driver.username
+            driver_name = driver.username  # Use username since User model doesn't have first_name/last_name
         except User.DoesNotExist:
             driver_name = driver_username
     
@@ -357,13 +357,14 @@ def save_office_delivery(request):
         packages.update(status='delivered')
         
         # Send email notifications to recipients about office delivery
-        driver_name = f"{driver.first_name} {driver.last_name}".strip() or driver.username
+        driver_name = driver.username  # Use username since User model doesn't have first_name/last_name
         for package in packages:
             try:
                 DeliveryEmailService.send_office_delivery_notification(
                     package, 
                     office.name, 
-                    driver_name
+                    driver_name,
+                    office.address
                 )
             except Exception as e:
                 # Log error but don't fail the office delivery

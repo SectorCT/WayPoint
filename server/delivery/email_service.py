@@ -52,7 +52,7 @@ class DeliveryEmailService:
             return False
     
     @staticmethod
-    def send_office_delivery_notification(package, office_name, driver_name=None):
+    def send_office_delivery_notification(package, office_name, driver_name=None, office_address=None):
         """
         Send notification when package is delivered to office instead of recipient
         
@@ -60,6 +60,7 @@ class DeliveryEmailService:
             package: Package object
             office_name: Name of the office where package was delivered
             driver_name: Name of the driver
+            office_address: Address of the office for pickup
         """
         if not package.recipientEmail:
             logger.warning(f"No email address for package {package.packageID}")
@@ -69,6 +70,7 @@ class DeliveryEmailService:
             context = {
                 'package': package,
                 'office_name': office_name,
+                'office_address': office_address or 'Address not available',
                 'driver_name': driver_name or 'our delivery driver',
                 'company_name': 'WayPoint Delivery'
             }

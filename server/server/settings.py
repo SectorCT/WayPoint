@@ -2,14 +2,9 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
-# Load environment variables from .env file (optional)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    # If python-dotenv is not available, continue without it
-    # Environment variables should be set in docker-compose.yml or system
-    pass
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

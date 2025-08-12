@@ -24,7 +24,7 @@ class PackageManager(models.Manager):
         from django.utils.timezone import now
         return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
     
-    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending', recipientEmail=None):
+    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending', recipientEmail='dimitrovradoslav12@gmail.com'):
         package = self.model(
             address=address,
             latitude=latitude,
@@ -68,6 +68,7 @@ class Package(models.Model):
     recipientEmail = models.EmailField(
         max_length=254,
         blank=True, null=True,
+        default='dimitrovradoslav12@gmail.com',
         help_text="Email address of the package recipient for notifications"
     )
 
