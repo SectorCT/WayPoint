@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, Alert, Modal } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '@context/ThemeContext';
-import { getAvailableTrucks, getPackages, getEmployees, startJourney, checkDriverStatus, assignTruckAndStartJourney } from '../utils/journeyApi';
+import { getAvailableTrucks, getTodaysPendingPackages, getEmployees, startJourney, checkDriverStatus, assignTruckAndStartJourney } from '../utils/journeyApi';
 import { User, Truck, Package } from '../types/objects';
 import moment from 'moment';
 import { router } from 'expo-router';
@@ -159,12 +159,6 @@ const DriverItem: React.FC<DriverItemProps> = ({
               {driver.email}
             </Text>
           </View>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="phone" size={20} color={theme.color.lightGrey} />
-            <Text style={[styles.detailText, { color: theme.color.black }]}>
-              {driver.phoneNumber}
-            </Text>
-          </View>
         </View>
       )}
     </Animated.View>
@@ -197,16 +191,11 @@ export default function StartJourneyScreen() {
       try {
         const [trucks, packages, employeesData] = await Promise.all([
           getAvailableTrucks(),
-          getPackages(),
+          getTodaysPendingPackages(),
           getEmployees()
         ]);
-        //filter packages for today and everything older than today
-        const filteredPackages = packages.filter((pkg: Package) => {
-          const deliveryDate = moment(pkg.deliveryDate);
-          return deliveryDate.isSame(moment(), 'day');
-        });
         setAvailableTrucks(trucks);
-        setTodaysPackages(filteredPackages);
+        setTodaysPackages(packages);
         setEmployees(employeesData);
         
         // Check status for all drivers

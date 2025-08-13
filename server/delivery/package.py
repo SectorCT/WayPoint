@@ -67,6 +67,22 @@ class getAllPackages(APIView):
         serializer = PackageSerializer(packages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class getTodaysPendingPackages(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsManager]
+
+    def get(self, request):
+        from django.utils import timezone
+        from datetime import date
+        
+        today = timezone.localdate()
+        packages = Package.objects.filter(
+            status='pending',
+            deliveryDate__lte=today
+        )
+        serializer = PackageSerializer(packages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class deletePackage(APIView):
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]

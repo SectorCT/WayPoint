@@ -686,17 +686,15 @@ class RoutePlannerView(APIView):
 
     def post(self, request, *args, **kwargs):  # noqa: D401
         today = timezone.localdate()
-        tomorrow = today + timedelta(days=1)
 
-        # Collect candidate packages (pending & due today/tomorrow)
+        # Collect candidate packages (pending & due today or overdue only)
         packages_qs = Package.objects.filter(
             status__in=["pending"],
-            deliveryDate__lte=tomorrow,
+            deliveryDate__lte=today,  # Only today and overdue packages
         ).annotate(
             priority=Case(
-                When(deliveryDate__lt=today, then=0),
-                When(deliveryDate=today, then=1),
-                When(deliveryDate=tomorrow, then=2),
+                When(deliveryDate__lt=today, then=0),  # Overdue packages (highest priority)
+                When(deliveryDate=today, then=1),      # Today's packages
                 output_field=IntegerField(),
             )
         ).order_by("priority", "deliveryDate")
