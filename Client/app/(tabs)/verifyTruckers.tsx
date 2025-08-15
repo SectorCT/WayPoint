@@ -73,10 +73,7 @@ export default function VerifyTruckersScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.color.white }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 48, paddingBottom: 8, paddingHorizontal: 20, backgroundColor: theme.color.white, borderBottomWidth: 1, borderBottomColor: theme.color.lightGrey, elevation: 2 }}>
-        <TouchableOpacity onPress={handleBack} style={{ marginRight: 16, padding: 4 }}>
-          <MaterialIcons name="arrow-back" size={28} color={theme.color.darkPrimary} />
-        </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 60, paddingBottom: 8, paddingHorizontal: 20, backgroundColor: theme.color.white, borderBottomWidth: 1, borderBottomColor: theme.color.lightGrey, elevation: 2 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.color.black }}>Drivers Awaiting Verification</Text>
           {user.company ? (
@@ -89,6 +86,9 @@ export default function VerifyTruckersScreen() {
             </Text>
           )}
         </View>
+        <TouchableOpacity onPress={handleBack} style={{ padding: 8, borderRadius: 20, backgroundColor: '#f5f5f5', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 }}>
+          <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+        </TouchableOpacity>
       </View>
       <View style={{ flex: 1, padding: 20 }}>
         {loading ? (

@@ -389,10 +389,20 @@ export default function StartJourneyScreen() {
       </Modal>
 
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.color.black }]}>Start Journey</Text>
-        <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
-          Select up to {availableTrucks.length} drivers
-        </Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, { color: theme.color.black }]}>Start Journey</Text>
+            <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
+              Select up to {availableTrucks.length} drivers
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.statsContainer}>
@@ -479,8 +489,17 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingTop: 60, // Add top padding to avoid status bar
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
     fontSize: 28,
@@ -494,7 +513,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   driverListContent: {
-    padding: 20,
+    padding: 16,
+    paddingTop: 8,
   },
   driverItem: {
     borderRadius: 12,
@@ -668,8 +688,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
 }); 

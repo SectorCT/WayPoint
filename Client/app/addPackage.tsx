@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
@@ -30,6 +31,10 @@ export default function AddPackageScreen() {
   const { theme } = useTheme();
   const params = useLocalSearchParams();
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const handleBack = () => {
+    router.back();
+  };
 
   // Initialize state from params or default values
   const [formState, setFormState] = useState<PackageState>({
@@ -150,12 +155,22 @@ export default function AddPackageScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: theme.color.black }]}>
-          Add New Package
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
-          Enter package details
-        </Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={[styles.headerTitle, { color: theme.color.black }]}>
+              Add New Package
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
+              Enter package details
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBack}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.formContainer}>
@@ -257,6 +272,24 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginTop: 60,
     marginBottom: 32,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 32,

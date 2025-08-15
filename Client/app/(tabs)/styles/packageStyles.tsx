@@ -25,6 +25,22 @@ export default function useStyles() {
       borderBottomWidth: 0.5,
       borderBottomColor: theme.color.lightGrey,
     },
+    headerContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+    },
+    backButton: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: '#f5f5f5',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
     buttonContainer: {
       flexDirection: "row",
       alignItems: "center",

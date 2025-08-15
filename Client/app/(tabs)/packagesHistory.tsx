@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getPackages } from "../../utils/journeyApi";
@@ -13,6 +14,7 @@ import { router } from "expo-router";
 import PackageModule from "@components/listModule/packageModule/packageModule";
 import moment from "moment";
 import { Package } from "../../types/objects";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 export default function PackagesHistoryScreen() {
   const { theme } = useTheme();
@@ -55,7 +57,15 @@ export default function PackagesHistoryScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.inner}>
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Packages History</Text>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>Packages History</Text>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => router.replace('/(tabs)/packages')}
+              >
+                <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {loading ? (

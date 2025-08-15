@@ -95,31 +95,43 @@ export default function AddOfficeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)/offices')} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={28} color={theme.color.darkPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.color.black, flex: 1, textAlign: 'center' }]}>Add New Office</Text>
-        <View style={{ width: 36 }} />
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={[styles.headerTitle, { color: theme.color.black }]}>
+              Add New Office
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
+              Enter office details
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)", alignSelf: 'center' }]}>Enter office details</Text>
-      <FormField
-        label="Office Name"
-        value={formState.name}
-        onChangeText={(text) => setFormState({ ...formState, name: text })}
-        placeholder="Enter office name"
-        icon="business"
-      />
-      <FormField
-        label="Office Address"
-        value={formState.address}
-        onChangeText={(text) => setFormState({ ...formState, address: text })}
-        placeholder="Enter office address"
-        icon="location-on"
-        actionIcon="map"
-        onActionPress={handlePickLocation}
-      />
-      <View style={styles.buttonContainer}>
-        <GradientButton title={adding ? "Adding..." : "Add Office"} onPress={handleSubmit} />
+      <View style={styles.formContainer}>
+        <FormField
+          label="Office Name"
+          value={formState.name}
+          onChangeText={(text) => setFormState({ ...formState, name: text })}
+          placeholder="Enter office name"
+          icon="business"
+        />
+        <FormField
+          label="Office Address"
+          value={formState.address}
+          onChangeText={(text) => setFormState({ ...formState, address: text })}
+          placeholder="Enter office address"
+          icon="location-on"
+          actionIcon="map"
+          onActionPress={handlePickLocation}
+        />
+        <View style={styles.buttonContainer}>
+          <GradientButton title={adding ? "Adding..." : "Add Office"} onPress={handleSubmit} />
+        </View>
       </View>
     </View>
   );
@@ -134,6 +146,18 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginTop: 60,
     marginBottom: 32,
+  },
+  headerRow: {
+    marginTop: 60,
+    marginBottom: 32,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 32,
@@ -156,20 +180,18 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 16,
   },
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    padding: 8,
-    zIndex: 2,
+  formContainer: {
+    flex: 1,
+    marginTop: 16,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 60,
-    marginBottom: 8,
-    height: 48,
-    paddingHorizontal: 8,
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
 }); 
