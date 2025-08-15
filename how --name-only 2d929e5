@@ -1,0 +1,10 @@
+[33m171a4be[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mEmails[m[33m, [m[1;31morigin/Emails[m[33m)[m Some fixes
+[33m04d21f2[m Icons fix
+[33mf77a0e5[m Email Delivery
+[33m7550392[m Sending emails and fixes
+[33m368b47c[m[33m ([m[1;32mmain[m[33m)[m Docker fix and test data
+[33m43f27e3[m Merge pull request #11 from SectorCT/OfficesFunctionality
+[33m1adf195[m[33m ([m[1;31morigin/OfficesFunctionality[m[33m)[m Office Delivery and return route
+[33me2bf67f[m Office Routes
+[33m2d929e5[m Icon removal when in office mode
+[33m1737a2e[m Offices Delivery packages init

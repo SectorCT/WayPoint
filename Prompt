@@ -1,0 +1,244 @@
+I am working on WayPoint, a comprehensive smart logistics management system that revolutionizes package delivery operations through intelligent routing, real-time tracking, and automated fleet management.
+
+## 🏗️ System Architecture & Tech Stack
+
+**Frontend Applications:**
+- **Mobile App (React Native/Expo)**: Cross-platform mobile application for truckers and managers
+  - **Location**: `Client/` directory
+  - **Entry Point**: `Client/app/index.tsx` (main app entry)
+  - **Navigation**: `Client/app/(tabs)/_layout.tsx` (tab navigation structure)
+  - **Package Manager**: `Client/package.json` (dependencies, scripts)
+- **Web Dashboard (React/TypeScript)**: Administrative web interface for logistics managers
+  - **Location**: `website/` directory
+  - **Entry Point**: `website/src/App.tsx` (main web app)
+  - **Package Manager**: `website/package.json`
+- **Android Native**: Native Android components and configurations
+  - **Location**: `Client/android/` directory
+  - **Main Activity**: `Client/android/app/src/main/java/com/dmyashkov/Client/MainActivity.kt`
+
+**Backend Infrastructure:**
+- **Django REST API**: Python-based backend with PostgreSQL database
+  - **Location**: `server/` directory
+  - **Main Entry**: `server/manage.py` (Django management)
+  - **Settings**: `server/server/settings.py` (Django configuration)
+  - **Main URLs**: `server/server/urls.py` (root URL configuration)
+- **Authentication System**: JWT-based auth with role-based access control (Manager/Trucker)
+  - **Location**: `server/authentication/` directory
+  - **Models**: `server/authentication/models.py` (User, Company models)
+  - **Views**: `server/authentication/views.py` (auth endpoints)
+  - **URLs**: `server/authentication/urls.py` (auth routing)
+- **Real-time APIs**: RESTful endpoints for live tracking and status updates
+  - **Location**: `server/delivery/` directory
+  - **Main Models**: `server/delivery/models.py` (Package, Truck, Route, Office models)
+  - **Main Views**: `server/delivery/views.py` (delivery endpoints)
+  - **Main URLs**: `server/delivery/urls.py` (delivery routing)
+
+**Key Technologies:**
+- React Native 0.79.2, Expo SDK 53, TypeScript 5.8.3
+- Django 4.x, Django REST Framework, PostgreSQL
+- React Native Maps, Expo Location, OSRM routing engine
+- Docker containerization, JWT authentication
+- **Database**: PostgreSQL with Django ORM
+- **Email Service**: `server/delivery/email_service.py` (delivery notifications)
+
+## 🚚 Core Features & Functionality
+
+**Package Management System:**
+- Package creation, assignment, and status tracking (pending → in_transit → delivered)
+  - **Models**: `server/delivery/models.py` (Package model, lines 40-100)
+  - **Mobile UI**: `Client/app/(tabs)/packages.tsx` (package management screen)
+  - **Web UI**: `website/src/components/PackagesPage.tsx`
+  - **Add Package**: `Client/app/addPackage.tsx` (package creation form)
+- Weight-based capacity management and recipient information handling
+- Delivery date scheduling and office-based fallback delivery
+- Digital signature capture and delivery confirmation
+  - **Signature Component**: `Client/components/basic/` (signature canvas integration)
+
+**Intelligent Fleet Management:**
+- Truck capacity management (kilogram-based) and availability tracking
+  - **Models**: `server/delivery/models.py` (Truck model)
+  - **Mobile UI**: `Client/app/(tabs)/trucks.tsx` (truck management screen)
+  - **Web UI**: `website/src/components/TrucksPage.tsx`
+  - **Add Truck**: `Client/app/addTruck.tsx` (truck creation form)
+- Automatic package-to-truck assignment based on capacity and location
+- Real-time truck status monitoring (used/available)
+- License plate identification and color-coded truck modules
+  - **Truck Module**: `Client/components/listModule/truckModule/truckModule.tsx`
+
+**Advanced Routing & Optimization:**
+- **OSRM Integration**: Open-source routing machine for optimal route calculation
+  - **Core Logic**: `server/delivery/routing.py` (main routing engine, lines 1-100)
+  - **Clustering**: `server/delivery/clusterLocations.py` (geographic clustering)
+- **Location Clustering**: Geographic clustering of packages for efficient zone-based delivery
+- **Route Optimization**: AI-powered route planning minimizing fuel costs and delivery time
+- **Multi-stop Optimization**: Intelligent sequencing of delivery stops
+- **Route Deviation Testing**: `Client/components/RouteDeviationTester.tsx` (route testing tool)
+
+**Office & Location Management:**
+- Office network management with geolocation coordinates
+  - **Mobile UI**: `Client/app/(tabs)/offices.tsx` (office management screen)
+  - **Map Picker**: `Client/app/pickLocationFromMap.tsx` (location selection)
+  - **Add Office**: `Client/app/addOffice.tsx` (office creation form)
+- Map-based location picker for precise address selection
+- Undelivered package storage and office-based delivery fallback
+- Geographic clustering for efficient delivery zones
+
+**User Management & Authentication:**
+- **Manager Role**: Full system access, route planning, fleet management, analytics
+- **Trucker Role**: Delivery execution, status updates, route following
+  - **Mobile Auth**: `Client/context/AuthContext.tsx` (authentication logic, lines 1-100)
+  - **Web Auth**: `website/src/components/Login.tsx`
+  - **Auth Types**: `Client/types/api.ts` (API request/response interfaces)
+- **Company Management**: Multi-company support with verification systems
+  - **Models**: `server/authentication/models.py` (Company model)
+  - **Admin Commands**: `server/authentication/management/commands/create_manager.py`
+- **User Verification**: Admin approval workflow for new users
+  - **Web UI**: `website/src/components/VerifyUsers.tsx`
+  - **Verify Truckers**: `Client/app/(tabs)/verifyTruckers.tsx`
+
+**Real-time Operations:**
+- Live journey tracking and status updates
+  - **Mobile UI**: `Client/app/(tabs)/home.tsx` (dashboard with journey status, lines 1-100)
+  - **Web UI**: `website/src/components/Dashboard.tsx`
+  - **Start Journey**: `Client/app/startJourney.tsx` (journey initiation)
+  - **Current Journey**: `Client/components/listModule/currentJourney/currentJourney.tsx`
+- Delivery history and performance analytics
+  - **Past Entries**: `Client/components/listModule/pastEntry/pastEntry.tsx`
+  - **History Button**: `Client/components/basic/historyButton/historyButton.tsx`
+- Real-time notifications and email alerts
+- Session management with automatic timeout (30 minutes)
+
+## 📱 Application Structure
+
+**Mobile App Navigation:**
+- **Auth Flow**: Login/Register with role-based routing
+  - **Login**: `Client/app/(auth)/login.tsx`
+  - **Register**: `Client/app/(auth)/register.tsx`
+  - **Auth Styles**: `Client/app/(auth)/styles/` (login/register styling)
+- **Manager Tabs**: Home, Packages, Trucks, Offices, Admin functions
+  - **Tab Layout**: `Client/app/(tabs)/_layout.tsx`
+  - **Home**: `Client/app/(tabs)/home.tsx`
+  - **Packages**: `Client/app/(tabs)/packages.tsx`
+  - **Trucks**: `Client/app/(tabs)/trucks.tsx`
+  - **Offices**: `Client/app/(tabs)/offices.tsx`
+  - **Admin Functions**: `Client/app/(tabs)/adminTruckTracker.tsx`, `Client/app/(tabs)/assignTrucks.tsx`
+- **Trucker Interface**: Simplified delivery execution interface
+  - **Location**: `Client/app/(trucker)/` directory
+  - **Main Trucker**: `Client/app/(trucker)/index.tsx`
+- **Shared Components**: Add buttons, form fields, gradient buttons, list modules
+  - **Components**: `Client/components/` directory
+  - **Basic Components**: `Client/components/basic/` (buttons, form fields, toggles)
+  - **List Modules**: `Client/components/listModule/` (package, truck, journey displays)
+  - **Form Fields**: `Client/components/basic/FormField.tsx`
+
+**Web Dashboard Sections:**
+- **Login System**: Manager authentication with session management
+  - **Main App**: `website/src/App.tsx` (session management, lines 1-100)
+  - **Login Component**: `website/src/components/Login.tsx`
+- **Dashboard**: Overview of logistics operations
+  - **Component**: `website/src/components/Dashboard.tsx`
+- **Journeys Page**: Route management and tracking
+  - **Component**: `website/src/components/JourneysPage.tsx`
+- **Packages Page**: Package status and management
+  - **Component**: `website/src/components/PackagesPage.tsx`
+- **Trucks Page**: Fleet overview and management
+  - **Component**: `website/src/components/TrucksPage.tsx`
+- **Statistics Page**: Performance analytics and reporting
+  - **Component**: `website/src/components/StatisticsPage.tsx`
+- **User Verification**: Admin approval workflow
+  - **Component**: `website/src/components/VerifyUsers.tsx`
+
+## 🔧 Key System Components
+
+**Data Models:**
+- **Package**: ID, address, coordinates, recipient, weight, status, delivery date
+  - **Backend**: `server/delivery/models.py` (Package class)
+  - **Frontend Types**: `Client/types/objects.ts` (Package interface)
+- **Truck**: License plate, capacity, availability status
+  - **Backend**: `server/delivery/models.py` (Truck class)
+  - **Frontend Types**: `Client/types/objects.ts` (Truck interface)
+- **User**: Role-based access, company association, verification status
+  - **Backend**: `server/authentication/models.py` (User model)
+  - **Frontend Types**: `Client/types/objects.ts` (User interface)
+- **Route**: Optimized delivery sequences with OSRM integration
+  - **Frontend Types**: `Client/types/objects.ts` (RouteData interface)
+- **Office**: Geographic locations for package storage and delivery
+  - **Backend**: `server/delivery/models.py` (Office model)
+- **Company**: Multi-tenant company support
+  - **Backend**: `server/authentication/models.py` (Company model)
+
+**API Endpoints:**
+- Authentication: `/auth/login/`, `/auth/register/`
+  - **Implementation**: `server/authentication/urls.py`, `server/authentication/views.py`
+- Packages: `/delivery/packages/`, `/delivery/offices/`
+  - **Implementation**: `server/delivery/urls.py`, `server/delivery/views.py`
+- Routing: `/delivery/routing/`, `/delivery/cluster/`
+  - **Implementation**: `server/delivery/routing.py` (main routing logic)
+- Trucks: `/delivery/trucks/`, `/delivery/assign/`
+  - **Implementation**: `server/delivery/urls.py`, `server/delivery/views.py`
+- History: `/delivery/history/`, `/delivery/statistics/`
+  - **Implementation**: `server/delivery/urls.py`, `server/delivery/views.py`
+
+**Business Logic:**
+- **Route Optimization**: OSRM-based trip planning with return-to-factory loops
+  - **Core Logic**: `server/delivery/routing.py` (lines 100-300)
+- **Package Assignment**: Capacity-based truck allocation with geographic clustering
+  - **Clustering**: `server/delivery/clusterLocations.py`
+- **Delivery Workflow**: Status progression with signature capture and confirmation
+  - **Models**: `server/delivery/models.py` (Package status management)
+- **Performance Tracking**: Delivery metrics, time analysis, and efficiency reporting
+  - **Models**: `server/delivery/models.py` (DeliveryHistory model)
+- **Email Notifications**: `server/delivery/email_service.py` (delivery confirmations)
+
+**Utility & Configuration Files:**
+- **Environment Config**: `Client/config/env.ts` (API endpoints, keys)
+- **Theme System**: `Client/constants/theme.tsx` (color schemes, styling)
+- **Font System**: `Client/constants/fonts.tsx` (typography configuration)
+- **API Utilities**: `Client/utils/api.ts` (HTTP client, authentication)
+- **Journey API**: `Client/utils/journeyApi.ts` (delivery-specific endpoints)
+- **Color Utils**: `Client/utils/colors.ts` (color generation utilities)
+- **Package Config**: `Client/package.json` (dependencies, scripts)
+- **Server Config**: `server/requirements.txt` (Python dependencies)
+- **Docker Setup**: `server/docker-compose.yml`, `server/Dockerfile`
+- **Type Definitions**: `Client/types/` (TypeScript interfaces and types)
+- **Test Scripts**: `Client/scripts/` (utility scripts for testing and setup)
+
+## 🎯 Current Implementation Status
+
+**Fully Implemented:**
+- Complete authentication system with JWT tokens
+- Package management and status tracking
+- Truck fleet management and capacity tracking
+- Office network with geolocation support
+- OSRM routing integration with optimization
+- Mobile app with React Native/Expo
+- Web dashboard with React/TypeScript
+- Real-time delivery tracking and history
+- Email notification system for deliveries
+- Digital signature capture for package delivery
+- Geographic clustering for route optimization
+
+**Key Features:**
+- Multi-role user system (Manager/Trucker)
+- Geographic clustering and route optimization
+- Digital signature capture for deliveries
+- Email notification system
+- Responsive mobile and web interfaces
+- Docker containerization for deployment
+- Multi-company tenant support
+- Real-time journey tracking and status updates
+
+**System Slogan:** *"Save Time, Cut Costs, Deliver Smart"*
+
+---
+
+**When you want to implement new features, use this context to understand the existing architecture, data models, and business logic. The system is designed for scalability, real-time operations, and intelligent logistics optimization. All file paths are relative to the workspace root `/d%3A/WayPoint`.**
+
+**Key Directories to Remember:**
+- `Client/` - React Native mobile app
+- `website/` - React web dashboard  
+- `server/` - Django backend API
+- `Client/components/` - Reusable UI components
+- `Client/types/` - TypeScript type definitions
+- `server/delivery/` - Core delivery logic
+- `server/authentication/` - User management

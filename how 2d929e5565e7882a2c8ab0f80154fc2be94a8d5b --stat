@@ -1,0 +1,7 @@
+[33mcommit 2d929e5565e7882a2c8ab0f80154fc2be94a8d5b[m
+Author: RKDimitrov <asrr3fl3x@gmail.com>
+Date:   Thu Aug 7 20:30:38 2025 +0300
+
+    Icon removal when in office mode
+
+Client/app/(trucker)/index.tsx
