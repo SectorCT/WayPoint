@@ -473,15 +473,15 @@ const AdminTruckTrackerScreen: React.FC = () => {
           })}
         </ScrollView>
         {user?.isManager && (
-          <View style={{ padding: 20, backgroundColor: theme.color.white }}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Unverified Truckers</Text>
+          <View style={{ padding: 16, backgroundColor: theme.color.white }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>Unverified Truckers</Text>
             {loadingTruckers ? (
               <ActivityIndicator size="small" color={theme.color.mediumPrimary} />
             ) : unverifiedTruckers.length === 0 ? (
               <Text style={{ color: theme.color.lightGrey }}>No unverified truckers.</Text>
             ) : (
               unverifiedTruckers.map(trucker => (
-                <View key={trucker.username} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <View key={trucker.username} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <Text style={{ flex: 1 }}>{trucker.username} ({trucker.email})</Text>
                   <TouchableOpacity onPress={() => handleVerifyTrucker(trucker.username)} style={{ backgroundColor: theme.color.mediumPrimary, padding: 8, borderRadius: 6 }}>
                     <Text style={{ color: '#fff' }}>Verify</Text>
@@ -625,6 +625,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 60, // Add top padding to avoid status bar
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     elevation: 2,
@@ -640,13 +641,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   routeListContent: {
-    padding: 20,
+    padding: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   routeItem: {
-    padding: 15,
+    padding: 12,
     borderRadius: 10,
     backgroundColor: '#f5f5f5',
-    marginBottom: 10,
+    marginBottom: 8,
     elevation: 2, // Add elevation for better touch feedback
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
   routeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     justifyContent: 'space-between',
   },
   driverInfo: {
@@ -678,7 +681,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressContainer: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   progressBarBackground: {
     height: 8,
@@ -731,7 +734,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   userSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   callButton: {
     width: 36,

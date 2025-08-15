@@ -21,6 +21,10 @@ export default function AddTruckScreen() {
     maxCapacity: "",
   });
 
+  const handleBack = () => {
+    router.back();
+  };
+
   const handleSubmit = async () => {
     try {
       // Format numeric values to 6 decimal places
@@ -42,9 +46,9 @@ export default function AddTruckScreen() {
         },
       );
 
-      if (response.ok) {
-        router.replace("/(tabs)/home");
-      } else {
+    if (response.ok) {
+         router.back();
+       } else {
         throw new Error("Failed to add truck");
       }
     } catch (error) {
@@ -55,24 +59,22 @@ export default function AddTruckScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.color.lightPrimary },
-          ]}
-        >
-          <MaterialIcons
-            name="local-shipping"
-            size={32}
-            color={theme.color.darkPrimary}
-          />
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={[styles.headerTitle, { color: theme.color.black }]}>
+              Add New Truck
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
+              Enter truck details
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBack}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.headerTitle, { color: theme.color.black }]}>
-          Add New Truck
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: "rgba(0, 0, 0, 0.6)" }]}>
-          Enter truck details
-        </Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -113,8 +115,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   headerContainer: {
-    marginTop: 20,
+    marginTop: 60,
     marginBottom: 32,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 32,
@@ -128,14 +148,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 16,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
+
   formContainer: {
     flex: 1,
   },
