@@ -48,12 +48,51 @@ export async function fetchAvailableTrucks(token: string) {
     });
     const data = await res.json();
     if (!res.ok) {
-      console.error('[API] Fetch trucks failed:', data.detail || data);
-      throw new Error(data.detail || 'Fetch trucks failed');
+      console.error('[API] Fetch available trucks failed:', data.detail || data);
+      throw new Error(data.detail || 'Fetch available trucks failed');
     }
+    console.log('[API] Available trucks fetched:', data.length);
     return data;
   } catch (err) {
-    console.error('[API] Fetch trucks error:', err);
+    console.error('[API] Fetch available trucks error:', err);
+    throw err;
+  }
+}
+
+export async function fetchAllTrucks(token: string) {
+  try {
+    console.log('[API] Fetching all trucks');
+    const res = await fetch(`${API_BASE}/delivery/trucks/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[API] Fetch all trucks failed:', data.detail || data);
+      throw new Error(data.detail || 'Fetch all trucks failed');
+    }
+    console.log('[API] All trucks fetched:', data.length);
+    return data;
+  } catch (err) {
+    console.error('[API] Fetch all trucks error:', err);
+    throw err;
+  }
+}
+
+export async function fetchTodaysPendingPackages(token: string) {
+  try {
+    console.log('[API] Fetching today\'s pending packages');
+    const res = await fetch(`${API_BASE}/delivery/packages/today-pending/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[API] Fetch today\'s pending packages failed:', data.detail || data);
+      throw new Error(data.detail || 'Fetch today\'s pending packages failed');
+    }
+    console.log('[API] Today\'s pending packages fetched:', data.length);
+    return data;
+  } catch (err) {
+    console.error('[API] Fetch today\'s pending packages error:', err);
     throw err;
   }
 }

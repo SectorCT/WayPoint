@@ -1,5 +1,5 @@
 from django.urls import path
-from .package import createPackage, deletePackage, createManyPackages, getAllPackages, mark_delivered, mark_undelivered, get_package, save_office_delivery, optimize_office_route
+from .package import createPackage, deletePackage, createManyPackages, getAllPackages, getTodaysPendingPackages, mark_delivered, mark_undelivered, get_package, save_office_delivery, optimize_office_route
 from .package import OfficeListCreate, OfficeDetail, UndeliveredPackagesByOffice, UndeliveredPackagesRouteSuggestion
 from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
 from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute
@@ -8,6 +8,7 @@ from .authentication import ListUnverifiedTruckers, VerifyTrucker
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
+    path('packages/today-pending/', getTodaysPendingPackages.as_view(), name='get-todays-pending-packages'),
     path('packages/create/', createPackage.as_view(), name='create-package'),
 
     path('packages/createMany/', createManyPackages.as_view(), name='create-package'),

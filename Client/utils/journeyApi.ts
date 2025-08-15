@@ -3,6 +3,13 @@ import { Truck, Package, User, RouteData } from '../types/objects';
 
 
 export const getAvailableTrucks = async (): Promise<Truck[]> => {
+  const response = await makeAuthenticatedRequest("/delivery/trucks/available/", {
+    method: "GET",
+  });
+  return response.json();
+};
+
+export const getAllTrucks = async (): Promise<Truck[]> => {
   const response = await makeAuthenticatedRequest("/delivery/trucks/", {
     method: "GET",
   });
@@ -13,6 +20,11 @@ export const getPackages = async (): Promise<Package[]> => {
   const response = await makeAuthenticatedRequest('/delivery/packages/');
   return response.json();
 }; 
+
+export const getTodaysPendingPackages = async (): Promise<Package[]> => {
+  const response = await makeAuthenticatedRequest('/delivery/packages/today-pending/');
+  return response.json();
+};
 
 export const getEmployees = async (): Promise<User[]> => {
   const response = await makeAuthenticatedRequest('/auth/all/');

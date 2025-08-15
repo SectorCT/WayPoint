@@ -137,11 +137,22 @@ export default function AssignTrucksScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.color.white }]}> 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
-          <Text style={{ color: theme.color.darkPrimary, marginLeft: 8 }}>Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.color.black }]}>Assign Trucks</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, { color: theme.color.black }]}>Assign Trucks</Text>
+            <Text style={[styles.subtitle, { color: theme.color.lightGrey }]}>
+              {loading ? loadingMsg : `Assign trucks to ${selectedDrivers.length} drivers`}
+            </Text>
+          </View>
+          {!loading && (
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <MaterialIcons name="arrow-back" size={24} color={theme.color.darkPrimary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -182,9 +193,39 @@ export default function AssignTrucksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { flexDirection: 'row', alignItems: 'center', marginRight: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginLeft: 8 },
+  header: { 
+    padding: 20, 
+    paddingTop: 60, // Add top padding to avoid status bar
+    borderBottomWidth: 1, 
+    borderBottomColor: '#eee' 
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  backButton: { 
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  title: { 
+    fontSize: 32, 
+    fontWeight: '700', 
+    marginBottom: 8 
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
   driverCard: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
   driverName: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   truckOption: { padding: 12, borderWidth: 1, borderRadius: 8, marginRight: 12, backgroundColor: '#f5f5f5' },

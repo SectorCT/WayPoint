@@ -12,7 +12,7 @@ User = get_user_model()
 # Sofia, Bulgaria coordinates with slight variations for packages
 SOFIA_CENTER = (42.6977, 23.3219)
 
-# Sample addresses in Sofia - extended to support 12 packages
+# Sample addresses in Sofia - extended to support 25 packages
 SOFIA_ADDRESSES = [
     "bul. Vitosha 89, Sofia, Bulgaria",
     "ul. Graf Ignatiev 6, Sofia, Bulgaria",
@@ -25,7 +25,19 @@ SOFIA_ADDRESSES = [
     "bul. Todor Aleksandrov 14, Sofia, Bulgaria",
     "ul. Pirotska 5, Sofia, Bulgaria",
     "ul. Shipka 6, Sofia, Bulgaria",
-    "ul. Oborishte 5, Sofia, Bulgaria"
+    "ul. Oborishte 5, Sofia, Bulgaria",
+    "ul. Shishman 15, Sofia, Bulgaria",
+    "ul. Patriarch Evtimiy 20, Sofia, Bulgaria",
+    "ul. Angel Kanchev 25, Sofia, Bulgaria",
+    "ul. Positano 30, Sofia, Bulgaria",
+    "ul. Hristo Botev 35, Sofia, Bulgaria",
+    "ul. Vasil Levski 40, Sofia, Bulgaria",
+    "ul. Georgi S. Rakovski 45, Sofia, Bulgaria",
+    "ul. Stamboliyski 50, Sofia, Bulgaria",
+    "ul. Slivnitsa 55, Sofia, Bulgaria",
+    "ul. Opalchenska 60, Sofia, Bulgaria",
+    "ul. Knyaz Boris 65, Sofia, Bulgaria",
+    "ul. Knyaz Simeon 70, Sofia, Bulgaria"
 ]
 
 class Command(BaseCommand):
@@ -103,6 +115,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Truck {truck.licensePlate} already exists')
 
         # Create packages
+        # Distribution: 20 packages for today, 5 packages for tomorrow
         today = timezone.now().date()
         tomorrow = today + timedelta(days=1)
         
@@ -111,8 +124,8 @@ class Command(BaseCommand):
             lat = SOFIA_CENTER[0] + random.uniform(-0.02, 0.02)
             lng = SOFIA_CENTER[1] + random.uniform(-0.02, 0.02)
             
-            # Alternate between today and tomorrow for delivery dates
-            delivery_date = today if i % 2 == 0 else tomorrow
+            # First 20 packages go to today, remaining 5 to tomorrow
+            delivery_date = today if i < 20 else tomorrow
             
             package = Package.objects.create(
                 address=address,
