@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { fetchDeliveryHistory, fetchDrivers, fetchAvailableTrucks, fetchPackages, fetchActiveRoutes } from '../utils/api';
+import { fetchPackages, fetchAvailableTrucks, fetchTodaysPendingPackages, fetchDeliveryHistory, fetchUnverifiedTruckers, fetchActiveRoutes, fetchDrivers } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { quickActions } from './Dashboard';
@@ -718,7 +718,7 @@ const JourneysPage: React.FC = () => {
         const trucks = await fetchAvailableTrucks(token);
         setTrucksData(trucks);
         setAvailableTrucks(trucks.length);
-        const packages = await fetchPackages(token);
+        const packages = await fetchTodaysPendingPackages(token);
         setTodayPackages(packages.length);
       } catch (e) {
         // Optionally handle error

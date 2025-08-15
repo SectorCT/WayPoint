@@ -1,0 +1,170 @@
+[33m2337ea7[m Website Changes
+[1mdiff --git a/server/delivery/clusterLocations.py b/server/delivery/clusterLocations.py[m
+[1mindex 9984e3a..52f4673 100644[m
+[1m--- a/server/delivery/clusterLocations.py[m
+[1m+++ b/server/delivery/clusterLocations.py[m
+[36m@@ -12,6 +12,8 @@[m [mdef cluster_locations(packages_data, driverUsernames):[m
+     # 2) Convert lat/long to arrays[m
+     coords = np.array([[loc["latitude"], loc["longitude"]] for loc in packages_data])[m
+     coords_rad = np.radians(coords)[m
+[32m+[m[32m    if coords_rad.size == 0:[m
+[32m+[m[32m        raise ValueError("No packages or locations to cluster. Please select drivers with available packages.")[m
+     earth_radius = 6371.0[m
+     eps_km = 1.5[m
+     eps = eps_km / earth_radius[m
+[33m4066e38[m delete functionality and refactor
+[1mdiff --git a/server/delivery/partition.py b/server/delivery/clusterLocations.py[m
+[1msimilarity index 100%[m
+[1mrename from server/delivery/partition.py[m
+[1mrename to server/delivery/clusterLocations.py[m
+[33md9ffbd8[m Working route function requiring drivers working
+[1mdiff --git a/server/delivery/partition.py b/server/delivery/partition.py[m
+[1mindex 891b258..9984e3a 100644[m
+[1m--- a/server/delivery/partition.py[m
+[1m+++ b/server/delivery/partition.py[m
+[36m@@ -1,62 +1,47 @@[m
+[31m-from rest_framework.views import APIView[m
+[31m-from rest_framework.response import Response[m
+[31m-from sklearn.cluster import DBSCAN[m
+ import numpy as np[m
+[32m+[m[32mfrom sklearn.cluster import DBSCAN, KMeans[m
+[32m+[m[32mfrom .models import Truck[m
+[32m+[m
+[32m+[m[32mdef cluster_locations(packages_data, driverUsernames):[m
+[32m+[m[32m    if not isinstance(packages_data, list) or not isinstance(driverUsernames, list):[m
+[32m+[m[32m        raise ValueError("Both 'packages' and 'driverUsernames' must be lists")[m
+[32m+[m
+[32m+[m[32m    numOfTrucks = Truck.objects.count()[m
+[32m+[m[32m    delivers = min(numOfTrucks, len(driverUsernames))[m
+[32m+[m
+[32m+[m[32m    # 2) Convert lat/long to arrays[m
+[32m+[m[32m    coords = np.array([[loc["latitude"], loc["longitude"]] for loc in packages_data])[m
+[32m+[m[32m    coords_rad = np.radians(coords)[m
+[32m+[m[32m    earth_radius = 6371.0[m
+[32m+[m[32m    eps_km = 1.5[m
+[32m+[m[32m    eps = eps_km / earth_radius[m
+[32m+[m
+[32m+[m[32m    # 3) DBSCAN[m
+[32m+[m[32m    dbscan = DBSCAN(eps=eps, min_samples=1, metric='haversine')[m
+[32m+[m[32m    labels = dbscan.fit_predict(coords_rad)[m
+[32m+[m
+[32m+[m[32m    clusters = {}[m
+[32m+[m[32m    for label, loc in zip(labels, packages_data):[m
+[32m+[m[32m        clusters.setdefault(int(label), []).append(loc)[m
+[32m+[m
+[32m+[m[32m    zones = [{"zone": zone_label, "driverUsername": "", "locations": locations}[m
+[32m+[m[32m             for zone_label, locations in clusters.items()][m
+[32m+[m
+[32m+[m[32m    # 4) If more zones than delivers, fall back to KMeans[m
+[32m+[m[32m    if len(zones) > delivers:[m
+[32m+[m[32m        kmeans = KMeans(n_clusters=delivers, random_state=0)[m
+[32m+[m[32m        kmeans_labels = kmeans.fit_predict(coords)[m
+ [m
+[31m-class ClusterLocations(APIView):[m
+[31m-    def post(self, request, eps_km=1.5):[m
+[31m-        packages = request.data  [m
+[31m-        [m
+[31m-        if not isinstance(packages, list):[m
+[31m-            return Response({"detail": "Expected a list of packages."}, status=400)[m
+[31m-[m
+[31m-        processed_locations = [][m
+[31m-        for package in packages:[m
+[31m-            new_loc = {[m
+[31m-                "address": package.get("address", ""),[m
+[31m-                "latitude": package.get("latitude"),[m
+[31m-                "longitude": package.get("longitude"),[m
+[31m-                "recipient": package.get("recipient", ""),[m
+[31m-                "recipientPhoneNumber": package.get("recipientPhoneNumber", ""),[m
+[31m-                "deliveryDate": package.get("deliveryDate", ""),[m
+[31m-                "weight": package.get("weight", "")[m
+[31m-            }[m
+[31m-            processed_locations.append(new_loc)[m
+[31m-        [m
+[31m-        # Ensure we have valid locations with latitude and longitude[m
+[31m-        try:[m
+[31m-            coords = np.array([[m
+[31m-                [float(loc["latitude"]), float(loc["longitude"])][m
+[31m-                for loc in processed_locations[m
+[31m-            ])[m
+[31m-        except (TypeError, ValueError) as e:[m
+[31m-            return Response({"detail": "Invalid latitude or longitude data."}, status=400)[m
+[31m-        [m
+[31m-        # Convert degrees to radians for the haversine metric[m
+[31m-        coords_rad = np.radians(coords)[m
+[31m-        [m
+[31m-        # Earth's radius in kilometers[m
+[31m-        earth_radius = 6371.0[m
+[31m-        [m
+[31m-        # Convert eps from kilometers to radians[m
+[31m-        eps = eps_km / earth_radius[m
+[31m-        [m
+[31m-        # Create and fit the DBSCAN model using the haversine metric[m
+[31m-        dbscan = DBSCAN(eps=eps, min_samples=1, metric='haversine')[m
+[31m-        labels = dbscan.fit_predict(coords_rad)[m
+[31m-        [m
+[31m-        # Group processed locations by cluster label[m
+         clusters = {}[m
+[31m-        for label, loc in zip(labels, processed_locations):[m
+[32m+[m[32m        for label, loc in zip(kmeans_labels, packages_data):[m
+             clusters.setdefault(int(label), []).append(loc)[m
+[31m-        [m
+[31m-        # Format the clusters as a list of zones[m
+[31m-        zones = [][m
+[31m-        for zone_label, locations in clusters.items():[m
+[31m-            zone = {[m
+[31m-                "zone": zone_label,[m
+[31m-                "locations": locations[m
+[31m-            }[m
+[31m-            zones.append(zone)[m
+[31m-        [m
+[31m-        return Response(zones)[m
+[32m+[m
+[32m+[m[32m        zones = [{"zone": zone_label, "driverUsername": "", "locations": locations}[m
+[32m+[m[32m                 for zone_label, locations in clusters.items()][m
+[32m+[m
+[32m+[m[32m    # 5) Assign drivers[m
+[32m+[m[32m    for i, zone in enumerate(zones):[m
+[32m+[m[32m        if i < len(driverUsernames):[m
+[32m+[m[32m            zone["driverUsername"] = driverUsernames[i][m
+[32m+[m
+[32m+[m[32m    return zones[m
+[33m3aa3987[m Fixed
+[1mdiff --git a/server/delivery/partition.py b/server/delivery/partition.py[m
+[1mindex 882d34f..891b258 100644[m
+[1m--- a/server/delivery/partition.py[m
+[1m+++ b/server/delivery/partition.py[m
+[36m@@ -5,7 +5,6 @@[m [mimport numpy as np[m
+ [m
+ class ClusterLocations(APIView):[m
+     def post(self, request, eps_km=1.5):[m
+[31m-        # Expecting the payload to be a list of packages[m
+         packages = request.data  [m
+         [m
+         if not isinstance(packages, list):[m
+[36m@@ -13,7 +12,6 @@[m [mclass ClusterLocations(APIView):[m
+ [m
+         processed_locations = [][m
+         for package in packages:[m
+[31m-            # Map package fields to our clustering location structure[m
+             new_loc = {[m
+                 "address": package.get("address", ""),[m
+                 "latitude": package.get("latitude"),[m
+[33m73b363e[m Added the partition algorithm without any testing
+[1mdiff --git a/server/delivery/partition.py b/server/delivery/partition.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..882d34f[m
+[1m--- /dev/null[m
+[1m+++ b/server/delivery/partition.py[m
+[36m@@ -0,0 +1,64 @@[m
+[32m+[m[32mfrom rest_framework.views import APIView[m
+[32m+[m[32mfrom rest_framework.response import Response[m
+[32m+[m[32mfrom sklearn.cluster import DBSCAN[m
+[32m+[m[32mimport numpy as np[m
+[32m+[m
+[32m+[m[32mclass ClusterLocations(APIView):[m
+[32m+[m[32m    def post(self, request, eps_km=1.5):[m
+[32m+[m[32m        # Expecting the payload to be a list of packages[m
+[32m+[m[32m        packages = request.data[m[41m  [m
+[32m+[m[41m        [m
+[32m+[m[32m        if not isinstance(packages, list):[m
+[32

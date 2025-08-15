@@ -7,7 +7,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { getAvailableTrucks } from "../../utils/journeyApi";
+import { getAllTrucks } from "../../utils/journeyApi";
 import useStyles from "./styles/trucksStyles";
 import { router } from "expo-router";
 import AddButton from "@/components/basic/addButton/addButton";
@@ -17,20 +17,20 @@ import TruckModule from "@/components/listModule/truckModule/truckModule";
 
 export default function TrucksScreen() {
   const { theme } = useTheme();
-  const [packages, setPackages] = useState<Truck[]>([]);
+  const [trucks, setTrucks] = useState<Truck[]>([]);
   const [loading, setLoading] = useState(true);
   const styles = useStyles();
 
   useEffect(() => {
-    fetchPackages();
+    fetchTrucks();
   }, []);
 
-  const fetchPackages = async () => {
+  const fetchTrucks = async () => {
     try {
-      const data = await getAvailableTrucks();
-      setPackages(data);
+      const data = await getAllTrucks();
+      setTrucks(data);
     } catch (error) {
-      console.error("Error fetching packages:", error);
+      console.error("Error fetching trucks:", error);
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export default function TrucksScreen() {
             <ActivityIndicator size="large" color={theme.color.mediumPrimary} />
           ) : (
             <FlatList
-              data={packages}
+              data={trucks}
               keyExtractor={(pkg) => pkg.licensePlate}
               renderItem={({ item }) => (
                 <TruckModule
@@ -62,7 +62,7 @@ export default function TrucksScreen() {
                   isUsed={item.isUsed}
                   onDelete={() => {
                     // Refresh the trucks list after deletion
-                    fetchPackages();
+                    fetchTrucks();
                   }}
                 />
               )}
