@@ -843,6 +843,48 @@ export default function TruckerViewScreen() {
     }
   };
 
+  // Add new function to show whole route
+  const handleShowWholeRoute = () => {
+    if (mapRef.current && routePoints.length > 0) {
+      // Calculate bounds of all route points
+      const bounds = routePoints.reduce((acc, point) => ({
+        minLat: Math.min(acc.minLat, point.latitude),
+        maxLat: Math.max(acc.maxLat, point.latitude),
+        minLng: Math.min(acc.minLng, point.longitude),
+        maxLng: Math.max(acc.maxLng, point.longitude)
+      }), {
+        minLat: routePoints[0].latitude,
+        maxLat: routePoints[0].latitude,
+        minLng: routePoints[0].longitude,
+        maxLng: routePoints[0].longitude
+      });
+
+      // Add some padding to the bounds
+      const latPadding = (bounds.maxLat - bounds.minLat) * 0.1;
+      const lngPadding = (bounds.maxLng - bounds.minLng) * 0.1;
+
+      const center = {
+        latitude: (bounds.minLat + bounds.maxLat) / 2,
+        longitude: (bounds.minLng + bounds.maxLng) / 2
+      };
+
+      const span = {
+        latitudeDelta: (bounds.maxLat - bounds.minLat) + latPadding,
+        longitudeDelta: (bounds.maxLng - bounds.minLng) + lngPadding
+      };
+
+      // Animate to show the whole route with no tilt
+      mapRef.current.animateCamera({
+        center: center,
+        pitch: 0, // Remove tilt
+        zoom: 12, // Zoom out to show more area
+      }, { duration: 1000 });
+
+      // Stop following heading when showing whole route
+      setIsFollowingHeading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isFollowingHeading) return;
     if (
@@ -883,15 +925,16 @@ export default function TruckerViewScreen() {
     }
     setIsSavingSignature(true);
     try {
+      if (!user) {
+        throw new Error('User not found');
+      }
       const response = await markPackageAsDelivered(selectedPackageId, user.username, signature);
       if (!response.ok) {
         throw new Error('Failed to mark package as delivered');
       }
       // Refresh route data after marking as delivered
-      if (user) {
-        const data = await getRoute(user.username);
-        setCurrentZone(data);
-      }
+      const data = await getRoute(user.username);
+      setCurrentZone(data);
       setShowSignature(false);
       setSelectedPackageId(null);
     } catch (error) {
@@ -1627,6 +1670,23 @@ export default function TruckerViewScreen() {
           />
         </TouchableOpacity>
 
+        {/* Add new button to show whole route */}
+        <TouchableOpacity 
+          style={[
+            styles.showRouteButton, 
+            { 
+              backgroundColor: theme.color.darkPrimary,
+            }
+          ]} 
+          onPress={handleShowWholeRoute}
+        >
+          <MaterialIcons 
+            name="visibility"
+            size={24} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+
         {/* Route View Mode Switch */}
         <View style={[styles.routeModeSwitch, { backgroundColor: theme.color.white }]}>
           <TouchableOpacity 
@@ -1934,21 +1994,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   returnRouteContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    gap: 8,
+    marginTop: 20,
   },
   returnRouteText: {
     fontSize: 16,
     fontWeight: '500',
-  },
-  returnRouteContainer: {
-    alignItems: 'center',
-    marginTop: 20,
   },
   returnRouteButton: {
     flexDirection: 'row',
@@ -2051,7 +2102,8 @@ const styles = StyleSheet.create({
   routeModeSwitch: {
     position: 'absolute',
     bottom: 40,
-    left: 20,
+    left: '50%',
+    transform: [{ translateX: -60 }],
     width: 120,
     height: 40,
     borderRadius: 20,
@@ -2375,5 +2427,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 12,
     textAlign: 'center',
+  },
+  showRouteButton: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 }); 
