@@ -6,7 +6,7 @@ import { useTheme } from "@context/ThemeContext";
 import { usePosition } from "@context/PositionContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { getAllRoutes, getUserByUsername } from "../../utils/journeyApi";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import House from "@assets/icons/house.svg";
 import { useAuth } from "@/context/AuthContext";
@@ -145,6 +145,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
   const { user } = useAuth();
   const [unverifiedTruckers, setUnverifiedTruckers] = useState<any[]>([]);
   const [loadingTruckers, setLoadingTruckers] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const initializeRouteData = async () => {
@@ -244,38 +245,37 @@ const AdminTruckTrackerScreen: React.FC = () => {
     }
   }, [user]);
 
+
+
   const fetchUnverifiedTruckers = async () => {
     setLoadingTruckers(true);
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/auth/list-unverified-truckers/`, {
+      if (!token) {
+        setUnverifiedTruckers([]);
+        setLoadingTruckers(false);
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/delivery/truckers/unverified/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await response.json();
-      setUnverifiedTruckers(Array.isArray(data) ? data : []);
+      if (response.ok) {
+        const data = await response.json();
+
+        setUnverifiedTruckers(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to fetch unverified truckers:', response.status);
+        setUnverifiedTruckers([]);
+      }
     } catch (e) {
+      console.error('Error fetching unverified truckers:', e);
       setUnverifiedTruckers([]);
     } finally {
       setLoadingTruckers(false);
     }
   };
 
-  const handleVerifyTrucker = async (username: string) => {
-    try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/auth/verify-trucker/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ username })
-      });
-      if (response.ok) {
-        setUnverifiedTruckers(prev => prev.filter(t => t.username !== username));
-      }
-    } catch (e) {}
-  };
+
 
   // Calculate initial region based on all locations or device position
   const allLocations = Array.from(zoneLocations.values()).flat();
@@ -368,6 +368,8 @@ const AdminTruckTrackerScreen: React.FC = () => {
             <MaterialIcons name="close" size={24} color={theme.color.darkPrimary} />
           </TouchableOpacity>
         </View>
+
+
 
         <ScrollView 
           style={styles.routeList}
@@ -472,22 +474,55 @@ const AdminTruckTrackerScreen: React.FC = () => {
             );
           })}
         </ScrollView>
+
+        {/* Unverified Truckers Section */}
         {user?.isManager && (
-          <View style={{ padding: 16, backgroundColor: theme.color.white }}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>Unverified Truckers</Text>
+          <View style={[styles.unverifiedSection, { backgroundColor: theme.color.white }]}>
             {loadingTruckers ? (
-              <ActivityIndicator size="small" color={theme.color.mediumPrimary} />
+              <View style={styles.unverifiedContent}>
+                <ActivityIndicator size="small" color={theme.color.mediumPrimary} />
+                <Text style={[styles.unverifiedText, { color: theme.color.darkGrey }]}>Loading...</Text>
+              </View>
             ) : unverifiedTruckers.length === 0 ? (
-              <Text style={{ color: theme.color.lightGrey }}>No unverified truckers.</Text>
+              <View style={styles.unverifiedContent}>
+                <MaterialIcons name="check-circle" size={20} color={theme.color.darkGrey} />
+                <Text style={[styles.unverifiedText, { color: theme.color.darkGrey }]}>No unverified truckers</Text>
+              </View>
             ) : (
-              unverifiedTruckers.map(trucker => (
-                <View key={trucker.username} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ flex: 1 }}>{trucker.username} ({trucker.email})</Text>
-                  <TouchableOpacity onPress={() => handleVerifyTrucker(trucker.username)} style={{ backgroundColor: theme.color.mediumPrimary, padding: 8, borderRadius: 6 }}>
-                    <Text style={{ color: '#fff' }}>Verify</Text>
-                  </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.unverifiedButton, 
+                  { 
+                    backgroundColor: isNavigating ? theme.color.lightGrey : theme.color.mediumPrimary,
+                    opacity: isNavigating ? 0.7 : 1
+                  }
+                ]}
+                onPress={() => {
+                  if (isNavigating) return; // Prevent multiple taps
+                  
+                  setIsNavigating(true);
+                  // Close drawer first, then navigate with a smooth transition
+                  drawerRef.current?.closeDrawer();
+                  // Add a small delay to allow drawer to close smoothly
+                  setTimeout(() => {
+                    router.push('/(tabs)/verifyTruckers');
+                  }, 300);
+                }}
+                activeOpacity={0.7}
+                disabled={isNavigating}
+              >
+                <View style={styles.unverifiedContent}>
+                  {isNavigating ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <MaterialIcons name="warning" size={20} color="#FFFFFF" />
+                  )}
+                  <Text style={[styles.unverifiedText, { color: '#FFFFFF' }]}>
+                    {isNavigating ? 'Navigating...' : `${unverifiedTruckers.length} unverified trucker${unverifiedTruckers.length !== 1 ? 's' : ''}`}
+                  </Text>
+                  {!isNavigating && <MaterialIcons name="arrow-forward" size={16} color="#FFFFFF" />}
                 </View>
-              ))
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -503,6 +538,15 @@ const AdminTruckTrackerScreen: React.FC = () => {
       drawerType="slide"
       drawerBackgroundColor={theme.color.white}
       renderNavigationView={renderDrawerContent}
+      onDrawerOpen={() => {
+        if (user?.isManager) {
+          fetchUnverifiedTruckers();
+        }
+      }}
+      onDrawerClose={() => {
+        // Reset navigation state when drawer closes
+        setIsNavigating(false);
+      }}
     >
       <View style={styles.container}>
         {routeData.length === 0 ? (
@@ -743,6 +787,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  unverifiedSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+
+  unverifiedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  unverifiedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  unverifiedButton: {
+    padding: 12,
+    borderRadius: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
