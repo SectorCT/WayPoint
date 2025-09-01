@@ -649,7 +649,7 @@ const JourneysPage: React.FC = () => {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [driversLoading, setDriversLoading] = useState(false);
   const [selectedDrivers, setSelectedDrivers] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'start' | 'drivers'>('start');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [availableTrucks, setAvailableTrucks] = useState<number>(0);
   const [todayPackages, setTodayPackages] = useState<number>(0);
@@ -999,147 +999,157 @@ const JourneysPage: React.FC = () => {
                   📦 {todayPackages} Packages
                 </div>
               </div>
-              <div className={styles.tabs}>
-                <button
-                  className={activeTab === 'start' ? styles.activeTab : styles.tab}
-                  onClick={() => setActiveTab('start')}
-                >Start Journey</button>
-                <button
-                  className={activeTab === 'drivers' ? styles.activeTab : styles.tab}
-                  onClick={() => setActiveTab('drivers')}
-                >Drivers</button>
-              </div>
-              <div className={styles.tabContent}>
-                {activeTab === 'start' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, width: '100%' }}>
-                    <h2 style={{ margin: '12px 0 0 0', textAlign: 'left' }}>Choose Driver</h2>
-                    <input
-                      type="text"
-                      placeholder="Search drivers..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: 8,
-                        border: '1px solid #F8D5B0',
-                        fontSize: '1rem',
-                        marginBottom: 2,
-                        marginTop: 0,
-                      }}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-                      {driversLoading ? <div>Loading drivers...</div> : (
-                        selectableDrivers
-                          .map(driver => {
-                            const isSelected = selectedDrivers.has(driver.username);
-                            const routeAssigned = routes.some(route =>
-                              String(route.user).trim().toLowerCase() === String(driver.username).trim().toLowerCase() &&
-                              String(route.status).trim().toLowerCase() === 'active'
-                            );
-                            return (
-                              <div
-                                key={driver.username}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  border: isSelected ? '2px solid #F05033' : '1px solid #eee',
-                                  borderRadius: 16,
-                                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                                  background: '#fff',
-                                  padding: '14px 20px',
-                                  cursor: routeAssigned ? 'not-allowed' : 'pointer',
-                                  transition: 'border 0.2s',
-                                  fontWeight: isSelected ? 600 : 500,
-                                  color: isSelected ? '#F05033' : '#222',
-                                  width: '100%',
-                                  opacity: routeAssigned ? 0.5 : 1,
-                                }}
-                              >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
-                                  <span style={{ fontSize: 17 }}>{driver.username}</span>
-                                  {driver.email && <span style={{ fontSize: 13, color: '#888' }}>{driver.email}</span>}
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    setSelectedDrivers(prev => {
-                                      const newSet = new Set(prev);
-                                      if (newSet.has(driver.username)) {
-                                        newSet.delete(driver.username);
-                                      } else {
-                                        newSet.add(driver.username);
-                                      }
-                                      return newSet;
-                                    });
-                                  }}
-                                  style={{
-                                    background: isSelected ? 'linear-gradient(90deg, #F39358 0%, #F05033 100%)' : '#f5f6fa',
-                                    color: isSelected ? '#fff' : '#F05033',
-                                    border: 'none',
-                                    borderRadius: '50%',
-                                    width: 36,
-                                    height: 36,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: 22,
-                                    fontWeight: 700,
-                                    boxShadow: isSelected ? '0 2px 8px rgba(240,80,51,0.13)' : 'none',
-                                    cursor: routeAssigned ? 'not-allowed' : 'pointer',
-                                    transition: 'background 0.2s, color 0.2s',
-                                    outline: 'none',
-                                  }}
-                                  aria-label={isSelected ? 'Deselect driver' : 'Select driver'}
-                                  disabled={routeAssigned}
-                                >
-                                  {isSelected ? '✓' : '+'}
-                                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, width: '100%' }}>
+                <h2 style={{ margin: '12px 0 0 0', textAlign: 'left' }}>Journeys</h2>
+                <input
+                  type="text"
+                  placeholder="Search drivers..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid #F8D5B0',
+                    fontSize: '1rem',
+                    marginBottom: 2,
+                    marginTop: 0,
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+                  {driversLoading ? <div>Loading drivers...</div> : (
+                    drivers
+                      .filter(driver =>
+                        driver.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (driver.email && driver.email.toLowerCase().includes(searchQuery.toLowerCase()))
+                      )
+                      .map(driver => {
+                        const isSelected = selectedDrivers.has(driver.username);
+                        // Check for any routes assigned to this driver (more comprehensive check)
+                        const driverRoutes = routes.filter(route =>
+                          String(route.user).trim().toLowerCase() === String(driver.username).trim().toLowerCase()
+                        );
+                        
+                        const routeAssigned = driverRoutes.length > 0;
+                        const activeRoute = driverRoutes.length > 0 ? driverRoutes[0] : null;
+                        
+                        // Debug logging
+                        console.log(`Driver ${driver.username}:`, {
+                          totalRoutes: routes.length,
+                          driverRoutes: driverRoutes.length,
+                          routeStatuses: driverRoutes.map(r => r.status),
+                          routeAssigned,
+                          hasActiveRoute: !!activeRoute
+                        });
+                        
+                        return (
+                          <div
+                            key={driver.username}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              border: isSelected ? '2px solid #F05033' : '1px solid #eee',
+                              borderRadius: 16,
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                              background: '#fff',
+                              padding: '14px 20px',
+                              cursor: routeAssigned ? 'not-allowed' : 'pointer',
+                              transition: 'border 0.2s',
+                              fontWeight: isSelected ? 600 : 500,
+                              color: isSelected ? '#F05033' : '#222',
+                              width: '100%',
+                              opacity: routeAssigned ? 0.5 : 1,
+                            }}
+                          >
+                            {/* Driver info in the middle */}
+                            <div style={{ 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: 2, 
+                              textAlign: 'left',
+                              flex: 1
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 17 }}>{driver.username}</span>
                               </div>
-                            );
-                          })
-                      )}
-                    </div>
-                    <button
-                      className={styles.gradientButton}
-                      style={{ width: '100%', marginTop: 8, opacity: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 1 : 0.5, cursor: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 'pointer' : 'not-allowed' }}
-                      onClick={handleStartJourney}
-                      disabled={selectedDrivers.size === 0 || selectableDrivers.length === 0}
-                    >Start Journey</button>
-                  </div>
-                )}
-                {activeTab === 'drivers' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                    <h2 style={{ margin: '12px 0 0 0' }}>Drivers</h2>
-                    <input
-                      type="text"
-                      placeholder="Search drivers..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: 8,
-                        border: '1px solid #F8D5B0',
-                        fontSize: '1rem',
-                        marginBottom: 2,
-                        marginTop: 0,
-                      }}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {driversLoading ? <div>Loading drivers...</div> : (
-                        drivers
-                          .filter(driver =>
-                            driver.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (driver.email && driver.email.toLowerCase().includes(searchQuery.toLowerCase()))
-                          )
-                          .map(driver => (
-                            <DriverCard key={driver.username} driver={driver} token={localStorage.getItem('access') || ''} />
-                          ))
-                      )}
-                    </div>
-                  </div>
-                )}
+                              {driver.email && <span style={{ fontSize: 13, color: '#888' }}>{driver.email}</span>}
+                            </div>
+                            
+                            {/* Active Route box on the right */}
+                            {activeRoute && (
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                marginRight: 12,
+                                color: '#4CAF50', 
+                                backgroundColor: '#E8F5E9',
+                                padding: '4px 8px',
+                                borderRadius: 8,
+                                fontSize: 12,
+                                fontWeight: 500,
+                                border: '1px solid #4CAF50'
+                              }}>
+                                {driverRoutes.length > 1 ? `${driverRoutes.length} Active Routes` : 'Active Route'}
+                              </div>
+                            )}
+                            
+                            {/* Selection button on the right */}
+                            <button
+                              onClick={() => {
+                                if (!routeAssigned) {
+                                  setSelectedDrivers(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(driver.username)) {
+                                      newSet.delete(driver.username);
+                                    } else {
+                                      newSet.add(driver.username);
+                                    }
+                                    return newSet;
+                                  });
+                                }
+                              }}
+                              style={{
+                                background: isSelected ? 'linear-gradient(90deg, #F39358 0%, #F05033 100%)' : '#f5f6fa',
+                                color: isSelected ? '#fff' : '#F05033',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: 36,
+                                height: 36,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 22,
+                                fontWeight: 700,
+                                boxShadow: isSelected ? '0 2px 8px rgba(240,80,51,0.13)' : 'none',
+                                cursor: routeAssigned ? 'not-allowed' : 'pointer',
+                                transition: 'background 0.2s, color 0.2s',
+                                outline: 'none',
+                              }}
+                              aria-label={isSelected ? 'Deselect driver' : 'Select driver'}
+                              disabled={routeAssigned}
+                            >
+                              {isSelected ? '✓' : '+'}
+                            </button>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+                <button
+                  className={styles.gradientButton}
+                  style={{ 
+                    width: '100%', 
+                    marginTop: 8, 
+                    opacity: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 1 : 0.5, 
+                    cursor: selectedDrivers.size > 0 && selectableDrivers.length > 0 ? 'pointer' : 'not-allowed' 
+                  }}
+                  onClick={handleStartJourney}
+                  disabled={selectedDrivers.size === 0 || selectableDrivers.length === 0}
+                >
+                  Start Journey
+                </button>
               </div>
             </div>
           </div>
