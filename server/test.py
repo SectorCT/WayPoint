@@ -2,7 +2,7 @@ import requests
 
 # Factory first (example factory coord), then the 7 stops from your list (lon, lat)
 coords = [
-    (23.3750, 42.6666),  # Factory (example, keep as start)
+    (-122.0841, 37.4220),  # Factory (Google HQ, keep as start)
     (23.3064, 42.7245),  # бул. Захари Стоянов 20
     (23.2985, 42.7333),  # ул. 302-ра 15
     (23.2934, 42.7300),  # бул. Царица Йоанна 90

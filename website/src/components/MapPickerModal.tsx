@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Map, Marker } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-const DEFAULT_POSITION = { lat: 42.6977, lng: 23.3219 }; // Sofia, BG
+const DEFAULT_POSITION = { lat: 37.4220, lng: -122.0841 }; // Google HQ, Mountain View, CA
 
 const modalStyle: React.CSSProperties = {
   position: 'fixed',

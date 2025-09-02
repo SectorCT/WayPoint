@@ -131,9 +131,9 @@ const examplePath1: Feature<LineString> = {
   geometry: {
     type: 'LineString',
     coordinates: [
-      [23.3219, 42.6977], // Sofia center
-      [23.35, 42.70],     // East
-      [23.37, 42.68],     // Southeast
+      [-122.0841, 37.4220], // Google HQ center
+      [-122.06, 37.44],     // East
+      [-122.08, 37.40],     // Southeast
     ],
   },
   properties: {},
@@ -143,9 +143,9 @@ const examplePath2: Feature<LineString> = {
   geometry: {
     type: 'LineString',
     coordinates: [
-      [23.3219, 42.6977], // Sofia center
-      [23.30, 42.71],     // Northwest
-      [23.28, 42.69],     // West
+      [-122.0841, 37.4220], // Google HQ center
+      [-122.10, 37.44],     // Northwest
+      [-122.12, 37.40],     // West
     ],
   },
   properties: {},
@@ -1212,8 +1212,8 @@ const JourneysPage: React.FC = () => {
             <div style={{ height: '72vh', width: '72vh', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               <Map
                 initialViewState={{
-                  latitude: 42.6977,
-                  longitude: 23.3219,
+                  latitude: 37.4220,
+                  longitude: -122.0841,
                   zoom: 12,
                 }}
                 style={{ width: '100%', height: '100%' }}

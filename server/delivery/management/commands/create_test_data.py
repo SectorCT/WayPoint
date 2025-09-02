@@ -9,35 +9,61 @@ from authentication.models import Company
 
 User = get_user_model()
 
-# Sofia, Bulgaria coordinates with slight variations for packages
-SOFIA_CENTER = (42.6977, 23.3219)
+# Google HQ coordinates (warehouse location)
+GOOGLE_HQ = (37.4220, -122.0841)
 
-# Sample addresses in Sofia - extended to support 25 packages
-SOFIA_ADDRESSES = [
-    "bul. Vitosha 89, Sofia, Bulgaria",
-    "ul. Graf Ignatiev 6, Sofia, Bulgaria",
-    "bul. Tsarigradsko Shose 115, Sofia, Bulgaria",
-    "ul. Alabin 33, Sofia, Bulgaria",
-    "bul. Cherni Vrah 100, Sofia, Bulgaria",
-    "ul. Solunska 45, Sofia, Bulgaria",
-    "bul. Bulgaria 102, Sofia, Bulgaria",
-    "ul. Rakovski 96, Sofia, Bulgaria",
-    "bul. Todor Aleksandrov 14, Sofia, Bulgaria",
-    "ul. Pirotska 5, Sofia, Bulgaria",
-    "ul. Shipka 6, Sofia, Bulgaria",
-    "ul. Oborishte 5, Sofia, Bulgaria",
-    "ul. Shishman 15, Sofia, Bulgaria",
-    "ul. Patriarch Evtimiy 20, Sofia, Bulgaria",
-    "ul. Angel Kanchev 25, Sofia, Bulgaria",
-    "ul. Positano 30, Sofia, Bulgaria",
-    "ul. Hristo Botev 35, Sofia, Bulgaria",
-    "ul. Vasil Levski 40, Sofia, Bulgaria",
-    "ul. Georgi S. Rakovski 45, Sofia, Bulgaria",
-    "ul. Stamboliyski 50, Sofia, Bulgaria",
-    "ul. Slivnitsa 55, Sofia, Bulgaria",
-    "ul. Opalchenska 60, Sofia, Bulgaria",
-    "ul. Knyaz Boris 65, Sofia, Bulgaria",
-    "ul. Knyaz Simeon 70, Sofia, Bulgaria"
+# Sample addresses spread across wider Bay Area neighborhoods
+SAN_JOSE_ADDRESSES = [
+    # Mountain View area (closest to Google HQ)
+    "1600 Amphitheatre Parkway, Mountain View, CA 94043",  # Google HQ itself
+    "2000 W El Camino Real, Mountain View, CA 94040",  # Mountain View
+    "1000 N Shoreline Blvd, Mountain View, CA 94043",  # Mountain View
+    "3000 Central Expressway, Mountain View, CA 94043",  # Mountain View
+    
+    # Sunnyvale area
+    "16000 N Wolfe Rd, Sunnyvale, CA 94087",  # Sunnyvale
+    "14000 W Fremont Ave, Sunnyvale, CA 94087",  # Sunnyvale
+    "15000 E Fremont Ave, Sunnyvale, CA 94087",  # Sunnyvale
+    "17000 S Wolfe Rd, Sunnyvale, CA 94087",  # Sunnyvale
+    
+    # Cupertino area
+    "1 Infinite Loop, Cupertino, CA 95014",  # Apple Park
+    "19000 W Homestead Rd, Cupertino, CA 95014",  # Cupertino
+    "20000 N De Anza Blvd, Cupertino, CA 95014",  # Cupertino
+    "13000 S De Anza Blvd, Cupertino, CA 95014",  # Cupertino
+    
+    # Los Altos area
+    "1000 N San Antonio St, Los Altos, CA 94022",  # Los Altos
+    "2000 Foothill Blvd, Los Altos, CA 94022",  # Los Altos
+    "3000 Main St, Los Altos, CA 94022",  # Los Altos
+    "4000 El Camino Real, Los Altos, CA 94022",  # Los Altos
+    
+    # Palo Alto area
+    "3400 Hillview Ave, Palo Alto, CA 94304",  # Stanford Research Park
+    "1000 El Camino Real, Menlo Park, CA 94025",  # Stanford Shopping Center
+    "6000 Page Mill Rd, Palo Alto, CA 94304",  # Palo Alto
+    "7000 Sand Hill Rd, Menlo Park, CA 94025",  # Menlo Park
+    
+    # San Jose area (further out)
+    "2000 S Bascom Ave, Campbell, CA 95008",  # Campbell
+    "3000 Stevens Creek Blvd, San Jose, CA 95128",  # San Jose
+    "4000 Almaden Expy, San Jose, CA 95118",  # San Jose
+    "5000 Blossom Hill Rd, San Jose, CA 95123",  # San Jose
+    "6000 Santa Teresa Blvd, San Jose, CA 95119",  # San Jose
+    "7000 Story Rd, San Jose, CA 95122",  # San Jose
+    "8000 Monterey Rd, San Jose, CA 95112",  # San Jose
+    "9000 S White Rd, San Jose, CA 95148",  # San Jose
+    "10000 Berryessa Rd, San Jose, CA 95132",  # San Jose
+    "11000 N 1st St, San Jose, CA 95134",  # San Jose
+    "12000 E Calaveras Blvd, Milpitas, CA 95035",  # Milpitas
+    "13000 S De Anza Blvd, Cupertino, CA 95014",  # Cupertino
+    "14000 W Fremont Ave, Sunnyvale, CA 94087",  # Sunnyvale
+    "15000 E Fremont Ave, Sunnyvale, CA 94087",  # Sunnyvale
+    "16000 N Wolfe Rd, Sunnyvale, CA 94087",  # Sunnyvale
+    "17000 S Wolfe Rd, Sunnyvale, CA 94087",  # Sunnyvale
+    "18000 E Homestead Rd, Cupertino, CA 95014",  # Cupertino
+    "19000 W Homestead Rd, Cupertino, CA 95014",  # Cupertino
+    "20000 N De Anza Blvd, Cupertino, CA 95014"  # Cupertino
 ]
 
 class Command(BaseCommand):
@@ -114,15 +140,33 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f'Truck {truck.licensePlate} already exists')
 
-        # Create packages
+        # Create packages with better geographic distribution
         # Distribution: 20 packages for today, 5 packages for tomorrow
         today = timezone.now().date()
         tomorrow = today + timedelta(days=1)
         
-        for i, address in enumerate(SOFIA_ADDRESSES):
-            # Create slight variations in coordinates
-            lat = SOFIA_CENTER[0] + random.uniform(-0.02, 0.02)
-            lng = SOFIA_CENTER[1] + random.uniform(-0.02, 0.02)
+        for i, address in enumerate(SAN_JOSE_ADDRESSES):
+            # Create coordinates with better spread across the Bay Area
+            # Use different ranges for different areas to create realistic distribution
+            
+            if i < 4:  # Mountain View area (closest to Google HQ)
+                lat = GOOGLE_HQ[0] + random.uniform(-0.008, 0.008)
+                lng = GOOGLE_HQ[1] + random.uniform(-0.008, 0.008)
+            elif i < 8:  # Sunnyvale area
+                lat = 37.3688 + random.uniform(-0.01, 0.01)
+                lng = -122.0363 + random.uniform(-0.01, 0.01)
+            elif i < 12:  # Cupertino area
+                lat = 37.3318 + random.uniform(-0.01, 0.01)
+                lng = -122.0312 + random.uniform(-0.01, 0.01)
+            elif i < 16:  # Los Altos area
+                lat = 37.3852 + random.uniform(-0.01, 0.01)
+                lng = -122.1141 + random.uniform(-0.01, 0.01)
+            elif i < 20:  # Palo Alto/Menlo Park area
+                lat = 37.4419 + random.uniform(-0.01, 0.01)
+                lng = -122.1430 + random.uniform(-0.01, 0.01)
+            else:  # San Jose area (further out)
+                lat = 37.3382 + random.uniform(-0.015, 0.015)
+                lng = -121.8863 + random.uniform(-0.015, 0.015)
             
             # First 20 packages go to today, remaining 5 to tomorrow
             delivery_date = today if i < 20 else tomorrow
@@ -132,7 +176,7 @@ class Command(BaseCommand):
                 latitude=lat,
                 longitude=lng,
                 recipient=f'Test Recipient {i+1}',
-                recipientPhoneNumber=f'+359888{100000 + i}',
+                recipientPhoneNumber=f'+1408{1000000 + i}',
                 deliveryDate=delivery_date,
                 weight=random.uniform(1.0, 20.0),
                 status='pending',
@@ -140,13 +184,13 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.SUCCESS(f'Created package: {package.packageID}'))
 
-        # Create offices for the company - extended to 5 offices
+        # Create offices for the company - San Jose area offices
         office_data = [
-            {"name": "Central Office", "address": "bul. Vitosha 1, Sofia, Bulgaria", "latitude": 42.695, "longitude": 23.320, "company": company},
-            {"name": "East Office", "address": "bul. Tsarigradsko Shose 200, Sofia, Bulgaria", "latitude": 42.670, "longitude": 23.400, "company": company},
-            {"name": "West Office", "address": "ul. Graf Ignatiev 50, Sofia, Bulgaria", "latitude": 42.700, "longitude": 23.300, "company": company},
-            {"name": "North Office", "address": "bul. Cherni Vrah 50, Sofia, Bulgaria", "latitude": 42.720, "longitude": 23.320, "company": company},
-            {"name": "South Office", "address": "ul. Alabin 100, Sofia, Bulgaria", "latitude": 42.680, "longitude": 23.320, "company": company}
+            {"name": "Google HQ Warehouse", "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043", "latitude": 37.4220, "longitude": -122.0841, "company": company},
+            {"name": "Mountain View Office", "address": "2000 W El Camino Real, Mountain View, CA 94040", "latitude": 37.3861, "longitude": -122.0839, "company": company},
+            {"name": "Palo Alto Office", "address": "3400 Hillview Ave, Palo Alto, CA 94304", "latitude": 37.4419, "longitude": -122.1430, "company": company},
+            {"name": "Cupertino Office", "address": "1 Infinite Loop, Cupertino, CA 95014", "latitude": 37.3318, "longitude": -122.0312, "company": company},
+            {"name": "San Jose Office", "address": "3000 Stevens Creek Blvd, San Jose, CA 95128", "latitude": 37.3382, "longitude": -121.8863, "company": company}
         ]
         offices = []
         for od in office_data:
