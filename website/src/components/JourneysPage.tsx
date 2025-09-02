@@ -8,6 +8,7 @@ import { Map, Marker, Source, Layer } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Feature, LineString } from 'geojson';
 import { Helmet } from 'react-helmet';
+import OfficeDeliveries from './OfficeDeliveries';
 
 // Function to generate a color based on a value (same as mobile app)
 const generateColorFromValue = (value: string): string => {
@@ -955,52 +956,83 @@ const JourneysPage: React.FC = () => {
       </Helmet>
       <div style={{
         width: '100%',
-        maxWidth: '1600px',
+        maxWidth: '1800px',
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
       }}>
-        {/* Main content: two columns */}
-        <div className={styles.columnsWrapper} style={{ width: '100%', marginTop: 0 }}>
-          {/* Left column: Tabs, driver selection, start journey */}
-          <div className={styles.leftCol} style={{ alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-            <div style={{ width: '100%', maxWidth: 400, marginTop: 0, paddingTop: 0 }}>
-              {/* Counter row */}
-              <div style={{ display: 'flex', flexDirection: 'row', gap: 18, marginBottom: 18, marginTop: 8 }}>
-                <div style={{
-                  background: '#fff',
-                  borderRadius: 12,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  padding: '10px 18px',
-                  fontWeight: 600,
-                  fontSize: 16,
-                  color: '#F05033',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minWidth: 90,
-                  justifyContent: 'center',
-                }}>
-                  🚚 {availableTrucks} Trucks
-                </div>
-                <div style={{
-                  background: '#fff',
-                  borderRadius: 12,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  padding: '10px 18px',
-                  fontWeight: 600,
-                  fontSize: 16,
-                  color: '#F39358',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minWidth: 90,
-                  justifyContent: 'center',
-                }}>
-                  📦 {todayPackages} Packages
-                </div>
-              </div>
+        {/* Top row: Counter and buttons */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '16px 0',
+          marginBottom: 16
+        }}>
+          {/* Counter row */}
+          <div style={{ display: 'flex', flexDirection: 'row', gap: 18 }}>
+            <div style={{
+              background: '#fff',
+              borderRadius: 12,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              padding: '10px 18px',
+              fontWeight: 600,
+              fontSize: 16,
+              color: '#F05033',
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 90,
+              justifyContent: 'center',
+            }}>
+              🚚 {availableTrucks} Trucks
+            </div>
+            <div style={{
+              background: '#fff',
+              borderRadius: 12,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              padding: '10px 18px',
+              fontWeight: 600,
+              fontSize: 16,
+              color: '#F39358',
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 90,
+              justifyContent: 'center',
+            }}>
+              📦 {todayPackages} Packages
+            </div>
+          </div>
+          
+          {/* Back to Dashboard button */}
+          <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
+            ← Back to Dashboard
+          </button>
+        </div>
+
+        {/* Main content: three columns */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'row', 
+          alignItems: 'flex-start', 
+          justifyContent: 'center', 
+          gap: 24,
+          width: '100%'
+        }}>
+          {/* Left column: Journeys menu */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start', 
+            minWidth: 400,
+            maxWidth: 400
+          }}>
+            <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, width: '100%' }}>
-                <h2 style={{ margin: '12px 0 0 0', textAlign: 'left' }}>Journeys</h2>
+                <h2 style={{ margin: '0 0 0 0', textAlign: 'left' }}>Journeys</h2>
                 <input
                   type="text"
                   placeholder="Search drivers..."
@@ -1153,12 +1185,20 @@ const JourneysPage: React.FC = () => {
               </div>
             </div>
           </div>
-          {/* Right column: Active routes bar above the map */}
-          <div className={styles.rightCol}>
+
+          {/* Center column: Active routes bar and map */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start', 
+            minWidth: 500,
+            flex: 1
+          }}>
             <div style={{ width: '100%', marginBottom: 16 }}>
               <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
             </div>
-            <div style={{ height: '80vh', width: '80vh', maxWidth: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', margin: '0 auto' }}>
+            <div style={{ height: '70vh', width: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               <Map
                 initialViewState={{
                   latitude: 42.6977,
@@ -1215,13 +1255,23 @@ const JourneysPage: React.FC = () => {
               </Map>
             </div>
           </div>
+
+          {/* Right column: Office Deliveries */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start',
+            minWidth: 320
+          }}>
+            <OfficeDeliveries 
+              selectedRoute={selectedRoute} 
+              routes={routes} 
+              token={localStorage.getItem('access') || ''} 
+            />
+          </div>
         </div>
-        {/* Quick action buttons and top right button remain as before */}
-        <div className={styles.topRightScreenButton}>
-          <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
-            ← Back to Dashboard
-          </button>
-        </div>
+        {/* Quick action buttons */}
         <div className={styles.quickActionsCorner}>
           {quickActions.map((action) => {
             const Icon = action.Icon as unknown as React.FC<any>;

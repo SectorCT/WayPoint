@@ -262,4 +262,40 @@ export async function fetchActiveRoutes(token: string) {
     console.error('[API] Fetch active routes error:', err);
     throw err;
   }
+}
+
+export async function fetchUndeliveredPackagesRoute(token: string, driverUsername: string) {
+  try {
+    console.log('[API] Fetching undelivered packages route for:', driverUsername);
+    const res = await fetch(`${API_BASE}/delivery/offices/undelivered_route/${driverUsername}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to fetch undelivered packages route');
+    }
+    console.log('[API] Undelivered packages route fetched:', data);
+    return data;
+  } catch (err) {
+    console.error('[API] Fetch undelivered packages route error:', err);
+    throw err;
+  }
+}
+
+export async function fetchOfficeDeliveries(token: string, driverUsername: string) {
+  try {
+    console.log('[API] Fetching office deliveries for:', driverUsername);
+    const res = await fetch(`${API_BASE}/delivery/office-deliveries/${driverUsername}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to fetch office deliveries');
+    }
+    console.log('[API] Office deliveries fetched:', data);
+    return data;
+  } catch (err) {
+    console.error('[API] Fetch office deliveries error:', err);
+    throw err;
+  }
 } 
