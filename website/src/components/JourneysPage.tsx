@@ -977,7 +977,7 @@ const JourneysPage: React.FC = () => {
              display: 'flex', 
              flexDirection: 'row', 
              gap: 18,
-             marginLeft: '60px'
+             marginLeft: '80px'
            }}>
              <div style={{
                background: '#fff',
@@ -1028,9 +1028,9 @@ const JourneysPage: React.FC = () => {
            flexDirection: 'row', 
            alignItems: 'flex-start', 
            justifyContent: 'center', 
-           gap: 60,
+           gap: 70,
            width: '100%',
-           marginLeft: '40px'
+           marginLeft: '20px'
          }}>
            {/* Left column: Journeys menu */}
            <div style={{ 

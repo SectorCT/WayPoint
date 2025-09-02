@@ -108,11 +108,11 @@ const OfficeDeliveries: React.FC<OfficeDeliveriesProps> = ({ selectedRoute, rout
        borderRadius: 16,
        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
        padding: 24,
-       height: 'fit-content',
-       minHeight: 600,
+       height: 600,
        width: 320,
        display: 'flex',
        flexDirection: 'column',
+       overflow: 'hidden'
      }}>
       <div style={{ 
         display: 'flex', 
@@ -239,7 +239,7 @@ const OfficeDeliveries: React.FC<OfficeDeliveriesProps> = ({ selectedRoute, rout
                display: 'flex', 
                flexDirection: 'column', 
                gap: 12,
-               maxHeight: 500,
+               flex: 1,
                overflowY: 'auto',
                paddingRight: 4
              }}>
@@ -317,7 +317,9 @@ const OfficeDeliveries: React.FC<OfficeDeliveriesProps> = ({ selectedRoute, rout
                     <div style={{
                       borderTop: '1px solid #e9ecef',
                       background: '#f8f9fa',
-                      padding: 16
+                      padding: 16,
+                      maxHeight: 300,
+                      overflowY: 'auto'
                     }}>
                       <div style={{ 
                         fontSize: 12, 
@@ -332,10 +334,7 @@ const OfficeDeliveries: React.FC<OfficeDeliveriesProps> = ({ selectedRoute, rout
                                              <div style={{ 
                          display: 'flex', 
                          flexDirection: 'column', 
-                         gap: 8,
-                         maxHeight: officeDelivery.packages.length > 1 ? 220 : 'auto',
-                         overflowY: officeDelivery.packages.length > 1 ? 'auto' : 'visible',
-                         paddingRight: officeDelivery.packages.length > 1 ? 4 : 0
+                         gap: 8
                        }}>
                         {officeDelivery.packages.map((pkg) => (
                           <div
