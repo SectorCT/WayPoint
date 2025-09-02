@@ -962,87 +962,85 @@ const JourneysPage: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'stretch',
       }}>
-        {/* Top row: Counter and buttons */}
-                 <div style={{
+                 {/* Top row: Counters, Journey buttons, and Back button */}
+         <div style={{
            display: 'flex',
            flexDirection: 'row',
-           alignItems: 'center',
+           alignItems: 'flex-start',
            justifyContent: 'space-between',
            width: '100%',
-           padding: '8px 0',
+           padding: '8px 0 8px 0',
            marginBottom: 16
          }}>
-          {/* Counter row - positioned above Journeys sidebar */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'row', 
-            gap: 18,
-            marginLeft: '60px',
-            width: '320px',
-            justifyContent: 'flex-start'
-          }}>
-            <div style={{
-              background: '#fff',
-              borderRadius: 12,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              padding: '10px 18px',
-              fontWeight: 600,
-              fontSize: 16,
-              color: '#F05033',
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 90,
-              justifyContent: 'center',
-            }}>
-              🚚 {availableTrucks} Trucks
-            </div>
-            <div style={{
-              background: '#fff',
-              borderRadius: 12,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              padding: '10px 18px',
-              fontWeight: 600,
-              fontSize: 16,
-              color: '#F39358',
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 90,
-              justifyContent: 'center',
-            }}>
-              📦 {todayPackages} Packages
-            </div>
-          </div>
-          
-          {/* Journey buttons in the center */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
-          </div>
-          
-          {/* Back to Dashboard button */}
-          <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
-            ← Back to Dashboard
-          </button>
-        </div>
+           {/* Counter row - positioned on the left */}
+           <div style={{ 
+             display: 'flex', 
+             flexDirection: 'row', 
+             gap: 18,
+             marginLeft: '60px'
+           }}>
+             <div style={{
+               background: '#fff',
+               borderRadius: 12,
+               boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+               padding: '10px 18px',
+               fontWeight: 600,
+               fontSize: 16,
+               color: '#F05033',
+               display: 'flex',
+               alignItems: 'center',
+               minWidth: 90,
+               justifyContent: 'center',
+             }}>
+               🚚 {availableTrucks} Trucks
+             </div>
+             <div style={{
+               background: '#fff',
+               borderRadius: 12,
+               boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+               padding: '10px 18px',
+               fontWeight: 600,
+               fontSize: 16,
+               color: '#F39358',
+               display: 'flex',
+               alignItems: 'center',
+               minWidth: 90,
+               justifyContent: 'center',
+             }}>
+               📦 {todayPackages} Packages
+             </div>
+           </div>
+           
+           {/* Journey buttons in the center */}
+           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+             <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
+           </div>
+           
+           {/* Back to Dashboard button - positioned like other pages */}
+           <button onClick={() => navigate('/dashboard')} className={styles.logoutButton} style={{ marginRight: '20px' }}>
+             ← Back to Dashboard
+           </button>
+         </div>
 
-        {/* Main content: three columns */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          alignItems: 'flex-start', 
-          justifyContent: 'center', 
-          gap: 40,
-          width: '100%',
-          marginLeft: '60px'
-        }}>
-          {/* Left column: Journeys menu */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'flex-start', 
-            justifyContent: 'flex-start', 
-            minWidth: 320,
-            maxWidth: 320
-          }}>
+                 {/* Main content: three columns */}
+         <div style={{ 
+           display: 'flex', 
+           flexDirection: 'row', 
+           alignItems: 'flex-start', 
+           justifyContent: 'center', 
+           gap: 60,
+           width: '100%',
+           marginLeft: '40px'
+         }}>
+           {/* Left column: Journeys menu */}
+           <div style={{ 
+             display: 'flex', 
+             flexDirection: 'column', 
+             alignItems: 'flex-start', 
+             justifyContent: 'flex-start', 
+             minWidth: 320,
+             maxWidth: 320
+           }}>
             <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, width: '100%' }}>
                 <h2 style={{ margin: '0 0 0 0', textAlign: 'left' }}>Journeys</h2>
@@ -1199,17 +1197,18 @@ const JourneysPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Center column: Active routes bar and map */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'flex-start', 
-            minWidth: '72vh',
-            maxWidth: '72vh',
-            flex: 1,
-            paddingLeft: '40px'
-          }}>
+                     {/* Center column: Active routes bar and map */}
+           <div style={{ 
+             display: 'flex', 
+             flexDirection: 'column', 
+             alignItems: 'center', 
+             justifyContent: 'flex-start', 
+             minWidth: '72vh',
+             maxWidth: '72vh',
+             flex: 1,
+             paddingLeft: '20px',
+             paddingRight: '20px'
+           }}>
             <div style={{ height: '72vh', width: '72vh', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               <Map
                 initialViewState={{
