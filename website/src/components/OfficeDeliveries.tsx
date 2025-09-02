@@ -333,7 +333,7 @@ const OfficeDeliveries: React.FC<OfficeDeliveriesProps> = ({ selectedRoute, rout
                          display: 'flex', 
                          flexDirection: 'column', 
                          gap: 8,
-                         maxHeight: officeDelivery.packages.length > 1 ? 400 : 'auto',
+                         maxHeight: officeDelivery.packages.length > 1 ? 220 : 'auto',
                          overflowY: officeDelivery.packages.length > 1 ? 'auto' : 'visible',
                          paddingRight: officeDelivery.packages.length > 1 ? 4 : 0
                        }}>

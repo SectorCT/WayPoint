@@ -963,17 +963,24 @@ const JourneysPage: React.FC = () => {
         alignItems: 'stretch',
       }}>
         {/* Top row: Counter and buttons */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '16px 0',
-          marginBottom: 16
-        }}>
-          {/* Counter row */}
-          <div style={{ display: 'flex', flexDirection: 'row', gap: 18 }}>
+                 <div style={{
+           display: 'flex',
+           flexDirection: 'row',
+           alignItems: 'center',
+           justifyContent: 'space-between',
+           width: '100%',
+           padding: '8px 0',
+           marginBottom: 16
+         }}>
+          {/* Counter row - positioned above Journeys sidebar */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'row', 
+            gap: 18,
+            marginLeft: '60px',
+            width: '320px',
+            justifyContent: 'flex-start'
+          }}>
             <div style={{
               background: '#fff',
               borderRadius: 12,
@@ -1006,6 +1013,11 @@ const JourneysPage: React.FC = () => {
             </div>
           </div>
           
+          {/* Journey buttons in the center */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
+          </div>
+          
           {/* Back to Dashboard button */}
           <button onClick={() => navigate('/dashboard')} className={styles.logoutButton}>
             ← Back to Dashboard
@@ -1018,8 +1030,9 @@ const JourneysPage: React.FC = () => {
           flexDirection: 'row', 
           alignItems: 'flex-start', 
           justifyContent: 'center', 
-          gap: 24,
-          width: '100%'
+          gap: 40,
+          width: '100%',
+          marginLeft: '60px'
         }}>
           {/* Left column: Journeys menu */}
           <div style={{ 
@@ -1027,8 +1040,8 @@ const JourneysPage: React.FC = () => {
             flexDirection: 'column', 
             alignItems: 'flex-start', 
             justifyContent: 'flex-start', 
-            minWidth: 400,
-            maxWidth: 400
+            minWidth: 320,
+            maxWidth: 320
           }}>
             <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, width: '100%' }}>
@@ -1190,15 +1203,14 @@ const JourneysPage: React.FC = () => {
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            alignItems: 'flex-start', 
+            alignItems: 'center', 
             justifyContent: 'flex-start', 
-            minWidth: 500,
-            flex: 1
+            minWidth: '72vh',
+            maxWidth: '72vh',
+            flex: 1,
+            paddingLeft: '40px'
           }}>
-            <div style={{ width: '100%', marginBottom: 16 }}>
-              <ActiveRoutesBar routes={routes} selectedRoute={selectedRoute} onRouteSelect={handleRouteSelect} />
-            </div>
-            <div style={{ height: '70vh', width: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <div style={{ height: '72vh', width: '72vh', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               <Map
                 initialViewState={{
                   latitude: 42.6977,
