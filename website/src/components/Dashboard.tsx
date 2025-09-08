@@ -38,7 +38,33 @@ const Dashboard: React.FC = () => {
   const [trucks, setTrucks] = useState<any[]>([]);
   const [deliveryHistory, setDeliveryHistory] = useState<any[]>([]);
   const [unverifiedTruckers, setUnverifiedTruckers] = useState<any[]>([]);
+  const [statisticsData, setStatisticsData] = useState<any>(null);
   const navigate = useNavigate();
+
+  const fetchStatistics = async () => {
+    try {
+      const token = localStorage.getItem('access');
+      if (!token) throw new Error('Not authenticated');
+      
+      const response = await fetch('http://localhost:8000/delivery/statistics/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setStatisticsData(data);
+    } catch (err) {
+      console.error('Error fetching statistics:', err);
+      // Don't set error for statistics, just use fallback data
+    }
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -57,6 +83,9 @@ const Dashboard: React.FC = () => {
         setTrucks(trks);
         setDeliveryHistory(hist);
         setUnverifiedTruckers(unver);
+        
+        // Fetch statistics data
+        await fetchStatistics();
       } catch (e: any) {
         setError(e.message || 'Failed to fetch dashboard data');
       } finally {
@@ -91,7 +120,39 @@ const Dashboard: React.FC = () => {
     { Icon: FaUserCheck, color: '#F05033', text: 'Trucker Mike verified', time: '1h ago' },
   ];
 
-  const analyticsData = [
+  // Use real data if available, otherwise fallback to placeholder data
+  const analyticsData = statisticsData ? [
+    {
+      title: 'Packages Delivered (Last 7 Days)',
+      type: 'line',
+      data: statisticsData.daily_deliveries || [
+        { day: 'Mon', value: 0 },
+        { day: 'Tue', value: 0 },
+        { day: 'Wed', value: 0 },
+        { day: 'Thu', value: 0 },
+        { day: 'Fri', value: 0 },
+        { day: 'Sat', value: 0 },
+        { day: 'Sun', value: 0 },
+      ],
+    },
+    {
+      title: 'Truck Usage',
+      type: 'bar',
+      data: statisticsData.truck_usage_data || [
+        { truck: 'No Data', used: 0 },
+      ],
+    },
+    {
+      title: 'Package Status Distribution',
+      type: 'pie',
+      data: statisticsData.package_status_distribution || [
+        { name: 'Delivered', value: 0 },
+        { name: 'In Transit', value: 0 },
+        { name: 'Pending', value: 0 },
+        { name: 'Undelivered', value: 0 },
+      ],
+    },
+  ] : [
     {
       title: 'Packages Delivered (Last 7 Days)',
       type: 'line',
@@ -337,7 +398,7 @@ const Dashboard: React.FC = () => {
                   <ResponsiveContainer width="100%" height={140}>
                     <PieChart>
                       <Pie data={analyticsData[analyticsIndex].data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={50} label>
-                        {analyticsData[analyticsIndex].data.map((entry, idx) => (
+                        {analyticsData[analyticsIndex].data.map((entry: any, idx: number) => (
                           <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                         ))}
                       </Pie>
