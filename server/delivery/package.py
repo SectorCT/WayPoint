@@ -16,6 +16,48 @@ from .models import User, OfficeDelivery
 from .serializers import OfficeDeliverySerializer
 from .email_service import DeliveryEmailService
 
+logger = logging.getLogger(__name__)
+
+def _check_and_release_truck_if_route_complete(route):
+    """
+    Check if all packages in the route are completed (delivered or undelivered)
+    and release the truck if so.
+    """
+    try:
+        # Get all package IDs from the route sequence (excluding ADMIN)
+        package_ids = [
+            pkg.get("packageID") for pkg in route.packageSequence 
+            if pkg.get("packageID") != "ADMIN"
+        ]
+        
+        if not package_ids:
+            logger.warning(f"No packages found in route {route.id}")
+            return
+        
+        # Check if all packages are either delivered or undelivered
+        packages = Package.objects.filter(packageID__in=package_ids)
+        total_packages = packages.count()
+        completed_packages = packages.filter(status__in=['delivered', 'undelivered']).count()
+        
+        logger.info(f"Route {route.id}: {completed_packages}/{total_packages} packages completed")
+        
+        # If all packages are completed, release the truck and mark route as inactive
+        if completed_packages == total_packages and total_packages > 0:
+            logger.info(f"All packages completed for route {route.id}. Releasing truck {route.truck.licensePlate}")
+            
+            # Release truck
+            route.truck.isUsed = False
+            route.truck.save()
+            
+            # Mark route as inactive
+            route.isActive = False
+            route.save()
+            
+            logger.info(f"Truck {route.truck.licensePlate} released and route {route.id} marked as inactive")
+            
+    except Exception as e:
+        logger.exception(f"Error checking route completion for route {route.id}: {str(e)}")
+
 class createPackage(APIView):
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
@@ -165,6 +207,9 @@ def mark_delivered(request):
         if updated:
             route.packageSequence = sequence
             route.save()
+            
+            # Check if all packages in this route are completed and release truck if so
+            _check_and_release_truck_if_route_complete(route)
     
     return Response({"detail": "Package marked as delivered"}, status=200)
 
@@ -218,6 +263,9 @@ def mark_undelivered(request):
         if updated:
             route.packageSequence = sequence
             route.save()
+            
+            # Check if all packages in this route are completed and release truck if so
+            _check_and_release_truck_if_route_complete(route)
     return Response({"detail": "Package marked as undelivered and assigned to nearest office if available"}, status=status.HTTP_200_OK)
 
 class OfficeListCreate(APIView):
@@ -398,6 +446,9 @@ def save_office_delivery(request):
         
         route.packageSequence = updated_sequence
         route.save()
+        
+        # Check if all packages in this route are completed and release truck if so
+        _check_and_release_truck_if_route_complete(route)
         
         serializer = OfficeDeliverySerializer(office_delivery)
         return Response(serializer.data, status=201)
