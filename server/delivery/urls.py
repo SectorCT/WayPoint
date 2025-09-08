@@ -5,6 +5,7 @@ from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
 from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
 from .authentication import ListUnverifiedTruckers, VerifyTrucker
+from .statistics import StatisticsView
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
@@ -49,4 +50,7 @@ urlpatterns = [
     path('offices/<int:pk>/', OfficeDetail.as_view(), name='office-detail'),
     path('offices/<int:office_id>/undelivered/', UndeliveredPackagesByOffice.as_view(), name='undelivered-packages-by-office'),
     path('offices/undelivered_route/<str:driver_username>/', UndeliveredPackagesRouteSuggestion.as_view(), name='undelivered-packages-route-suggestion'),
+    
+    # Statistics endpoint
+    path('statistics/', StatisticsView.as_view(), name='statistics'),
 ]
