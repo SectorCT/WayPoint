@@ -73,7 +73,7 @@ class Command(BaseCommand):
         self.stdout.write('Creating test data...')
         
         # Create manager first
-        manager_data = {'email': 'a@a.com', 'username': 'manager', 'is_staff': True, 'isManager': True}
+        manager_data = {'email': 'sarah.chen@waypoint.delivery', 'username': 'sarah.chen', 'is_staff': True, 'isManager': True}
         manager, _ = User.objects.get_or_create(
             email=manager_data['email'],
             username=manager_data['username'],
@@ -87,9 +87,9 @@ class Command(BaseCommand):
         manager.save()
         # Create company and assign manager
         company, _ = Company.objects.get_or_create(
-            unique_id='COMPANY123',
+            unique_id='SFLOGISTICS2024',
             defaults={
-                'name': 'Test Company',
+                'name': 'San Francisco Bay Logistics',
                 'manager': manager
             }
         )
@@ -98,11 +98,11 @@ class Command(BaseCommand):
             company.save()
         # Create truckers and assign to company
         trucker_users_data = [
-            {'email': 'r@r.com', 'username': 'r'},
-            {'email': 'b@b.com', 'username': 'b'},
-            {'email': 'c@c.com', 'username': 'c'},
-            {'email': 'v@v.com', 'username': 'v'},
-            {'email': 'z@z.com', 'username': 'z'},
+            {'email': 'mike.rodriguez@waypoint.delivery', 'username': 'mike.rodriguez'},
+            {'email': 'james.wong@waypoint.delivery', 'username': 'james.wong'},
+            {'email': 'carlos.martinez@waypoint.delivery', 'username': 'carlos.martinez'},
+            {'email': 'david.kim@waypoint.delivery', 'username': 'david.kim'},
+            {'email': 'antonio.garcia@waypoint.delivery', 'username': 'antonio.garcia'},
         ]
         for idx, user_data in enumerate(trucker_users_data):
             is_verified = idx < 2  # First two are verified, rest are not
@@ -125,9 +125,9 @@ class Command(BaseCommand):
 
         # Create trucks
         trucks_data = [
-            {'licensePlate': 'CA1234BH', 'kilogramCapacity': 1000},
-            {'licensePlate': 'CA5678BH', 'kilogramCapacity': 2000},
-            {'licensePlate': 'CA9012BH', 'kilogramCapacity': 1500}
+            {'licensePlate': 'CA7ABC123', 'kilogramCapacity': 1000},
+            {'licensePlate': 'CA8DEF456', 'kilogramCapacity': 2000},
+            {'licensePlate': 'CA9GHI789', 'kilogramCapacity': 1500}
         ]
 
         for truck_data in trucks_data:
@@ -171,11 +171,20 @@ class Command(BaseCommand):
             # First 20 packages go to today, remaining 5 to tomorrow
             delivery_date = today if i < 20 else tomorrow
             
+            # Realistic recipient names for San Francisco Bay Area
+            recipient_names = [
+                'Jennifer Liu', 'Robert Johnson', 'Maria Santos', 'David Chen', 'Lisa Thompson',
+                'Michael Brown', 'Sarah Davis', 'James Wilson', 'Anna Rodriguez', 'Christopher Lee',
+                'Emily Garcia', 'Daniel Martinez', 'Jessica White', 'Andrew Taylor', 'Michelle Anderson',
+                'Kevin Thomas', 'Amanda Jackson', 'Ryan Harris', 'Nicole Martin', 'Brandon Thompson',
+                'Stephanie Garcia', 'Tyler Martinez', 'Rachel Davis', 'Jordan Wilson', 'Ashley Brown'
+            ]
+            
             package = Package.objects.create(
                 address=address,
                 latitude=lat,
                 longitude=lng,
-                recipient=f'Test Recipient {i+1}',
+                recipient=recipient_names[i % len(recipient_names)],
                 recipientPhoneNumber=f'+1408{1000000 + i}',
                 deliveryDate=delivery_date,
                 weight=random.uniform(1.0, 20.0),
