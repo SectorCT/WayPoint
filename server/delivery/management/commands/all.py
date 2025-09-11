@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
 
 class Command(BaseCommand):
-    help = 'Runs clear_db, create_test_data, and assign_manager_to_company COMPANY123 a@a.com in order.'
+    help = 'Runs clear_db, create_test_data, and assign_manager_to_company SFLOGISTICS2024 sarah.chen@waypoint.delivery in order.'
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE('Running clear_db...'))
@@ -14,5 +14,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('create_test_data completed.'))
 
         self.stdout.write(self.style.NOTICE('Assigning manager to company...'))
-        call_command('assign_manager_to_company', 'COMPANY123', 'a@a.com')
+        call_command('assign_manager_to_company', 'SFLOGISTICS2024', 'sarah.chen@waypoint.delivery')
         self.stdout.write(self.style.SUCCESS('Manager assigned to company.')) 

@@ -18,6 +18,14 @@ import {
   Navigation
 } from "lucide-react";
 
+// Import mobile app screenshots
+import loginImage from "@/assets/mobileview/login.png";
+import trucksImage from "@/assets/mobileview/trucks.png";
+import journeyImage from "@/assets/mobileview/journey.png";
+import signatureImage from "@/assets/mobileview/signature.png";
+import routesummaryImage from "@/assets/mobileview/routesummary.png";
+import driverdeliveryImage from "@/assets/mobileview/driverdelivery.png";
+
 const MobileApp = () => {
   const features = [
     {
@@ -96,98 +104,48 @@ const MobileApp = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10">
       <Header />
 
-      {/* Floating Background Images */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Top Left */}
-        <div className="absolute top-20 left-8 w-16 h-16 bg-primary/10 rounded-lg animate-float" style={{animationDelay: '0s'}}></div>
-        <div className="absolute top-40 left-20 w-12 h-12 bg-primary/15 rounded-lg animate-float" style={{animationDelay: '1s'}}></div>
-        
-        {/* Top Right */}
-        <div className="absolute top-32 right-12 w-20 h-20 bg-primary/8 rounded-lg animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-60 right-8 w-14 h-14 bg-primary/12 rounded-lg animate-float" style={{animationDelay: '0.5s'}}></div>
-        
-        {/* Middle Left */}
-        <div className="absolute top-1/2 left-4 w-18 h-18 bg-primary/6 rounded-lg animate-float" style={{animationDelay: '1.5s'}}></div>
-        <div className="absolute top-1/2 left-24 w-10 h-10 bg-primary/20 rounded-lg animate-float" style={{animationDelay: '3s'}}></div>
-        
-        {/* Middle Right */}
-        <div className="absolute top-1/2 right-16 w-16 h-16 bg-primary/10 rounded-lg animate-float" style={{animationDelay: '2.5s'}}></div>
-        <div className="absolute top-1/2 right-4 w-12 h-12 bg-primary/14 rounded-lg animate-float" style={{animationDelay: '0.8s'}}></div>
-        
-        {/* Bottom Left */}
-        <div className="absolute bottom-32 left-12 w-14 h-14 bg-primary/12 rounded-lg animate-float" style={{animationDelay: '1.8s'}}></div>
-        <div className="absolute bottom-20 left-28 w-8 h-8 bg-primary/18 rounded-lg animate-float" style={{animationDelay: '2.8s'}}></div>
-        
-        {/* Bottom Right */}
-        <div className="absolute bottom-40 right-20 w-16 h-16 bg-primary/8 rounded-lg animate-float" style={{animationDelay: '0.3s'}}></div>
-        <div className="absolute bottom-16 right-8 w-12 h-12 bg-primary/16 rounded-lg animate-float" style={{animationDelay: '1.2s'}}></div>
-      </div>
-
       {/* Hero Section */}
-      <section className="pt-24 pb-16 relative overflow-hidden z-10">
+      <section className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Content */}
-            <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-                  <Smartphone className="h-6 w-6 text-primary" />
-                </div>
-                <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                  React Native Cross-Platform
-                </span>
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+                <Smartphone className="h-6 w-6 text-primary" />
               </div>
-              
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
-                WayPoint
-                <span className="block text-primary">Mobile App</span>
-              </h1>
-              
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
-                The ultimate mobile solution for logistics management. Built with React Native for seamless 
-                cross-platform performance, serving both truckers and managers with role-based interfaces.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button variant="cta" size="lg" className="group">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download App
-                  <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button variant="professional" size="lg">
-                  View Demo
-                </Button>
-              </div>
+              <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
+                React Native Cross-Platform
+              </span>
             </div>
+            
+            <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
+              WayPoint
+              <span className="block text-primary">Mobile App</span>
+            </h1>
+            
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+              The ultimate mobile solution for logistics management. Built with React Native for seamless 
+              cross-platform performance, serving both truckers and managers with role-based interfaces.
+            </p>
 
-            {/* Floating Images Placeholder */}
-            <div className="relative h-96 lg:h-[500px]">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center">
-                <div className="text-center">
-                  <Smartphone className="h-32 w-32 text-primary mx-auto mb-4 animate-float" />
-                  <p className="text-lg text-muted-foreground mb-2">
-                    Mobile App Screenshots
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Replace with floating mobile app images
-                  </p>
-                </div>
-              </div>
-              
-              {/* Floating Elements - Replace with actual images */}
-              <div className="absolute top-4 right-4 w-20 h-20 bg-primary/20 rounded-lg animate-float" style={{animationDelay: '1s'}}></div>
-              <div className="absolute bottom-8 left-8 w-16 h-16 bg-primary/15 rounded-lg animate-float" style={{animationDelay: '2s'}}></div>
-              <div className="absolute top-1/2 right-8 w-12 h-12 bg-primary/25 rounded-lg animate-float" style={{animationDelay: '0.5s'}}></div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="cta" size="lg" className="group">
+                <Download className="h-4 w-4 mr-2" />
+                Download App
+                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button variant="professional" size="lg">
+                View Demo
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-secondary/20 relative z-10">
+      <section className="py-16 bg-secondary/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -200,8 +158,138 @@ const MobileApp = () => {
         </div>
       </section>
 
+      {/* Mobile App Gallery Section */}
+      <section className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
+              See WayPoint in
+              <span className="block text-primary">Action</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Explore the key screens of our mobile application designed for modern logistics operations.
+            </p>
+          </div>
+
+          {/* Interactive Gallery */}
+          <div className="relative">
+            {/* Main Featured Phone */}
+            <div className="flex justify-center mb-12">
+              <div className="relative w-56 h-[450px] md:w-64 md:h-[500px] bg-gradient-to-b from-gray-900 to-gray-800 rounded-[2.5rem] shadow-2xl border-4 border-gray-700 overflow-hidden transition-all duration-700 transform hover:scale-105 hover:shadow-3xl group">
+                <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-600 rounded-full z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <img 
+                  src={loginImage} 
+                  alt="Mobile App Login" 
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                  id="main-screenshot"
+                />
+                <div className="absolute bottom-4 left-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                  <div className="bg-black/80 backdrop-blur-sm rounded-lg p-3">
+                    <h3 className="text-white font-semibold text-sm mb-1" id="main-title">Secure Login</h3>
+                    <p className="text-gray-300 text-xs" id="main-description">Role-based authentication with JWT security</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Thumbnail Gallery */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 max-w-5xl mx-auto">
+              {[
+                { src: loginImage, title: "Secure Login", description: "Role-based authentication with JWT security" },
+                { src: trucksImage, title: "Fleet Management", description: "Monitor truck capacity and availability in real-time" },
+                { src: journeyImage, title: "Journey Tracking", description: "Live tracking of delivery progress and routes" },
+                { src: signatureImage, title: "Digital Signatures", description: "Capture delivery confirmations with digital signatures" },
+                { src: routesummaryImage, title: "Route Summary", description: "Optimized delivery paths with detailed route information" },
+                { src: driverdeliveryImage, title: "Delivery Management", description: "Complete package delivery workflow and status updates" }
+              ].map((screenshot, index) => (
+                <div 
+                  key={index} 
+                  className="group cursor-pointer transition-all duration-500 hover:scale-110 hover:-translate-y-2"
+                  onClick={() => {
+                    const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
+                    const mainTitle = document.getElementById('main-title');
+                    const mainDescription = document.getElementById('main-description');
+                    
+                    if (mainImg && mainTitle && mainDescription) {
+                      // Add fade effect
+                      mainImg.style.opacity = '0.5';
+                      setTimeout(() => {
+                        mainImg.src = screenshot.src;
+                        mainImg.alt = screenshot.title;
+                        mainTitle.textContent = screenshot.title;
+                        mainDescription.textContent = screenshot.description;
+                        mainImg.style.opacity = '1';
+                      }, 250);
+                    }
+                  }}
+                >
+                  <div className="relative w-16 h-28 md:w-20 md:h-36 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-lg overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-xl transition-all duration-500">
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+                    <img 
+                      src={screenshot.src} 
+                      alt={screenshot.title} 
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
+                    />
+                  </div>
+                  <div className="mt-4 text-center">
+                    <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 mb-1">
+                      {screenshot.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 line-clamp-2">
+                      {screenshot.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Gallery Navigation Dots */}
+            <div className="flex justify-center mt-8 space-x-2">
+              {[0, 1, 2, 3, 4, 5].map((index) => (
+                <button
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === 0 
+                      ? 'bg-primary w-6' 
+                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  }`}
+                  onClick={() => {
+                    const screenshots = [
+                      { src: loginImage, title: "Secure Login", description: "Role-based authentication with JWT security" },
+                      { src: trucksImage, title: "Fleet Management", description: "Monitor truck capacity and availability in real-time" },
+                      { src: journeyImage, title: "Journey Tracking", description: "Live tracking of delivery progress and routes" },
+                      { src: signatureImage, title: "Digital Signatures", description: "Capture delivery confirmations with digital signatures" },
+                      { src: routesummaryImage, title: "Route Summary", description: "Optimized delivery paths with detailed route information" },
+                      { src: driverdeliveryImage, title: "Delivery Management", description: "Complete package delivery workflow and status updates" }
+                    ];
+                    
+                    const screenshot = screenshots[index];
+                    const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
+                    const mainTitle = document.getElementById('main-title');
+                    const mainDescription = document.getElementById('main-description');
+                    
+                    if (mainImg && mainTitle && mainDescription) {
+                      mainImg.style.opacity = '0.5';
+                      setTimeout(() => {
+                        mainImg.src = screenshot.src;
+                        mainImg.alt = screenshot.title;
+                        mainTitle.textContent = screenshot.title;
+                        mainDescription.textContent = screenshot.description;
+                        mainImg.style.opacity = '1';
+                      }, 250);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section className="py-24 relative z-10">
+      <section className="py-24">
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
@@ -239,7 +327,8 @@ const MobileApp = () => {
       </section>
 
       {/* Technology Section */}
-      <section className="py-24 bg-secondary/20 relative z-10">
+      <section className="py-24 bg-secondary/20">
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
@@ -273,7 +362,7 @@ const MobileApp = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative z-10">
+      <section className="py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
             Ready to Transform
