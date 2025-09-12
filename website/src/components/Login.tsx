@@ -40,6 +40,9 @@ const Login: React.FC = () => {
         <title>Waypoint - Login</title>
       </Helmet>
       <div className={styles.card}>
+        <div className={styles.logoContainer}>
+          <img src="/waypoint.png" alt="Waypoint" className={styles.logo} />
+        </div>
         <div className={styles.headerContainer}>
           <h2 className={styles.headerTitle}>Log in to your account</h2>
           <div className={styles.headerSubtitle}>Welcome back! Please enter your details.</div>
