@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 
 export default function useStyles() {
@@ -34,7 +34,7 @@ export default function useStyles() {
     },
     titleContainer: {},
     inner: {
-      marginTop: 20,
+      marginTop: Platform.OS === 'android' ? 40 : 20,
     },
     topFill: {
       top: 0,
@@ -43,7 +43,7 @@ export default function useStyles() {
       position: "absolute",
       flex: 1,
       backgroundColor: theme.color.white,
-      height: 70,
+      height: Platform.OS === 'android' ? 90 : 70,
       zIndex: 1,
     },
     outer: {
