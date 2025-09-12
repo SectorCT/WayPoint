@@ -326,7 +326,9 @@ const Dashboard: React.FC = () => {
         </Helmet>
         <div className={styles.header}>
           <div className={styles.hero}>
-            <div className={styles.heroIcon}><FaUserTie size={40} color="#F39358" /></div>
+            <div className={styles.logoContainer}>
+              <img src="/waypoint.png" alt="Waypoint" className={styles.logo} />
+            </div>
             <div>
               <div className={styles.heroWelcome}>Welcome, {managerName}!</div>
               <div className={styles.heroSubtitle}>Here's what's happening today:</div>
