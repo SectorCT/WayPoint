@@ -8,9 +8,17 @@ import {
   Download,
   Globe
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+// Import selected mobile app screenshots
+import loginImage from "@/assets/mobileview/login.png";
+import trucksImage from "@/assets/mobileview/trucks.png";
+import journeyImage from "@/assets/mobileview/journey.png";
+import signatureImage from "@/assets/mobileview/signature.png";
 
 const Solutions = () => {
+  const navigate = useNavigate();
+
   const mobileFeatures = [
     "Real-time package tracking",
     "Digital signature capture", 
@@ -28,6 +36,18 @@ const Solutions = () => {
     "Real-time monitoring",
     "Custom reporting"
   ];
+
+  // Selected mobile screenshots for showcase
+  const mobileScreenshots = [
+    { src: loginImage, title: "Secure Login", alt: "Mobile app login screen" },
+    { src: trucksImage, title: "Fleet Management", alt: "Truck management interface" },
+    { src: journeyImage, title: "Journey Tracking", alt: "Live delivery tracking" },
+    { src: signatureImage, title: "Digital Signatures", alt: "Digital signature capture" }
+  ];
+
+  const handleMobileImageClick = () => {
+    navigate('/app');
+  };
 
   return (
     <section id="solutions" className="py-24 bg-secondary/30">
@@ -92,28 +112,56 @@ const Solutions = () => {
                 </div>
               </div>
 
-                             {/* Image Side */}
-               <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                 {/* Replace this div with your mobile app images */}
-                 <div className="text-center">
-                   <Smartphone className="h-24 w-24 text-primary mx-auto mb-4" />
-                   <p className="text-sm text-muted-foreground mb-2">
-                     WayPoint Mobile App Screenshots
-                   </p>
-                   <p className="text-xs text-muted-foreground">
-                     Replace with your actual mobile app screenshots
-                   </p>
-                 </div>
-                 
-                 {/* 
-                   To add your mobile app images, replace the div above with:
-                   <img 
-                     src="/images/mobile-app-vertical.jpg" 
-                     alt="WayPoint Mobile App" 
-                     className="h-full w-auto object-contain"
-                   />
-                 */}
-               </div>
+              {/* Image Side - Mobile App Showcase */}
+              <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center relative overflow-hidden">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute top-10 left-10 w-20 h-20 bg-primary rounded-full"></div>
+                  <div className="absolute bottom-10 right-10 w-16 h-16 bg-primary rounded-full"></div>
+                  <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-primary rounded-full"></div>
+                  <div className="absolute bottom-1/3 right-1/4 w-12 h-12 bg-primary rounded-full"></div>
+                </div>
+
+                {/* Mobile Screenshots Grid */}
+                <div className="relative z-10 grid grid-cols-2 gap-6 max-w-md">
+                  {mobileScreenshots.map((screenshot, index) => (
+                    <div 
+                      key={index}
+                      className="cursor-pointer"
+                      onClick={handleMobileImageClick}
+                      title={`Click to explore ${screenshot.title}`}
+                    >
+                      {/* Phone Mockup Container */}
+                      <div className="relative w-28 h-44 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg border-2 border-gray-700 overflow-hidden">
+                        <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-gray-600 rounded-full z-10"></div>
+                        <img 
+                          src={screenshot.src} 
+                          alt={screenshot.alt}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Label */}
+                      <div className="mt-3 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          {screenshot.title}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* View All Overlay */}
+                <div 
+                  className="absolute bottom-4 right-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-2 cursor-pointer"
+                  onClick={handleMobileImageClick}
+                >
+                  <p className="text-white text-xs font-semibold flex items-center">
+                    View All Features
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </p>
+                </div>
+              </div>
             </div>
           </Card>
         </div>
