@@ -80,7 +80,7 @@ export default function RegisterScreen() {
       <Text style={[styles.label, { marginBottom: 8 }]}>Account Type</Text>
       <ManagerToggle isManager={isManager} onToggle={setIsManager} />
       <GradientButton title="Register" onPress={handleRegister} />
-      <TouchableOpacity onPress={() => router.push("/login")}>
+      <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
         <Text style={styles.linkText}>
           Already have an account? <Text style={styles.linkAction}>Login</Text>
         </Text>

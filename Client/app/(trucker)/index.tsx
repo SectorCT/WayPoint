@@ -1433,7 +1433,7 @@ export default function TruckerViewScreen() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.color.white }}>
         <View style={{ position: 'absolute', top: 48, left: 20 }}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
             <MaterialIcons name="arrow-back" size={28} color={theme.color.darkPrimary} />
           </TouchableOpacity>
         </View>
