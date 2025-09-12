@@ -1,0 +1,200 @@
+CONTEXT INFORMATION:
+"# WayPoint AI Logistics - Website Context Prompt
+
+## **Project Overview**
+WayPoint is a modern AI-powered logistics management platform that revolutionizes delivery operations. The website is a professional marketing site built with React, TypeScript, and Tailwind CSS, showcasing intelligent logistics solutions for businesses.
+
+## **Technical Stack & Architecture**
+
+### **Core Technologies**
+- **Frontend**: React 18.3.1 with TypeScript
+- **Build Tool**: Vite 5.4.19
+- **Styling**: Tailwind CSS 3.4.17 with custom design system
+- **UI Components**: shadcn/ui with Radix UI primitives
+- **Routing**: React Router DOM 6.30.1
+- **State Management**: TanStack Query 5.83.0
+- **Icons**: Lucide React 0.462.0
+- **Forms**: React Hook Form 7.61.1 with Zod validation
+
+### **Project Structure**
+```
+src/
+├── components/          # Main page components
+│   ├── Header.tsx      # Navigation & branding
+│   ├── Hero.tsx        # Hero section with CTA
+│   ├── Features.tsx    # Feature showcase
+│   ├── Pricing.tsx     # Pricing plans
+│   ├── Contact.tsx     # Contact form & info
+│   ├── Footer.tsx      # Footer with links
+│   └── ui/             # Reusable UI components
+├── pages/              # Route components
+│   ├── Index.tsx       # Main landing page
+│   └── NotFound.tsx    # 404 error page
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+└── assets/             # Images and static files
+```
+
+## **Website Sections & Features**
+
+### **1. Header Component** (`src/components/Header.tsx`)
+**Location**: Fixed top navigation
+**Features**:
+- WayPoint logo with truck icon
+- Desktop navigation menu (Features, Technology, Pricing, Solutions, About)
+- Mobile hamburger menu with responsive design
+- "Start Free Demo" CTA button
+- Backdrop blur effect with border
+
+### **2. Hero Section** (`src/components/Hero.tsx`)
+**Location**: Full-screen landing section
+**Features**:
+- Background logistics image with gradient overlay
+- Animated floating elements
+- Main headline: "Save Time, Cut Costs, Deliver Smart"
+- Two CTA buttons: "Start Your Free Demo" and "Watch Demo Video"
+- Performance stats: 40% faster delivery, 25% cost reduction, 99% success rate
+- Scroll indicator animation
+- Slide-up animations with delays
+
+### **3. Features Section** (`src/components/Features.tsx`)
+**Location**: Main content area after hero
+**Features**:
+- 6 core feature cards with icons and descriptions:
+  1. **Smart Fleet Management** - Truck assignment, capacity monitoring
+  2. **Intelligent Package Management** - Digital signatures, notifications
+  3. **Advanced Routing & Optimization** - OSRM integration, AI planning
+  4. **Real-time Operations** - Live tracking, analytics
+  5. **Office & Location Management** - Geolocation, clustering
+  6. **Automated Workflows** - Session management, notifications
+- Technology showcase: React Native, Django, OSRM, Real-time WebSocket
+- Hover animations on feature cards
+
+### **4. Pricing Section** (`src/components/Pricing.tsx`)
+**Location**: After features section
+**Features**:
+- 3 pricing tiers:
+  - **Starter**: $99/month (500 packages, basic features)
+  - **Professional**: $299/month (2,500 packages, advanced features) - Most Popular
+  - **Enterprise**: $699/month (unlimited, custom solutions)
+- Feature comparison lists
+- Popular plan highlighting with star badge
+- CTA buttons for each plan
+- Additional info: 14-day free trial, no setup fees
+
+### **5. Contact Section** (`src/components/Contact.tsx`)
+**Location**: Before footer
+**Features**:
+- Contact form with fields: First Name, Last Name, Email, Company, Phone, Message
+- Contact information cards: Email, Phone, Office, Hours
+- "Schedule a Call" CTA section
+- Professional styling with cards and icons
+
+### **6. Footer Component** (`src/components/Footer.tsx`)
+**Location**: Bottom of page
+**Features**:
+- Company branding and description
+- 4 link sections: Product, Solutions, Resources, Company
+- Contact information
+- Legal links: Privacy Policy, Terms of Service, Security
+- Dark theme styling
+
+## **Design System & Styling**
+
+### **Color Palette** (`src/index.css`)
+- **Primary**: WayPoint Orange (#F39358) - `hsl(22 86% 64%)`
+- **Primary Glow**: Lighter orange - `hsl(22 95% 72%)`
+- **Foreground**: Rich Dark Blue-Grey - `hsl(215 25% 15%)`
+- **Success**: Delivery Green - `hsl(142 76% 36%)`
+- **Warning**: Alert Orange - `hsl(38 92% 50%)`
+
+### **Custom Button Variants** (`src/components/ui/button.tsx`)
+- `hero`: Primary CTA with glow effect and scale animation
+- `cta`: Gradient background with primary colors
+- `professional`: Clean border with subtle shadow
+- `default`: Standard primary button
+- `ghost`: Transparent with hover effects
+- `outline`: Bordered variant
+
+### **Animations & Effects** (`src/index.css`)
+- **Float Animation**: 6s ease-in-out for floating elements
+- **Slide-up Animation**: Staggered entrance animations
+- **Feature Card Hover**: TranslateY and shadow effects
+- **Button Glow**: Shadow effects on hover
+- **Truck Path Animation**: SVG path drawing animation
+
+## **Key Features & Functionality**
+
+### **Responsive Design**
+- Mobile-first approach with breakpoints
+- Hamburger menu for mobile navigation
+- Responsive grid layouts
+- Touch-friendly button sizes
+
+### **Performance Optimizations**
+- Vite for fast development and building
+- Optimized images and assets
+- Lazy loading capabilities
+- Modern CSS with hardware acceleration
+
+### **Accessibility**
+- Semantic HTML structure
+- ARIA labels and roles
+- Keyboard navigation support
+- Focus management
+- Color contrast compliance
+
+### **SEO & Marketing**
+- Professional copy focused on logistics benefits
+- Clear value propositions
+- Social proof with statistics
+- Multiple conversion points
+- Contact information prominently displayed
+
+## **Business Context**
+
+### **Target Audience**
+- Logistics companies
+- E-commerce businesses
+- Fleet management companies
+- Delivery service providers
+- Enterprise logistics operations
+
+### **Value Propositions**
+- 40% faster delivery times
+- 25% cost reduction
+- 99% delivery success rate
+- AI-powered optimization
+- Real-time tracking and analytics
+- Automated workflow management
+
+### **Technology Stack Highlights**
+- React Native for cross-platform mobile apps
+- Django for secure backend
+- OSRM for route optimization
+- Real-time WebSocket connections
+- Modern web technologies
+
+## **Development Guidelines**
+
+### **File Locations for Common Tasks**
+- **Add new page**: Create in `src/pages/` and add route in `src/App.tsx`
+- **Modify navigation**: Update `src/components/Header.tsx`
+- **Add new feature**: Extend `src/components/Features.tsx`
+- **Update pricing**: Modify `src/components/Pricing.tsx`
+- **Change styling**: Update `src/index.css` or `tailwind.config.ts`
+- **Add new UI component**: Create in `src/components/ui/`
+- **Update contact info**: Modify `src/components/Contact.tsx` and `src/components/Footer.tsx`
+
+### **Component Patterns**
+- All components use TypeScript with proper typing
+- Consistent use of shadcn/ui components
+- Tailwind CSS for styling with custom design tokens
+- Responsive design patterns
+- Accessibility-first approach
+
+This website represents a professional, modern logistics platform with a focus on AI-powered optimization, real-time operations, and comprehensive fleet management solutions.
+"
+
+FEATURE/ISSUE:
+"

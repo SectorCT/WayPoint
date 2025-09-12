@@ -41,7 +41,7 @@ def test_office_delivery_email():
             test_package, 
             "Main Office", 
             "Test Driver",
-            "123 Main Street, Sofia, Bulgaria"
+            "1600 Amphitheatre Parkway, Mountain View, CA 94043"
         )
         
         if result:

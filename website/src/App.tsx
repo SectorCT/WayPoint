@@ -1,5 +1,4 @@
 import React, { ReactElement, useEffect, useState } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/Login';

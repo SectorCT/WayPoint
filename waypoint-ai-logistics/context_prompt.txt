@@ -1,0 +1,243 @@
+CONTEXT INFORMATION:"
+
+# WayPoint AI Logistics - Website Context Prompt
+
+## Project Overview
+WayPoint is a comprehensive AI-powered logistics management platform that revolutionizes delivery operations through intelligent automation, real-time tracking, and advanced route optimization. The platform consists of multiple interconnected applications serving different user roles in the logistics ecosystem.
+
+## Website Structure & Technology Stack
+
+### Frontend Architecture
+- **Framework**: React 18.3.1 with TypeScript
+- **Build Tool**: Vite 5.4.19
+- **UI Library**: shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS 3.4.17 with custom animations
+- **Routing**: React Router DOM 6.30.1
+- **State Management**: TanStack React Query 5.83.0
+- **Form Handling**: React Hook Form 7.61.1 with Zod validation
+
+### Backend Integration
+- **API**: Django REST Framework with PostgreSQL
+- **Authentication**: JWT-based with role-based access control
+- **Real-time**: WebSocket connections for live tracking
+- **Routing Engine**: OSRM integration for optimal route calculation
+- **Deployment**: Docker containerization
+
+## Website Pages & Components
+
+### 1. Landing Page (Index.tsx)
+**Hero Section Features:**
+- Compelling headline: "Save Time, Cut Costs, Deliver Smart"
+- Key statistics: 40% faster delivery, 25% cost reduction, 99% success rate
+- Floating mobile app screenshots showcasing different features
+- Call-to-action buttons for demo and video
+
+**Main Sections:**
+- **Features**: 6 core features with detailed descriptions
+- **Technology**: Comprehensive tech stack overview
+- **Solutions**: Mobile app and web dashboard showcases
+- **Pricing**: 3-tier pricing structure ($99, $299, $699/month)
+- **Contact**: Lead generation form with contact information
+
+### 2. Mobile App Page (/app)
+**Target Audience**: Truckers and field managers
+**Key Features:**
+- Package Management: Creation, tracking, digital signatures
+- Fleet Management: Truck capacity monitoring, automatic assignment
+- Route Optimization: OSRM integration, geographic clustering
+- Location Services: GPS tracking, map-based tools
+- Real-time Operations: Live journey tracking, analytics
+- Role-based Access: Dual interface for truckers and managers
+
+**Technology Highlights:**
+- React Native cross-platform development
+- JWT security implementation
+- Real-time synchronization
+- Performance analytics
+
+### 3. Desktop Dashboard Page (/desktop)
+**Target Audience**: Logistics managers and administrators
+**Key Features:**
+- Analytics Dashboard: Performance metrics, delivery success rates
+- User Management: Role-based permissions, user verification
+- Fleet Management: Advanced fleet oversight, capacity tracking
+- Package Operations: End-to-end lifecycle management
+- Route Planning: AI-powered optimization tools
+- Data Management: Centralized reporting and analytics
+
+**Technology Highlights:**
+- React TypeScript interface
+- Enterprise-grade security
+- PostgreSQL database
+- Django REST API backend
+
+### 4. API Documentation Page (/api-documentation)
+**Comprehensive API Coverage:**
+- Authentication API: User management, JWT tokens, role-based access
+- Package Management API: Complete lifecycle, status tracking, digital signatures
+- Fleet Management API: Truck operations, capacity management, real-time updates
+- Routing & Optimization API: OSRM integration, geographic clustering, multi-stop optimization
+- Office Management API: Location management, geographic zones, delivery areas
+- Real-time Tracking API: Live tracking, WebSocket support, performance analytics
+- Analytics & Reporting API: Performance metrics, business intelligence, custom reports
+
+**Technical Specifications:**
+- Django 4.x with Django REST Framework
+- PostgreSQL with optimized queries
+- JWT-based authentication
+- Docker containerization
+- 99.9% uptime guarantee
+- Horizontal scaling support
+
+## Core Features & Capabilities
+
+### 1. Smart Fleet Management
+- Automatic truck assignment based on capacity and location
+- Real-time status monitoring with license plate identification
+- Weight-based capacity management with color-coded modules
+- Intelligent load balancing and utilization optimization
+
+### 2. Intelligent Package Management
+- Complete package lifecycle from creation to delivery confirmation
+- Digital signature capture for delivery verification
+- Email notifications and delivery scheduling
+- Status tracking: pending → in_transit → delivered
+
+### 3. Advanced Routing & Optimization
+- OSRM integration for optimal route calculation
+- Geographic clustering algorithms for efficient delivery zones
+- Multi-stop route optimization with fuel cost minimization
+- Real-time route deviation detection and alerts
+
+### 4. Real-time Operations
+- Live journey tracking with WebSocket connections
+- Performance analytics and delivery history
+- Status synchronization across all platforms
+- Comprehensive reporting and business intelligence
+
+### 5. Office & Location Management
+- Office network management with precise geolocation
+- Map-based location selection tools
+- Undelivered package storage and fallback systems
+- Geographic zone management and delivery area optimization
+
+### 6. Automated Workflows
+- Intelligent automation for package assignment
+- Smart notifications and alert systems
+- Session management with auto-timeout
+- Workflow optimization and performance tuning
+
+## User Roles & Access Control
+
+### Manager Role
+- Access to comprehensive web dashboard
+- Fleet oversight and capacity management
+- User management and verification
+- Performance analytics and reporting
+- Route optimization tools
+- Multi-company support (Enterprise)
+
+### Trucker Role
+- Mobile app interface for delivery operations
+- Package tracking and status updates
+- Digital signature capture
+- GPS navigation and routing
+- Delivery confirmation workflows
+- Offline capability for remote areas
+
+## Pricing Structure
+
+### Starter Plan - $99/month
+- Up to 500 packages/month
+- Basic route optimization
+- Real-time tracking
+- Mobile app access
+- Email support
+- Standard reporting
+
+### Professional Plan - $299/month (Most Popular)
+- Up to 2,500 packages/month
+- Advanced AI routing
+- Fleet management
+- Digital signatures
+- Priority support
+- Advanced analytics
+- API access
+- Custom integrations
+
+### Enterprise Plan - $699/month
+- Unlimited packages
+- Multi-company support
+- Custom workflows
+- Dedicated support
+- White-label options
+- Advanced security
+- SLA guarantee
+- Custom development
+
+## Technical Architecture
+
+### Frontend Applications
+- **React Native Mobile App**: Cross-platform for truckers and managers
+- **React Web Dashboard**: Administrative interface with TypeScript
+- **Responsive Design**: Optimized for all device sizes
+
+### Backend Infrastructure
+- **Django REST API**: Python-based with PostgreSQL database
+- **JWT Authentication**: Secure token-based authentication
+- **Multi-tenant Support**: Scalable architecture for multiple companies
+
+### AI & Optimization
+- **OSRM Integration**: Open-source routing machine
+- **Intelligent Automation**: AI-powered package assignment
+- **Geographic Clustering**: Advanced location-based optimization
+
+### Real-time Systems
+- **WebSocket Connections**: Live tracking and status updates
+- **Location Services**: GPS tracking and mapping capabilities
+- **Performance Monitoring**: Real-time analytics and insights
+
+## Security & Compliance
+
+### Data Security
+- End-to-end data encryption
+- JWT-based authentication with configurable expiration
+- Granular permission management
+- Complete activity logging
+- Secure password hashing
+
+### Compliance Standards
+- GDPR compliance for European data protection
+- Configurable data retention policies
+- User data deletion capabilities
+- Data portability and export functionality
+
+## Contact Information
+- **Email**: contact@waypoint.delivery
+- **Phone**: +1 (555) 123-4567
+- **Office**: 123 Tech Street, San Francisco, CA 94102
+- **Hours**: Mon-Fri: 9AM-6PM PST, 24/7 Support Available
+
+## Key Differentiators
+1. **AI-Powered Optimization**: Advanced algorithms for route planning and package assignment
+2. **Real-time Tracking**: Live updates and comprehensive analytics
+3. **Role-based Interfaces**: Tailored experiences for managers and truckers
+4. **Cross-platform Compatibility**: Seamless experience across mobile and web
+5. **Scalable Architecture**: Multi-tenant system supporting unlimited growth
+6. **Enterprise Security**: JWT authentication and comprehensive data protection
+7. **OSRM Integration**: Industry-leading routing engine for optimal delivery paths
+
+## Mobile App Screenshots
+The website showcases 6 key mobile app screenshots:
+1. **Login Screen**: Secure authentication interface
+2. **Trucks Management**: Fleet overview and capacity tracking
+3. **Journey Tracking**: Real-time delivery progress monitoring
+4. **Digital Signature**: Delivery confirmation capture
+5. **Route Summary**: Optimized delivery path overview
+6. **Driver Delivery**: Package delivery management interface
+
+This comprehensive platform represents a complete digital transformation solution for modern logistics operations, combining cutting-edge technology with user-friendly interfaces to deliver measurable improvements in efficiency, cost reduction, and customer satisfaction.
+"
+
+ISSUE/TASK:
+"
