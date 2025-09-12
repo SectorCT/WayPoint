@@ -16,6 +16,12 @@ import trucksImage from "@/assets/mobileview/trucks.png";
 import journeyImage from "@/assets/mobileview/journey.png";
 import signatureImage from "@/assets/mobileview/signature.png";
 
+// Import desktop dashboard screenshots
+import desktopJourneyImage from "@/assets/desktopview/desktopjourney.png";
+import packagesImage from "@/assets/desktopview/packages.png";
+import statisticsImage from "@/assets/desktopview/statistics.png";
+import trucksAssignImage from "@/assets/desktopview/trucksassign.png";
+
 const Solutions = () => {
   const navigate = useNavigate();
 
@@ -45,8 +51,20 @@ const Solutions = () => {
     { src: signatureImage, title: "Digital Signatures", alt: "Digital signature capture" }
   ];
 
+  // Desktop dashboard screenshots for showcase
+  const desktopScreenshots = [
+    { src: desktopJourneyImage, title: "Journey Management", alt: "Desktop journey tracking interface" },
+    { src: packagesImage, title: "Package Operations", alt: "Package management dashboard" },
+    { src: statisticsImage, title: "Analytics Dashboard", alt: "Performance statistics and analytics" },
+    { src: trucksAssignImage, title: "Fleet Assignment", alt: "Truck assignment and fleet management" }
+  ];
+
   const handleMobileImageClick = () => {
     navigate('/app');
+  };
+
+  const handleDesktopImageClick = () => {
+    navigate('/desktop');
   };
 
   return (
@@ -170,28 +188,58 @@ const Solutions = () => {
         <div>
           <Card className="border-0 bg-background/50 backdrop-blur-sm overflow-hidden transform transition-all duration-1000 ease-out hover:scale-[1.02] hover:shadow-xl slide-up slide-up-delay-1">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-                             {/* Image Side */}
-               <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center order-2 lg:order-1">
-                 {/* Replace this div with your web dashboard images */}
-                 <div className="text-center">
-                   <Monitor className="h-24 w-24 text-primary mx-auto mb-4" />
-                   <p className="text-sm text-muted-foreground mb-2">
-                     WayPoint Web Dashboard Screenshots
-                   </p>
-                   <p className="text-xs text-muted-foreground">
-                     Replace with your actual web dashboard screenshots
-                   </p>
-                 </div>
-                 
-                 {/* 
-                   To add your web dashboard images, replace the div above with:
-                   <img 
-                     src="/images/web-dashboard-screenshot.jpg" 
-                     alt="WayPoint Web Dashboard" 
-                     className="h-full w-full object-cover rounded-lg"
-                   />
-                 */}
-               </div>
+              {/* Image Side */}
+              <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center order-2 lg:order-1 relative overflow-hidden">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute top-10 left-10 w-20 h-20 bg-primary rounded-full"></div>
+                  <div className="absolute bottom-10 right-10 w-16 h-16 bg-primary rounded-full"></div>
+                  <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-primary rounded-full"></div>
+                  <div className="absolute bottom-1/3 right-1/4 w-12 h-12 bg-primary rounded-full"></div>
+                </div>
+
+                {/* Desktop Screenshots Grid - Horizontal Layout */}
+                <div className="relative z-10 grid grid-cols-2 gap-4 max-w-2xl">
+                  {desktopScreenshots.map((screenshot, index) => (
+                    <div 
+                      key={index}
+                      className="cursor-pointer group"
+                      onClick={handleDesktopImageClick}
+                      title={`Click to explore ${screenshot.title}`}
+                    >
+                      {/* Desktop Mockup Container */}
+                      <div className="relative w-full h-32 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg shadow-lg border-2 border-gray-700 overflow-hidden">
+                        <div className="absolute top-2 left-2 w-3 h-3 bg-red-500 rounded-full z-10"></div>
+                        <div className="absolute top-2 left-6 w-3 h-3 bg-yellow-500 rounded-full z-10"></div>
+                        <div className="absolute top-2 left-10 w-3 h-3 bg-green-500 rounded-full z-10"></div>
+                        <img 
+                          src={screenshot.src} 
+                          alt={screenshot.alt}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      
+                      {/* Label */}
+                      <div className="mt-2 text-center">
+                        <p className="text-xs text-muted-foreground">
+                          {screenshot.title}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* View All Overlay */}
+                <div 
+                  className="absolute bottom-4 right-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-2 cursor-pointer"
+                  onClick={handleDesktopImageClick}
+                >
+                  <p className="text-white text-xs font-semibold flex items-center">
+                    View All Features
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </p>
+                </div>
+              </div>
 
               {/* Content Side */}
               <div className="p-8 lg:p-12 flex flex-col justify-center order-1 lg:order-2">
