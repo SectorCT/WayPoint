@@ -141,9 +141,10 @@ const Desktop = () => {
                   Access Dashboard
                   <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="professional" size="lg">
+                {/* TODO: Uncomment when demo is ready */}
+                {/* <Button variant="professional" size="lg">
                   View Demo
-                </Button>
+                </Button> */}
               </div>
             </div>
 

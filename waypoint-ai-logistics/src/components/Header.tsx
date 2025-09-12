@@ -76,9 +76,10 @@ const Header = () => {
             >
               Go to Dashboard
             </Button>
-            <Button variant="hero" size="sm">
+            {/* TODO: Uncomment when demo is ready */}
+            {/* <Button variant="hero" size="sm">
               Start Free Demo
-            </Button>
+            </Button> */}
           </div>
 
           {/* Mobile menu button */}
@@ -117,9 +118,10 @@ const Header = () => {
                 >
                   Go to Dashboard
                 </Button>
-                <Button variant="hero" className="w-full">
+                {/* TODO: Uncomment when demo is ready */}
+                {/* <Button variant="hero" className="w-full">
                   Start Free Demo
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>

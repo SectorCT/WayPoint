@@ -130,16 +130,17 @@ const MobileApp = () => {
               cross-platform performance, serving both truckers and managers with role-based interfaces.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="cta" size="lg" className="group">
-                <Download className="h-4 w-4 mr-2" />
-                Download App
-                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button variant="professional" size="lg">
-                View Demo
-              </Button>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button variant="cta" size="lg" className="group">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download App
+                  <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                {/* TODO: Uncomment when demo is ready */}
+                {/* <Button variant="professional" size="lg">
+                  View Demo
+                </Button> */}
+              </div>
           </div>
         </div>
       </section>
