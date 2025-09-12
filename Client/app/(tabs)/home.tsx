@@ -73,7 +73,7 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.replace("/login");
+      router.replace("/(auth)/login");
     } catch (error) {
       console.error("Error logging out:", error);
     }
