@@ -97,7 +97,7 @@ const Contact = () => {
           {/* Contact Form */}
           <Card className="border-0 bg-background shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-foreground">Request a Demo</CardTitle>
+              <CardTitle className="text-2xl text-foreground">Get in Touch</CardTitle>
               <CardDescription>
                 Fill out the form below and our team will contact you within 24 hours.
               </CardDescription>
@@ -187,7 +187,7 @@ const Contact = () => {
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      Request Demo
+                      Send Message
                     </>
                   )}
                 </Button>

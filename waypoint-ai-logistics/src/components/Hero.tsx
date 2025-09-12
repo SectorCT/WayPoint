@@ -44,10 +44,11 @@ const Hero = () => {
             Start Your Free Demo
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
-          <Button variant="professional" size="lg" className="text-lg px-8 py-4 bg-white/10 text-white border-white/20 hover:bg-white/20">
+          {/* TODO: Uncomment when video is ready */}
+          {/* <Button variant="professional" size="lg" className="text-lg px-8 py-4 bg-white/10 text-white border-white/20 hover:bg-white/20">
             <Play className="mr-2 h-5 w-5" />
             Watch Demo Video
-          </Button>
+          </Button> */}
         </div>
 
         {/* Stats */}
