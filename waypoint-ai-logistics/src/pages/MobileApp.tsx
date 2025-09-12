@@ -171,117 +171,166 @@ const MobileApp = () => {
             </p>
           </div>
 
-          {/* Interactive Gallery */}
-          <div className="relative">
-            {/* Main Featured Phone */}
-            <div className="flex justify-center mb-12">
-              <div className="relative w-56 h-[450px] md:w-64 md:h-[500px] bg-gradient-to-b from-gray-900 to-gray-800 rounded-[2.5rem] shadow-2xl border-4 border-gray-700 overflow-hidden transition-all duration-700 transform hover:scale-105 hover:shadow-3xl group">
-                <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-600 rounded-full z-10"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <img 
-                  src={loginImage} 
-                  alt="Mobile App Login" 
-                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                  id="main-screenshot"
-                />
-                <div className="absolute bottom-4 left-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                  <div className="bg-black/80 backdrop-blur-sm rounded-lg p-3">
-                    <h3 className="text-white font-semibold text-sm mb-1" id="main-title">Secure Login</h3>
-                    <p className="text-gray-300 text-xs" id="main-description">Role-based authentication with JWT security</p>
+          {/* Interactive Gallery - Three Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center max-w-8xl mx-auto">
+            
+            {/* Left Side - Feature Options */}
+            <div className="order-2 lg:order-1">
+              <div className="space-y-3">
+                {[
+                  { src: loginImage, title: "Secure Login", description: "Role-based authentication with JWT security", icon: Shield },
+                  { src: trucksImage, title: "Fleet Management", description: "Monitor truck capacity and availability in real-time", icon: Truck },
+                  { src: journeyImage, title: "Journey Tracking", description: "Live tracking of delivery progress and routes", icon: Navigation }
+                ].map((screenshot, index) => (
+                  <div 
+                    key={index} 
+                    className="group cursor-pointer transition-all duration-500 hover:scale-105 hover:-translate-x-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg"
+                    onClick={() => {
+                      const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
+                      const mainTitle = document.getElementById('main-title');
+                      const mainDescription = document.getElementById('main-description');
+                      
+                      if (mainImg && mainTitle && mainDescription) {
+                        // Add fade effect
+                        mainImg.style.opacity = '0.5';
+                        setTimeout(() => {
+                          mainImg.src = screenshot.src;
+                          mainImg.alt = screenshot.title;
+                          mainTitle.textContent = screenshot.title;
+                          mainDescription.textContent = screenshot.description;
+                          mainImg.style.opacity = '1';
+                        }, 250);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center space-x-4">
+                      {/* Thumbnail */}
+                      <div className="relative w-16 h-28 bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg shadow-lg overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-xl transition-all duration-500 flex-shrink-0">
+                        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+                        <img 
+                          src={screenshot.src} 
+                          alt={screenshot.title} 
+                          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
+                        />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                            <screenshot.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                            {screenshot.title}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 line-clamp-2">
+                          {screenshot.description}
+                        </p>
+                      </div>
+                      
+                      {/* Arrow */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                        <ArrowRight className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Thumbnail Gallery */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 max-w-5xl mx-auto">
-              {[
-                { src: loginImage, title: "Secure Login", description: "Role-based authentication with JWT security" },
-                { src: trucksImage, title: "Fleet Management", description: "Monitor truck capacity and availability in real-time" },
-                { src: journeyImage, title: "Journey Tracking", description: "Live tracking of delivery progress and routes" },
-                { src: signatureImage, title: "Digital Signatures", description: "Capture delivery confirmations with digital signatures" },
-                { src: routesummaryImage, title: "Route Summary", description: "Optimized delivery paths with detailed route information" },
-                { src: driverdeliveryImage, title: "Delivery Management", description: "Complete package delivery workflow and status updates" }
-              ].map((screenshot, index) => (
-                <div 
-                  key={index} 
-                  className="group cursor-pointer transition-all duration-500 hover:scale-110 hover:-translate-y-2"
-                  onClick={() => {
-                    const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
-                    const mainTitle = document.getElementById('main-title');
-                    const mainDescription = document.getElementById('main-description');
-                    
-                    if (mainImg && mainTitle && mainDescription) {
-                      // Add fade effect
-                      mainImg.style.opacity = '0.5';
-                      setTimeout(() => {
-                        mainImg.src = screenshot.src;
-                        mainImg.alt = screenshot.title;
-                        mainTitle.textContent = screenshot.title;
-                        mainDescription.textContent = screenshot.description;
-                        mainImg.style.opacity = '1';
-                      }, 250);
-                    }
-                  }}
-                >
-                  <div className="relative w-16 h-28 md:w-20 md:h-36 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-lg overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-xl transition-all duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
-                    <img 
-                      src={screenshot.src} 
-                      alt={screenshot.title} 
-                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
-                    />
-                  </div>
-                  <div className="mt-4 text-center">
-                    <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300 mb-1">
-                      {screenshot.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 line-clamp-2">
-                      {screenshot.description}
-                    </p>
+            {/* Center - Main Featured Phone */}
+            <div className="order-1 lg:order-2 flex justify-center">
+              <div className="relative">
+                {/* Phone Mockup - Centered */}
+                <div className="relative w-72 h-[600px] bg-gradient-to-b from-gray-900 to-gray-800 rounded-[3rem] shadow-2xl border-4 border-gray-700 overflow-hidden transition-all duration-700 transform hover:scale-105 hover:shadow-3xl group">
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gray-600 rounded-full z-10"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img 
+                    src={loginImage} 
+                    alt="Mobile App Login" 
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                    id="main-screenshot"
+                  />
+                  <div className="absolute bottom-6 left-6 right-6 z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                    <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4">
+                      <h3 className="text-white font-semibold text-base mb-1" id="main-title">Secure Login</h3>
+                      <p className="text-gray-300 text-sm" id="main-description">Role-based authentication with JWT security</p>
+                    </div>
                   </div>
                 </div>
-              ))}
+                
+                {/* Floating Elements for Visual Appeal */}
+                <div className="absolute -top-6 -left-6 w-12 h-12 bg-primary/20 rounded-full animate-pulse"></div>
+                <div className="absolute -bottom-6 -right-6 w-8 h-8 bg-primary/30 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+                <div className="absolute top-1/2 -right-8 w-6 h-6 bg-primary/25 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
+                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-primary/25 rounded-full animate-pulse" style={{animationDelay: '3s'}}></div>
+              </div>
             </div>
 
-            {/* Gallery Navigation Dots */}
-            <div className="flex justify-center mt-8 space-x-2">
-              {[0, 1, 2, 3, 4, 5].map((index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === 0 
-                      ? 'bg-primary w-6' 
-                      : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                  }`}
-                  onClick={() => {
-                    const screenshots = [
-                      { src: loginImage, title: "Secure Login", description: "Role-based authentication with JWT security" },
-                      { src: trucksImage, title: "Fleet Management", description: "Monitor truck capacity and availability in real-time" },
-                      { src: journeyImage, title: "Journey Tracking", description: "Live tracking of delivery progress and routes" },
-                      { src: signatureImage, title: "Digital Signatures", description: "Capture delivery confirmations with digital signatures" },
-                      { src: routesummaryImage, title: "Route Summary", description: "Optimized delivery paths with detailed route information" },
-                      { src: driverdeliveryImage, title: "Delivery Management", description: "Complete package delivery workflow and status updates" }
-                    ];
-                    
-                    const screenshot = screenshots[index];
-                    const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
-                    const mainTitle = document.getElementById('main-title');
-                    const mainDescription = document.getElementById('main-description');
-                    
-                    if (mainImg && mainTitle && mainDescription) {
-                      mainImg.style.opacity = '0.5';
-                      setTimeout(() => {
-                        mainImg.src = screenshot.src;
-                        mainImg.alt = screenshot.title;
-                        mainTitle.textContent = screenshot.title;
-                        mainDescription.textContent = screenshot.description;
-                        mainImg.style.opacity = '1';
-                      }, 250);
-                    }
-                  }}
-                />
-              ))}
+            {/* Right Side - Feature Options */}
+            <div className="order-3 lg:order-3">
+              <div className="space-y-3">
+                {[
+                  { src: signatureImage, title: "Digital Signatures", description: "Capture delivery confirmations with digital signatures", icon: CheckCircle },
+                  { src: routesummaryImage, title: "Route Summary", description: "Optimized delivery paths with detailed route information", icon: MapPin },
+                  { src: driverdeliveryImage, title: "Delivery Management", description: "Complete package delivery workflow and status updates", icon: Package }
+                ].map((screenshot, index) => (
+                  <div 
+                    key={index} 
+                    className="group cursor-pointer transition-all duration-500 hover:scale-105 hover:translate-x-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg"
+                    onClick={() => {
+                      const mainImg = document.getElementById('main-screenshot') as HTMLImageElement;
+                      const mainTitle = document.getElementById('main-title');
+                      const mainDescription = document.getElementById('main-description');
+                      
+                      if (mainImg && mainTitle && mainDescription) {
+                        // Add fade effect
+                        mainImg.style.opacity = '0.5';
+                        setTimeout(() => {
+                          mainImg.src = screenshot.src;
+                          mainImg.alt = screenshot.title;
+                          mainTitle.textContent = screenshot.title;
+                          mainDescription.textContent = screenshot.description;
+                          mainImg.style.opacity = '1';
+                        }, 250);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center space-x-4">
+                      {/* Arrow - Left side for right column */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-2 group-hover:translate-x-0">
+                        <ArrowRight className="h-4 w-4 text-primary rotate-180" />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                            <screenshot.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                            {screenshot.title}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 line-clamp-2">
+                          {screenshot.description}
+                        </p>
+                      </div>
+                      
+                      {/* Thumbnail */}
+                      <div className="relative w-16 h-28 bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg shadow-lg overflow-hidden border-2 border-transparent group-hover:border-primary group-hover:shadow-xl transition-all duration-500 flex-shrink-0">
+                        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+                        <img 
+                          src={screenshot.src} 
+                          alt={screenshot.title} 
+                          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
