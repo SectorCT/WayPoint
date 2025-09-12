@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Monitor, 
   CheckCircle,
@@ -26,6 +27,18 @@ import statisticsImage from "@/assets/desktopview/statistics.png";
 import trucksAssignImage from "@/assets/desktopview/trucksassign.png";
 
 const Desktop = () => {
+  const navigate = useNavigate();
+
+  const handleDashboardClick = () => {
+    // Navigate to the actual dashboard URL
+    window.open('http://localhost:3000/dashboard', '_blank');
+  };
+
+  const handleContactClick = () => {
+    // Navigate to main page contact section
+    navigate('/', { state: { scrollTo: '#contact' } });
+  };
+
   const features = [
     {
       icon: BarChart3,
@@ -149,39 +162,36 @@ const Desktop = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             {/* Content */}
-            <div>
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-                  <Monitor className="h-6 w-6 text-primary" />
-                </div>
-                <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                  React TypeScript Interface
-                </span>
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+                <Monitor className="h-6 w-6 text-primary" />
               </div>
-              
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
-                WayPoint
-                <span className="block text-primary">Web Dashboard</span>
-              </h1>
-              
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
-                The comprehensive administrative interface for logistics managers. Built with React and TypeScript 
-                for powerful fleet management, analytics, and operational control.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="cta" size="lg" className="group">
-                  <Globe className="h-4 w-4 mr-2" />
-                  Access Dashboard
-                  <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                {/* TODO: Uncomment when demo is ready */}
-                {/* <Button variant="professional" size="lg">
-                  View Demo
-                </Button> */}
-              </div>
+              <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
+                React TypeScript Interface
+              </span>
             </div>
+            
+            <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
+              WayPoint
+              <span className="block text-primary">Web Dashboard</span>
+            </h1>
+            
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              The comprehensive administrative interface for logistics managers. Built with React and TypeScript 
+              for powerful fleet management, analytics, and operational control.
+            </p>
 
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="cta" size="lg" className="group" onClick={handleDashboardClick}>
+                <Globe className="h-4 w-4 mr-2" />
+                Access Dashboard
+                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              {/* TODO: Uncomment when demo is ready */}
+              {/* <Button variant="professional" size="lg">
+                View Demo
+              </Button> */}
+            </div>
           </div>
         </div>
       </section>
@@ -340,12 +350,12 @@ const Desktop = () => {
             Access the WayPoint web dashboard and take control of your logistics operations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="cta" size="lg" className="group">
+            <Button variant="cta" size="lg" className="group" onClick={handleDashboardClick}>
               <Globe className="h-4 w-4 mr-2" />
               Access Dashboard
               <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button variant="professional" size="lg">
+            <Button variant="professional" size="lg" onClick={handleContactClick}>
               Contact Sales
             </Button>
           </div>

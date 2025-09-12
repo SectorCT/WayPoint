@@ -271,7 +271,7 @@ const Solutions = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="cta" size="lg" className="group">
+                  <Button variant="cta" size="lg" className="group" onClick={() => window.open('http://localhost:3000/dashboard', '_blank')}>
                     <Globe className="h-4 w-4 mr-2" />
                     Access Dashboard
                     <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
