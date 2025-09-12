@@ -19,6 +19,18 @@
   align-items: stretch;
 }
 
+.logoContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.logo {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+
 .headerContainer {
   margin-bottom: 32px;
 }

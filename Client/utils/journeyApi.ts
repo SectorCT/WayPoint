@@ -29,7 +29,7 @@ export const getTodaysPendingPackages = async (): Promise<Package[]> => {
 export const getEmployees = async (): Promise<User[]> => {
   const response = await makeAuthenticatedRequest('/auth/all/');
   const data = await response.json();
-  return data.filter((user: User) => user.isManager === false);
+  return data.filter((user: User) => user.isManager === false && user.verified === true);
 };
 
 export const getUserByUsername = async (username: string): Promise<User> => {

@@ -107,15 +107,15 @@ OSRM_TIMEOUT_S = 20
 # Factory / ADMIN sentinel record
 # ---------------------------------------------------------------------------
 FACTORY_ADDRESS: Dict[str, Any] = {
-    "address": "123 Factory Street, City, Country",
-    "latitude": 42.6666,
-    "longitude": 23.3750,
+    "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
+    "latitude": 37.4220,
+    "longitude": -122.0841,
     "package_info": {
-        "address": "123 Factory Street, City, Country",
-        "latitude": 42.6666,
-        "longitude": 23.3750,
+        "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
+        "latitude": 37.4220,
+        "longitude": -122.0841,
         "packageID": "ADMIN",
-        "recipient": "Factory",
+        "recipient": "Google HQ Warehouse",
         "recipientPhoneNumber": "",
         "deliveryDate": "2025-03-21",
         "weight": 0,

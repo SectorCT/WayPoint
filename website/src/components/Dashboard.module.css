@@ -22,6 +22,18 @@
   align-items: center;
   gap: 18px;
 }
+.logoContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
 .heroIcon {
   background: linear-gradient(135deg, #F39358 0%, #F05033 100%);
   border-radius: 50%;

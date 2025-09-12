@@ -4,10 +4,10 @@
     "slug": "waypoint",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/icon.png",
+    "icon": "./assets/images/waypointicon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/waypointicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,24 +17,41 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.waypoint.app",
+      "buildNumber": "1",
       "config": {
         "googleMapsApiKey": "YOUR_IOS_API_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "WayPoint needs access to your location to provide real-time delivery tracking and route optimization.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "WayPoint needs access to your location to provide real-time delivery tracking and route optimization.",
+        "NSCameraUsageDescription": "WayPoint needs access to your camera to capture delivery signatures.",
+        "NSPhotoLibraryUsageDescription": "WayPoint needs access to your photo library to save delivery confirmations.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "foregroundImage": "./assets/images/waypointicon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.waypoint.app",
+      "versionCode": 1,
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_ANDROID_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
-      "favicon": "./assets/icons/favicon.png"
+      "favicon": "./assets/images/waypointicon.png"
     },
     "plugins": [
       [
@@ -61,8 +78,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "3879b2fd-c6cc-4231-abfc-44b7e36c286d"
       }
-    }
+    },
+    "owner": "rkdimitrov"
   }
 }

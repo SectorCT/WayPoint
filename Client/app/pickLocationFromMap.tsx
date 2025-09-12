@@ -17,8 +17,8 @@ interface LocationState {
 export default function PickLocationScreen() {
   const params = useLocalSearchParams<LocationState>();
   const [selectedLocation, setSelectedLocation] = useState<Region>({
-    latitude: params.latitude ? Number(params.latitude) : 42.6977,
-    longitude: params.longitude ? Number(params.longitude) : 23.3219,
+    latitude: params.latitude ? Number(params.latitude) : 37.4220,
+    longitude: params.longitude ? Number(params.longitude) : -122.0841,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
