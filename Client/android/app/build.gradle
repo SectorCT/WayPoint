@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.dmyashkov.Client'
+    namespace 'com.waypoint.app'
     defaultConfig {
-        applicationId 'com.dmyashkov.Client'
+        applicationId 'com.waypoint.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
