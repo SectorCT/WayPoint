@@ -81,6 +81,10 @@
         "projectId": "3879b2fd-c6cc-4231-abfc-44b7e36c286d"
       }
     },
+    "env": {
+      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.0.109:8000/",
+      "EXPO_PUBLIC_GEOAPIFY_API_KEY": "fddd4e88b0c94c09ab0dae3c2037b462"
+    },
     "owner": "rkdimitrov"
   }
 }
