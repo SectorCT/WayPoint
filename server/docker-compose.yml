@@ -6,9 +6,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data/
     environment:
-      POSTGRES_DB: myprojectdb
-      POSTGRES_USER: myprojectuser
-      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: waypoint_db
+      POSTGRES_USER: waypoint_user
+      POSTGRES_PASSWORD: waypoint_password_2024
 
   web:
     build: .
@@ -19,11 +19,11 @@ services:
     depends_on:
       - db
     environment:
-      DJANGO_SECRET_KEY: 'django-insecure-4$$96vkmn3@flse_=1zec=ma=o&j0en_c0rutj7*$1r)$59b)t'
+      DJANGO_SECRET_KEY: 'django-insecure-4$$96vkmn3@flse_=1zec=ma=o&j0en_c0rutj7*$$1r)$$59b)t'
       ALLOWED_HOSTS: '*'
-      DB_NAME: myprojectdb
-      DB_USER: myprojectuser
-      DB_PASSWORD: yourpassword
+      DB_NAME: waypoint_db
+      DB_USER: waypoint_user
+      DB_PASSWORD: waypoint_password_2024
       DB_HOST: db
       DB_PORT: 5432
 
