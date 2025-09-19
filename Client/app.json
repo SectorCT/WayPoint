@@ -70,7 +70,9 @@
             "./assets/fonts/Bold.ttf"
           ]
         }
-      ]
+      ],
+      "expo-router",
+      "expo-web-browser"
     ],
     "scheme": "waypoint",
     "extra": {
@@ -80,10 +82,6 @@
       "eas": {
         "projectId": "3879b2fd-c6cc-4231-abfc-44b7e36c286d"
       }
-    },
-    "env": {
-      "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:8000/",
-      "EXPO_PUBLIC_GEOAPIFY_API_KEY": "fddd4e88b0c94c09ab0dae3c2037b462"
     },
     "owner": "rkdimitrov"
   }

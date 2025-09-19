@@ -18,6 +18,8 @@ const config = async () => {
       assetExts: resolver.assetExts.filter((ext) => ext !== "svg"),
       sourceExts: [...resolver.sourceExts, "svg", "sql"],
     },
+    // Increase the max workers for better performance
+    maxWorkers: 4,
   };
 };
 
