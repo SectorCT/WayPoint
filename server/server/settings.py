@@ -8,7 +8,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "REMOVED_DJANGO_SECRET"
+SECRET_KEY = os.getenv('SECRET_KEY', 'REMOVED_DJANGO_SECRET')
 
 DEBUG = True
 

@@ -19,7 +19,7 @@ services:
     depends_on:
       - db
     environment:
-      DJANGO_SECRET_KEY: 'REMOVED_DJANGO_SECRET'
+      SECRET_KEY: ${SECRET_KEY:-REMOVED_DJANGO_SECRET}
       ALLOWED_HOSTS: '*'
       DB_NAME: waypoint_db
       DB_USER: waypoint_user
