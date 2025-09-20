@@ -1,4 +1,4 @@
-package com.dmyashkov.Client
+package com.waypoint.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
