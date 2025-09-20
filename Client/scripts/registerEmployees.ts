@@ -1,5 +1,5 @@
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 interface RegisterRequest {
     email: string;
