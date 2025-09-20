@@ -14,6 +14,6 @@ EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=your-email@gmail.com
 
 # Django Configuration
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=django-insecure-placeholder-key-change-in-production
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1

@@ -19,7 +19,7 @@
       "bundleIdentifier": "com.waypoint.app",
       "buildNumber": "1",
       "config": {
-        "googleMapsApiKey": "YOUR_IOS_API_KEY"
+        "googleMapsApiKey": "PLACEHOLDER_IOS_API_KEY"
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "WayPoint needs access to your location to provide real-time delivery tracking and route optimization.",
@@ -38,7 +38,7 @@
       "versionCode": 1,
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_ANDROID_API_KEY"
+          "apiKey": "PLACEHOLDER_ANDROID_API_KEY"
         }
       },
       "permissions": [
