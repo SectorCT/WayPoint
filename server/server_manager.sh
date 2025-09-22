@@ -75,7 +75,13 @@ start_server() {
     fi
     
     print_status "Activating virtual environment..."
-    source "$VENV_DIR/bin/activate"
+    if [ -f "$VENV_DIR/bin/activate" ]; then
+        source "$VENV_DIR/bin/activate"
+        PYTHON_CMD="python"
+    else
+        print_warning "Virtual environment activation script not found, using system Python"
+        PYTHON_CMD="python3"
+    fi
     
     print_status "Starting Django development server on $SERVER_HOST:$SERVER_PORT..."
     print_status "Server will be accessible at:"
@@ -85,7 +91,7 @@ start_server() {
     print_status "Press Ctrl+C to stop the server"
     echo ""
     
-    python "$MANAGE_PY" runserver "$SERVER_HOST:$SERVER_PORT"
+    $PYTHON_CMD "$MANAGE_PY" runserver "$SERVER_HOST:$SERVER_PORT"
 }
 
 # Function to stop the server
@@ -172,13 +178,19 @@ run_migrations() {
         exit 1
     fi
     
-    source "$VENV_DIR/bin/activate"
+    if [ -f "$VENV_DIR/bin/activate" ]; then
+        source "$VENV_DIR/bin/activate"
+        PYTHON_CMD="python"
+    else
+        print_warning "Virtual environment activation script not found, using system Python"
+        PYTHON_CMD="python3"
+    fi
     
     print_status "Creating migrations..."
-    python "$MANAGE_PY" makemigrations
+    $PYTHON_CMD "$MANAGE_PY" makemigrations
     
     print_status "Applying migrations..."
-    python "$MANAGE_PY" migrate
+    $PYTHON_CMD "$MANAGE_PY" migrate
     
     print_status "Migrations completed successfully"
 }
@@ -198,9 +210,15 @@ create_superuser() {
         exit 1
     fi
     
-    source "$VENV_DIR/bin/activate"
+    if [ -f "$VENV_DIR/bin/activate" ]; then
+        source "$VENV_DIR/bin/activate"
+        PYTHON_CMD="python"
+    else
+        print_warning "Virtual environment activation script not found, using system Python"
+        PYTHON_CMD="python3"
+    fi
     
-    python "$MANAGE_PY" createsuperuser
+    $PYTHON_CMD "$MANAGE_PY" createsuperuser
 }
 
 # Function to show logs
@@ -266,6 +284,127 @@ test_api() {
     print_status "API test completed"
 }
 
+# Function to setup the server environment
+setup_server() {
+    print_header
+    print_status "Setting up WayPoint Backend Server..."
+    echo ""
+    
+    cd "$SERVER_DIR" || {
+        print_error "Failed to change to server directory: $SERVER_DIR"
+        exit 1
+    }
+    
+    # Check if Python 3 is available
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python 3 is not installed. Please install Python 3 first."
+        exit 1
+    fi
+    
+    # Check if pip is available
+    if ! command -v pip3 &> /dev/null; then
+        print_error "pip3 is not installed. Please install pip3 first."
+        exit 1
+    fi
+    
+    print_status "Python 3 and pip3 found ✓"
+    
+    # Create virtual environment if it doesn't exist
+    if [ -d "$VENV_DIR" ]; then
+        print_warning "Virtual environment already exists at: $VENV_DIR"
+        read -p "Do you want to recreate it? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            print_status "Removing existing virtual environment..."
+            rm -rf "$VENV_DIR"
+        else
+            print_status "Using existing virtual environment..."
+        fi
+    fi
+    
+    if [ ! -d "$VENV_DIR" ]; then
+        print_status "Creating virtual environment..."
+        python3 -m venv "$VENV_DIR"
+        if [ $? -ne 0 ]; then
+            print_error "Failed to create virtual environment"
+            exit 1
+        fi
+        print_status "Virtual environment created successfully ✓"
+    fi
+    
+    # Activate virtual environment
+    print_status "Activating virtual environment..."
+    if [ -f "$VENV_DIR/bin/activate" ]; then
+        source "$VENV_DIR/bin/activate"
+        PYTHON_CMD="python"
+        PIP_CMD="pip"
+    else
+        print_warning "Virtual environment activation script not found, using system Python"
+        PYTHON_CMD="python3"
+        PIP_CMD="pip3"
+    fi
+    
+    # Upgrade pip
+    print_status "Upgrading pip..."
+    $PIP_CMD install --upgrade pip
+    
+    # Install requirements
+    if [ -f "requirements.txt" ]; then
+        print_status "Installing Python dependencies..."
+        $PIP_CMD install -r requirements.txt
+        if [ $? -ne 0 ]; then
+            print_error "Failed to install dependencies"
+            exit 1
+        fi
+        print_status "Dependencies installed successfully ✓"
+    else
+        print_warning "requirements.txt not found, skipping dependency installation"
+    fi
+    
+    # Setup environment file
+    if [ ! -f ".env" ] && [ -f "env_example.txt" ]; then
+        print_status "Creating environment file from template..."
+        cp env_example.txt .env
+        print_warning "Please edit .env file with your actual configuration values"
+        print_status "Environment file created: $SERVER_DIR/.env"
+    elif [ -f ".env" ]; then
+        print_status "Environment file already exists ✓"
+    else
+        print_warning "No environment file template found, you may need to create .env manually"
+    fi
+    
+    # Run migrations
+    print_status "Running database migrations..."
+    $PYTHON_CMD "$MANAGE_PY" makemigrations
+    $PYTHON_CMD "$MANAGE_PY" migrate
+    if [ $? -ne 0 ]; then
+        print_warning "Database migrations failed. You may need to configure your database first."
+        print_status "Please check your database configuration in .env file"
+    else
+        print_status "Database migrations completed successfully ✓"
+    fi
+    
+    # Ask about creating superuser
+    echo ""
+    read -p "Do you want to create a Django superuser now? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        $PYTHON_CMD "$MANAGE_PY" createsuperuser
+    fi
+    
+    echo ""
+    print_status "Setup completed successfully! 🎉"
+    echo ""
+    print_status "Next steps:"
+    echo "  1. Edit .env file with your configuration"
+    echo "  2. Run './server_manager.sh start' to start the server"
+    echo "  3. Run './server_manager.sh status' to check server status"
+    echo ""
+    print_status "Server will be accessible at:"
+    echo "  - Local: http://localhost:$SERVER_PORT"
+    echo "  - Network: http://$(hostname -I | awk '{print $1}'):$SERVER_PORT"
+}
+
 # Function to show help
 show_help() {
     print_header
@@ -273,6 +412,7 @@ show_help() {
     echo ""
     echo "Available commands:"
     echo ""
+    echo "  setup       Set up the server environment (first time setup)"
     echo "  start       Start the WayPoint backend server"
     echo "  stop        Stop the running server"
     echo "  restart     Restart the server"
@@ -284,6 +424,7 @@ show_help() {
     echo "  help        Show this help message"
     echo ""
     echo "Examples:"
+    echo "  $0 setup    # First time setup"
     echo "  $0 start    # Start the server"
     echo "  $0 status   # Check if server is running"
     echo "  $0 restart  # Restart the server"
@@ -297,6 +438,9 @@ show_help() {
 
 # Main script logic
 case "${1:-help}" in
+    setup)
+        setup_server
+        ;;
     start)
         start_server
         ;;
