@@ -1,4 +1,5 @@
 // timemanager/context/ThemeContext.tsx
+import React from "react";
 import { THEME } from "@constants/theme";
 import { createContext, useContext, useState, type ReactNode } from "react";
 

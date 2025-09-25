@@ -136,7 +136,7 @@ export default function AddPackageScreen() {
     }
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = (event: unknown, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
       const formattedDate = selectedDate.toLocaleDateString("en-US", {
@@ -244,7 +244,7 @@ export default function AddPackageScreen() {
               try {
                 const [month, day, year] = formState.deliveryDate.split('/');
                 return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-              } catch (e) {
+              } catch {
                 return new Date();
               }
             })()}

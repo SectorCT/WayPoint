@@ -1,6 +1,6 @@
+import React from "react";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
 import { ThemeProvider } from "@context/ThemeContext";
 import { AuthProvider } from "@context/AuthContext";
 import { PositionProvider } from "@context/PositionContext";
@@ -19,7 +19,6 @@ const FONTS = {
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
 
   useEffect(() => {
     async function loadFonts() {

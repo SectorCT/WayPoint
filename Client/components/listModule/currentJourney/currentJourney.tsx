@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import useStyles from "./styles";
 import { useTheme } from "@context/ThemeContext";
-import Trash from "@assets/icons/trash.svg";
 import Truck from "@assets/icons/truck.svg";
 import { router } from "expo-router";
 
