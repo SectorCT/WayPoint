@@ -1,10 +1,10 @@
+import React from "react";
 import { Tabs } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import Cubes from "@assets/icons/cubes.svg";
 import House from "@assets/icons/house.svg";
 import Truck from "@assets/icons/truck.svg";
-import { View } from "react-native";
 
 export default function TabLayout() {
   const { theme } = useTheme();

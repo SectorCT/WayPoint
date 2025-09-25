@@ -5,7 +5,6 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
-  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getPackages } from "../../utils/journeyApi";
@@ -69,7 +68,7 @@ export default function PackagesScreen() {
 
     // Remove empty categories
     return Object.fromEntries(
-      Object.entries(groupedPackages).filter(([_, value]) => value.length > 0),
+      Object.entries(groupedPackages).filter(([, value]) => value.length > 0),
     ) as Record<string, Package[]>;
   };
 

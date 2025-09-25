@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
 import useStyles from "./styles";
-import { useTheme } from "@context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { SvgProps } from "react-native-svg";
 
@@ -23,7 +22,6 @@ export default function InfoEntryPast({
   marginTop = 0,
 }: InfoEntryPastProps) {
   const styles = useStyles();
-  const { theme } = useTheme();
 
   return (
     <LinearGradient

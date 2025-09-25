@@ -40,7 +40,7 @@ interface Coordinate {
   longitude: number;
 }
 
-interface RouteLocation extends Coordinate {
+export interface RouteLocation extends Coordinate {
   waypoint_index: number;
   package_info: Package;
 }

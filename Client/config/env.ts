@@ -1,8 +1,5 @@
-import Constants from "expo-constants";
-
 // Development API URL (when running on device/simulator)
 const DEV_API_URL = "http://172.20.10.3:8000"; // Your current IP address from .env file
-const DEV_API_URL_PHYSICAL = "http://172.20.10.3:8000"; // Your current IP address for physical devices
 
 // Production API URL (when deployed)
 const PROD_API_URL = "http://185.32.148.190:8000"; // External server IP for APK builds

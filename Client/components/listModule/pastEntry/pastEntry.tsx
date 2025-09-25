@@ -1,12 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import useStyles from "./styles";
-import { useTheme } from "@/context/ThemeContext";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import InfoEntryPast from "../infoEntryPast/infoEntryPast";
 import Cubes from "@assets/icons/cubes.svg";
 import Truck from "@assets/icons/truck.svg";
-import Weight from "@assets/icons/weight.svg";
 
 interface PastEntryProps {
   date: string;
@@ -30,7 +26,6 @@ export default function PastEntry({
   duration,
 }: PastEntryProps) {
   const styles = useStyles();
-  const { theme } = useTheme();
 
   return (
     <View style={styles.container}>
