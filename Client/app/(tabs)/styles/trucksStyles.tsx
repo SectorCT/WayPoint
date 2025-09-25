@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 
 export default function useStyles() {
@@ -21,6 +21,7 @@ export default function useStyles() {
       zIndex: 2,
       backgroundColor: theme.color.white,
       paddingBottom: 20,
+      paddingTop: Platform.OS === 'android' ? 30 : 0,
       opacity: 1,
     },
     title: {

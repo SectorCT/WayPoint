@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator, Platform } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingTop: 60, // Add top padding to avoid status bar
+    paddingTop: Platform.OS === 'android' ? 90 : 60, // Add extra padding for Android
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     elevation: 2,
