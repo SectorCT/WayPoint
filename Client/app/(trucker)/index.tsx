@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator, Modal } from "react-native";
-import MapView, { Polyline, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery, optimizeOfficeRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { useTheme } from "@context/ThemeContext";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
@@ -23,13 +22,6 @@ interface RouteLocation extends Coordinate {
   package_info: Package;
 }
 
-interface User {
-  email: string;
-  username: string;
-  phoneNumber: string;
-  isManager: boolean;
-  verified: boolean;
-}
 
 interface Package {
   status: "pending" | "in_transit" | "delivered" | "undelivered";
@@ -50,20 +42,9 @@ interface RouteData {
   dateOfCreation: string;
   truck?: string;
   _id?: string;
-  route?: any[]; // OSRM route legs with steps
+  route?: unknown[]; // OSRM route legs with steps
 }
 
-interface Theme {
-  color: {
-    white: string;
-    black: string;
-    mediumPrimary: string;
-    darkPrimary: string;
-    lightPrimary: string;
-    lightGrey: string;
-    error: string;
-  };
-}
 
 const DRAWER_WIDTH = 300;
 
@@ -168,19 +149,19 @@ const CurrentPositionMarker = ({ heading }: { heading: number | null }) => (
 );
 
 // Add helper to get all steps from route legs
-function getAllStepsFromRoute(route: any[]): any[] {
+function getAllStepsFromRoute(route: unknown[]): unknown[] {
   if (!route || !Array.isArray(route)) return [];
-  let steps: any[] = [];
+  let steps: unknown[] = [];
   for (const leg of route) {
-    if (leg.steps && Array.isArray(leg.steps)) {
-      steps = steps.concat(leg.steps);
+    if (leg && typeof leg === 'object' && 'steps' in leg && Array.isArray((leg as { steps: unknown }).steps)) {
+      steps = steps.concat((leg as { steps: unknown[] }).steps);
     }
   }
   return steps;
 }
 
 // Helper to get icon for maneuver type/modifier
-function getManeuverIcon(type: string, modifier: string, theme: any): JSX.Element {
+function getManeuverIcon(type: string, modifier: string, theme: { color: { darkPrimary: string } }): JSX.Element {
   const iconColor = theme.color.darkPrimary;
   if (type === 'arrive') return <MaterialCommunityIcons name="flag-checkered" size={28} color={iconColor} />;
   if (type === 'depart') return <MaterialCommunityIcons name="car" size={28} color={iconColor} />;
@@ -201,18 +182,21 @@ function getManeuverIcon(type: string, modifier: string, theme: any): JSX.Elemen
 }
 
 // Add helper to compute estimate (duration or distance) for full route or next package
-function getRouteEstimate(routeSteps: any[], mode: 'full' | 'next'): string | null {
+function getRouteEstimate(routeSteps: unknown[], mode: 'full' | 'next'): string | null {
   if (!routeSteps || !routeSteps.length) return null;
   if (mode === 'full') {
     // Sum all durations
-    const totalSeconds = routeSteps.reduce((sum, step) => sum + (step.duration || 0), 0);
+    const totalSeconds = routeSteps.reduce((sum, step) => {
+      const stepObj = step as { duration?: number };
+      return sum + (stepObj.duration || 0);
+    }, 0);
     if (totalSeconds > 0) {
       const mins = Math.round(totalSeconds / 60);
       return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
     }
   } else {
     // Next mode: show duration for the next step only
-    const next = routeSteps[0];
+    const next = routeSteps[0] as { duration?: number };
     if (next && next.duration) {
       const mins = Math.round(next.duration / 60);
       return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
@@ -236,7 +220,6 @@ function getOffsetCenter(position: Coordinate, offsetMeters = 120, heading = 0):
 
 export default function TruckerViewScreen() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const { position } = usePosition();
   const { logout } = useAuth();
   const drawerRef = useRef<DrawerLayout>(null);
@@ -252,12 +235,10 @@ export default function TruckerViewScreen() {
   
   // Deviation detection state
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [lastDeviationCheck, setLastDeviationCheck] = useState<number>(0);
   const [deviationAlertShown, setDeviationAlertShown] = useState(false);
   const deviationCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Test mode state
-  const [isTestModeVisible, setIsTestModeVisible] = useState(false);
   
   // Route view mode state
   const [showFullJourney, setShowFullJourney] = useState(true);
@@ -266,17 +247,17 @@ export default function TruckerViewScreen() {
   const [isFollowingHeading, setIsFollowingHeading] = useState(false);
   
   // Add state for steps and next step
-  const [routeSteps, setRouteSteps] = useState<any[]>([]);
-  const [nextStep, setNextStep] = useState<any | null>(null);
+  const [routeSteps, setRouteSteps] = useState<unknown[]>([]);
+  const [nextStep, setNextStep] = useState<unknown | null>(null);
   
   // Add state for undelivered packages functionality
   const [undeliveredPackagesCount, setUndeliveredPackagesCount] = useState(0);
   const [isUndeliveredRouteMode, setIsUndeliveredRouteMode] = useState(false);
-  const [undeliveredRouteData, setUndeliveredRouteData] = useState<any>(null);
+  const [undeliveredRouteData, setUndeliveredRouteData] = useState<unknown>(null);
   
   // Add state for office package details modal
   const [officePackageModalVisible, setOfficePackageModalVisible] = useState(false);
-  const [selectedOfficePackages, setSelectedOfficePackages] = useState<any[]>([]);
+  const [selectedOfficePackages, setSelectedOfficePackages] = useState<unknown[]>([]);
   const [selectedOfficeName, setSelectedOfficeName] = useState<string>('');
   
   // Add state for office delivery tracking
@@ -285,7 +266,7 @@ export default function TruckerViewScreen() {
   const [isOptimizingOfficeRoute, setIsOptimizingOfficeRoute] = useState(false);
   
   const routeColor = generateColorFromValue(currentZone?.user || '');
-  const signatureRef = React.useRef<any>(null);
+  const signatureRef = React.useRef<unknown>(null);
 
   // Function to get the next undelivered package
   const getNextDeliveryPoint = (): RouteLocation | null => {
@@ -636,22 +617,19 @@ export default function TruckerViewScreen() {
           longitude: (bounds.minLng + bounds.maxLng) / 2
         };
 
-        const span = {
-          latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
-          longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5
-        };
 
         mapRef.current.animateToRegion({
           ...center,
-          ...span
+          latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
+          longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5
         }, 1000);
       }
-    } catch (error) {
-      console.error('Error getting return route:', error);
+    } catch {
+      console.error('Error getting return route');
       // Show error message to user
       Alert.alert(
         'Route Calculation Failed',
-        error instanceof Error ? error.message : 'Unable to calculate the return route. Please try again.',
+        'Unable to calculate the return route. Please try again.',
         [{ 
           text: 'OK',
           onPress: () => {
@@ -694,7 +672,7 @@ export default function TruckerViewScreen() {
       }
       
       // Extract office IDs for optimization
-      const officeIds = undeliveredData.undelivered_offices.map((officeData: any) => officeData.office.id);
+      const officeIds = undeliveredData.undelivered_offices.map((officeData: { office: { id: number } }) => officeData.office.id);
       
       // Call optimization API
       console.log('Calling optimization API with office IDs:', officeIds);
@@ -721,7 +699,7 @@ export default function TruckerViewScreen() {
       const newLocations: RouteLocation[] = [];
       const newOfficeLocations: RouteLocation[] = [];
       
-      optimizedData.optimized_offices.forEach((officeData: any, index: number) => {
+      optimizedData.optimized_offices.forEach((officeData: { latitude: number; longitude: number; office_id: number; office_name: string }) => {
         const officeLocation = {
           latitude: officeData.latitude,
           longitude: officeData.longitude,
@@ -859,19 +837,12 @@ export default function TruckerViewScreen() {
         maxLng: routePoints[0].longitude
       });
 
-      // Add some padding to the bounds
-      const latPadding = (bounds.maxLat - bounds.minLat) * 0.1;
-      const lngPadding = (bounds.maxLng - bounds.minLng) * 0.1;
 
       const center = {
         latitude: (bounds.minLat + bounds.maxLat) / 2,
         longitude: (bounds.minLng + bounds.maxLng) / 2
       };
 
-      const span = {
-        latitudeDelta: (bounds.maxLat - bounds.minLat) + latPadding,
-        longitudeDelta: (bounds.maxLng - bounds.minLng) + lngPadding
-      };
 
       // Animate to show the whole route with no tilt
       mapRef.current.animateCamera({
@@ -937,7 +908,7 @@ export default function TruckerViewScreen() {
       setCurrentZone(data);
       setShowSignature(false);
       setSelectedPackageId(null);
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to save signature and mark as delivered.');
     } finally {
       setIsSavingSignature(false);
@@ -965,7 +936,7 @@ export default function TruckerViewScreen() {
       const officeIdNumber = parseInt(packageId.replace('OFFICE_', ''));
       
       // Get the office data to find the packages
-      const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+      const officeData = undeliveredRouteData?.undelivered_offices?.find((office: { office: { id: number } }) => 
         office.office.id === officeIdNumber
       );
       
@@ -974,7 +945,7 @@ export default function TruckerViewScreen() {
       }
       
       // Get package IDs for this office
-      const packageIds = officeData.packages.map((pkg: any) => pkg.packageID);
+      const packageIds = officeData.packages.map((pkg: { packageID: string }) => pkg.packageID);
       
       // Save office delivery to server
       await saveOfficeDelivery(user.username, officeIdNumber, packageIds);
@@ -1010,7 +981,7 @@ export default function TruckerViewScreen() {
     console.log('Looking for office ID:', officeIdNumber);
     console.log('Available offices:', undeliveredRouteData?.undelivered_offices);
     
-    const officeData = undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+    const officeData = undeliveredRouteData?.undelivered_offices?.find((office: { office: { id: number } }) => 
       office.office.id === parseInt(officeIdNumber)
     );
     
@@ -1046,36 +1017,6 @@ export default function TruckerViewScreen() {
 
   // Remove handleDoneSignature
 
-  const handleDelivery = async (packageId: string) => {
-    try {
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      const response = await markPackageAsDelivered(packageId, user.username);
-
-      if (!response.ok) {
-        console.error('Failed to mark package as delivered:', response);
-      }
-
-      // Update the status of the package in locations
-      const updatedLocations = locations.map(location => 
-        location.package_info.packageID === packageId 
-          ? { 
-              ...location, 
-              package_info: { 
-                ...location.package_info, 
-                status: 'delivered' as const 
-              } 
-            }
-          : location
-      );
-      setLocations(updatedLocations);
-      
-    } catch (error) {
-      console.error('Error marking package as delivered:', error);
-    }
-  };
 
   const handleUndelivered = async (packageId: string) => {
     Alert.alert(
@@ -1168,7 +1109,7 @@ export default function TruckerViewScreen() {
               All Deliveries Complete!
             </Text>
             <Text style={[styles.emptyStateSubtitle, { color: theme.color.lightGrey }]}>
-              Great job! You've completed all your deliveries for today.
+              Great job! You&apos;ve completed all your deliveries for today.
             </Text>
             
             {/* Undelivered Packages Section */}
@@ -1234,7 +1175,7 @@ export default function TruckerViewScreen() {
                   >
                     <MaterialIcons name="inventory" size={16} color="#FFFFFF" />
                     <Text style={[styles.packageCountButtonText, { color: '#FFFFFF' }]}>
-                      {undeliveredRouteData?.undelivered_offices?.find((office: any) => 
+                      {undeliveredRouteData?.undelivered_offices?.find((office: { office: { id: number }; packages?: unknown[] }) => 
                         office.office.id === parseInt(location.package_info.packageID.replace('OFFICE_', ''))
                       )?.packages?.length || 0} Packages
                     </Text>
@@ -1247,7 +1188,7 @@ export default function TruckerViewScreen() {
                   >
                     <MaterialIcons name="close" size={16} color="#FF4136" />
                     <Text style={[styles.undeliveredButtonText, { color: '#FF4136' }]}>
-                      Didn't Deliver
+                      Didn&apos;t Deliver
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1323,11 +1264,11 @@ export default function TruckerViewScreen() {
               Packages at {selectedOfficeName}
             </Text>
             <ScrollView style={styles.packageListModal}>
-              {selectedOfficePackages.map((pkg: any, index: number) => (
+              {selectedOfficePackages.map((pkg: { packageID: string; recipient: string; address: string }) => (
                 <View key={pkg.packageID} style={styles.packageItemModal}>
                   <View style={styles.packageHeaderModal}>
                     <View style={[styles.indexBadge, { backgroundColor: theme.color.darkPrimary }]}>
-                      <Text style={styles.indexText}>{index + 1}</Text>
+                      <Text style={styles.indexText}>1</Text>
                     </View>
                     <Text style={[styles.recipientName, { color: theme.color.black }]}>
                       {pkg.recipient}

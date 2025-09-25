@@ -20,7 +20,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await login(email, password);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to login. Please check your credentials.");
     }
   };
@@ -50,7 +50,7 @@ export default function LoginScreen() {
       <GradientButton title="Login" onPress={handleLogin} />
       <TouchableOpacity onPress={() => router.push("/register")}>
         <Text style={styles.linkText}>
-          Don't have an account? <Text style={styles.linkAction}>Sign up</Text>
+          Don&apos;t have an account? <Text style={styles.linkAction}>Sign up</Text>
         </Text>
       </TouchableOpacity>
     </View>

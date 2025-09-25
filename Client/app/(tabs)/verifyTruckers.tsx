@@ -7,10 +7,18 @@ import { API_BASE_URL } from '../../config/env';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 
+interface Trucker {
+  id: number;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  verified: boolean;
+}
+
 export default function VerifyTruckersScreen() {
   const { user } = useAuth();
   const theme = useTheme().theme;
-  const [unverifiedTruckers, setUnverifiedTruckers] = useState<any[]>([]);
+  const [unverifiedTruckers, setUnverifiedTruckers] = useState<Trucker[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +62,7 @@ export default function VerifyTruckersScreen() {
       } else {
         Alert.alert('Error', 'Failed to verify trucker.');
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Failed to verify trucker.');
     }
   };

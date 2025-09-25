@@ -1,10 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from "expo-constants";
 import { API_BASE_URL } from "../config/env";
 
 const BASE_URL = API_BASE_URL;
 
-export const makeAuthenticatedRequest = async <T = any>(
+export const makeAuthenticatedRequest = async (
   endpoint: string,
   options: RequestInit = {},
 ): Promise<Response> => {
@@ -63,7 +62,7 @@ export const makeAuthenticatedRequest = async <T = any>(
   }
 };
 
-export const getDeliveryHistory = async (days: number = 7): Promise<any[]> => {
+export const getDeliveryHistory = async (days: number = 7): Promise<unknown[]> => {
   try {
     const response = await makeAuthenticatedRequest(`/delivery/history/?days=${days}`);
     if (!response.ok) {

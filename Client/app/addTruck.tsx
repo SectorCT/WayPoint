@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Alert, StyleSheet, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
 import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 interface TruckState {

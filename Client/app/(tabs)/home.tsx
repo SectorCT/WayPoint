@@ -7,15 +7,11 @@ import {
   SafeAreaView,
   TouchableOpacity,
   RefreshControl,
-  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
-import { makeAuthenticatedRequest, getDeliveryHistory } from "../../utils/api";
+import { getDeliveryHistory } from "../../utils/api";
 import useStyles from "./styles/homeStyles";
 import { router } from "expo-router";
-import AddButton from "@/components/basic/addButton/addButton";
-import PackageModule from "@components/listModule/packageModule/packageModule";
-import moment from "moment";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
 import PastEntry from "@/components/listModule/pastEntry/pastEntry";
 import { useAuth } from "@/context/AuthContext";
@@ -38,14 +34,11 @@ interface PastEntryType {
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { logout, user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
   const [pastEntries, setPastEntries] = useState<PastEntryType[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const styles = useStyles();
-
-  const [journeyStarted, setJourneyStarted] = useState(false);
 
   // Fetch delivery history on component mount
   useEffect(() => {
@@ -84,15 +77,6 @@ export default function HomeScreen() {
     router.push('/(tabs)/verifyTruckers');
   };
 
-  const renderPastEntry = ({ item }: { item: PastEntryType }) => (
-    <PastEntry
-      date={item.date}
-      delivered={item.delivered}
-      undelivered={item.undelivered}
-      numTrucks={item.numTrucks}
-      duration={item.hours}
-    />
-  );
 
   return (
     <View style={styles.outer}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator, Platform } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -24,7 +24,7 @@ interface Package {
   latitude: number;
   longitude: number;
   status: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface RouteLocation {
@@ -39,7 +39,7 @@ interface RouteData {
   dateOfCreation: string;
   packageSequence: Package[];
   mapRoute: [number, number][];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Function to generate a color based on a value
@@ -89,7 +89,7 @@ const CustomMarker = ({ number, isDelivered, isUndelivered, isWarehouse }: { num
   </View>
 );
 
-const EmptyState = ({ theme }: { theme: any }) => (
+const EmptyState = ({ theme }: { theme: { color: { white: string; darkPrimary: string; lightGrey: string } } }) => (
   <View style={[styles.emptyContainer, { backgroundColor: theme.color.white }]}>
     <MaterialIcons name="local-shipping" size={80} color={theme.color.darkPrimary} />
     <Text style={[styles.emptyTitle, { color: theme.color.black }]}>No Routes Available</Text>
@@ -140,10 +140,10 @@ const AdminTruckTrackerScreen: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [zoneLocations, setZoneLocations] = useState<Map<string, RouteLocation[]>>(new Map());
   const [routeData, setRouteData] = useState<RouteData[]>([]);
-  const [userData, setUserData] = useState<Map<string, any>>(new Map());
+  const [userData, setUserData] = useState<Map<string, { username: string; email: string; phoneNumber: string }>>(new Map());
   const params = useLocalSearchParams<{ routes?: string }>();
   const { user } = useAuth();
-  const [unverifiedTruckers, setUnverifiedTruckers] = useState<any[]>([]);
+  const [unverifiedTruckers, setUnverifiedTruckers] = useState<{ id: number; username: string; email: string; phoneNumber: string; verified: boolean }[]>([]);
   const [loadingTruckers, setLoadingTruckers] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -172,7 +172,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
         
         // Initialize locations for all zones
         const newZoneLocations = new Map<string, RouteLocation[]>();
-        const newUserData = new Map<string, any>();
+        const newUserData = new Map<string, { username: string; email: string; phoneNumber: string }>();
         const processedUsers = new Set<string>();
         
         // Fetch user data for each unique route
@@ -195,7 +195,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
           }
           console.log("zoneData.packageSequence", zoneData.packageSequence);
           const locations = zoneData.packageSequence
-            .map((packageInfo: Package, index: number) => ({
+            .map((packageInfo: Package) => ({
               latitude: packageInfo.latitude,
               longitude: packageInfo.longitude,
               waypoint_index: packageInfo.location_index,
@@ -314,9 +314,6 @@ const AdminTruckTrackerScreen: React.FC = () => {
       return;
     }
 
-    const deliveredCount = routeData.packageSequence.filter((pkg: Package) => pkg.status === 'delivered').length;
-    const totalCount = routeData.packageSequence.length;
-    const progress = (deliveredCount / totalCount) * 100;
 
     // Convert route points to coordinates
     const routePoints: Coordinate[] = [
