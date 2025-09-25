@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Animated, Easing, Platform } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { assignTruckAndStartJourney, startJourney } from '../../utils/journeyApi';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { 
     padding: 20, 
-    paddingTop: 60, // Add top padding to avoid status bar
+    paddingTop: Platform.OS === 'android' ? 90 : 60, // Add extra padding for Android
     borderBottomWidth: 1, 
     borderBottomColor: '#eee' 
   },

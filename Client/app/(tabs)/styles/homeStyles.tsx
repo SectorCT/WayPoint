@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 
 export default function useStyles() {
@@ -21,6 +21,7 @@ export default function useStyles() {
       zIndex: 2,
       backgroundColor: theme.color.white,
       paddingBottom: 20,
+      paddingTop: Platform.OS === 'android' ? 40 : 0, // More padding for Home tab
       opacity: 1,
       borderBottomWidth: 0.5,
       borderBottomColor: theme.color.lightGrey,

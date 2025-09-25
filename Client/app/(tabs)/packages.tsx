@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getPackages } from "../../utils/journeyApi";

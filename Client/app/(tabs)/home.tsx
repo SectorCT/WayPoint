@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { makeAuthenticatedRequest, getDeliveryHistory } from "../../utils/api";

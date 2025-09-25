@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -129,7 +130,7 @@ export default function OfficesScreen() {
       <View style={styles.topFill} />
       <SafeAreaView style={styles.container}>
         <View style={styles.inner}>
-          <View style={styles.headerContainer}>
+          <View style={[styles.headerContainer, Platform.OS === 'android' && { paddingTop: 30 }]}>
             <Text style={styles.title}>Offices</Text>
             <TouchableOpacity onPress={() => router.push('/addOffice')}>
               <MaterialIcons name="add-business" size={28} color={theme.color.darkPrimary} />
