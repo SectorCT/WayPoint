@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "registerEmployees": "ts-node ./scripts/registerEmployees.ts"
   },
   "jest": {
@@ -55,6 +56,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.27.4",
+    "@eslint/js": "^9.36.0",
     "@react-native-community/cli": "^18.0.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.15.29",
@@ -62,12 +64,16 @@
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^19.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.4.0",
     "jest": "^29.2.1",
     "jest-expo": "~54.0.12",
     "react-native-svg-transformer": "^1.5.1",
     "react-test-renderer": "^19.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.44.1"
   },
   "private": true
 }

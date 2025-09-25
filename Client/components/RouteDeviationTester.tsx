@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, SafeAreaView, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Modal } from 'react-native';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
 import { runTestScenario, runAllTests, getTestScenarios } from '../scripts/testRouteDeviation';
@@ -93,7 +93,7 @@ const RouteDeviationTester: React.FC<RouteDeviationTesterProps> = ({ isVisible, 
               1. Select a test scenario above{'\n'}
               2. The test will show you the expected behavior{'\n'}
               3. Compare with actual app behavior{'\n'}
-              4. Use "Run All Tests" to see all results at once
+              4. Use &quot;Run All Tests&quot; to see all results at once
             </Text>
           </View>
         </ScrollView>

@@ -24,7 +24,7 @@ export default function RegisterScreen() {
     }
     try {
       await register(email, username, password, phoneNumber, isManager, isManager ? undefined : companyId);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to register. Please try again.");
     }
   };

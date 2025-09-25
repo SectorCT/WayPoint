@@ -42,7 +42,7 @@ export const getUserByUsername = async (username: string): Promise<User> => {
   return user;
 };
 
-export const startJourney = async (drivers: string[]): Promise<any> => {
+export const startJourney = async (drivers: string[]): Promise<unknown> => {
   const body = {
     drivers: drivers,
   }
@@ -62,9 +62,9 @@ export const startJourney = async (drivers: string[]): Promise<any> => {
 export const assignTruckAndStartJourney = async (
   driverUsername: string,
   truckLicensePlate: string,
-  packageSequence: any,
-  mapRoute: any
-): Promise<any> => {
+  packageSequence: Package[],
+  mapRoute: number[][]
+): Promise<unknown> => {
   const body = {
     driverUsername,
     truckLicensePlate,
@@ -84,7 +84,7 @@ export const assignTruckAndStartJourney = async (
   return response.json();
 };
 
-export const checkDriverStatus = async (username: string): Promise<any> => {
+export const checkDriverStatus = async (username: string): Promise<unknown> => {
   const response = await makeAuthenticatedRequest('/delivery/route/checkDriverStatus/', {
     method: "POST",
     body: JSON.stringify({
@@ -206,7 +206,7 @@ export const recalculateRoute = async (
   }
 };
 
-export const getUndeliveredPackagesRoute = async (driverUsername: string): Promise<any> => {
+export const getUndeliveredPackagesRoute = async (driverUsername: string): Promise<unknown> => {
   try {
     const response = await makeAuthenticatedRequest(`/delivery/offices/undelivered_route/${driverUsername}/`, {
       method: "GET",
@@ -228,7 +228,7 @@ export const saveOfficeDelivery = async (
   driverUsername: string,
   officeId: number,
   packageIds: string[]
-): Promise<any> => {
+): Promise<unknown> => {
   try {
     const response = await makeAuthenticatedRequest('/delivery/office-delivery/', {
       method: "POST",
@@ -256,7 +256,7 @@ export const optimizeOfficeRoute = async (
   currentLat: number,
   currentLng: number,
   officeIds: number[]
-): Promise<any> => {
+): Promise<unknown> => {
   try {
     const response = await makeAuthenticatedRequest('/delivery/route/optimize-office/', {
       method: "POST",

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Animated, Easing, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, Easing } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
-import { assignTruckAndStartJourney, startJourney } from '../../utils/journeyApi';
+import { assignTruckAndStartJourney } from '../../utils/journeyApi';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Truck, User } from '../../types/objects';
@@ -9,6 +9,19 @@ import { Truck, User } from '../../types/objects';
 interface Assignment {
   driver: User;
   truck?: Truck;
+}
+
+interface RouteWaypoint {
+  package_info: {
+    packageID: string;
+    [key: string]: unknown;
+  };
+  route: number[][];
+}
+
+interface PlannedRoute {
+  driverUsername: string;
+  route: RouteWaypoint[];
 }
 
 function TruckLoadingAnimation() {
@@ -44,16 +57,16 @@ export default function AssignTrucksScreen() {
   const { theme } = useTheme();
   // Get params from navigation
   const params = useLocalSearchParams();
-  function parseParam<T>(param: any): T {
+  function parseParam<T>(param: unknown): T {
     if (typeof param === 'string') {
       try {
         return JSON.parse(param);
       } catch {
-        return [] as any;
+        return [] as T;
       }
     }
     if (Array.isArray(param)) return param as T;
-    return [] as any;
+    return [] as T;
   }
   const selectedDrivers: User[] = parseParam<User[]>(params.selectedDrivers);
   const availableTrucks: Truck[] = parseParam<Truck[]>(params.availableTrucks);
@@ -92,15 +105,15 @@ export default function AssignTrucksScreen() {
       const plannedRoutes = await startJourney(driverUsernames);
       // 2. Assign trucks for each driver with a planned route
       setLoadingMsg('Assigning trucks and packages...');
-      const driversWithRoutes = assignments.filter(a => plannedRoutes.some((r: any) => r.driverUsername === a.driver.username));
+      const driversWithRoutes = assignments.filter(a => plannedRoutes.some((r: PlannedRoute) => r.driverUsername === a.driver.username));
       for (const assignment of driversWithRoutes) {
-        const route = plannedRoutes.find((r: any) => r.driverUsername === assignment.driver.username);
+        const route = plannedRoutes.find((r: PlannedRoute) => r.driverUsername === assignment.driver.username);
         if (!route) continue;
         await assignTruckAndStartJourney(
           assignment.driver.username,
           assignment.truck!.licensePlate,
-          route.route.map((wp: any) => wp.package_info),
-          route.route.flatMap((wp: any) => wp.route)
+          route.route.map((wp: RouteWaypoint) => wp.package_info),
+          route.route.flatMap((wp: RouteWaypoint) => wp.route)
         );
       }
       setLoading(false);

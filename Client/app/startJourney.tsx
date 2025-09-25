@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TextInput, Alert, Modal } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '@context/ThemeContext';
-import { getAvailableTrucks, getTodaysPendingPackages, getEmployees, startJourney, checkDriverStatus, assignTruckAndStartJourney } from '../utils/journeyApi';
+import { getAvailableTrucks, getTodaysPendingPackages, getEmployees, checkDriverStatus, assignTruckAndStartJourney } from '../utils/journeyApi';
 import { User, Truck, Package } from '../types/objects';
-import moment from 'moment';
 import { router } from 'expo-router';
 
 interface DriverItemProps {
@@ -14,7 +13,7 @@ interface DriverItemProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isDisabled: boolean;
-  driverStatus?: any;
+  driverStatus?: unknown;
 }
 
 const DriverItem: React.FC<DriverItemProps> = ({
@@ -56,7 +55,7 @@ const DriverItem: React.FC<DriverItemProps> = ({
     if (!driverStatus) return { message: '', color: theme.color.lightGrey };
     
     switch (driverStatus.status) {
-      case 'active':
+      case 'active': {
         const pending = driverStatus.pending_packages || 0;
         const delivered = driverStatus.delivered_packages || 0;
         const undelivered = driverStatus.undelivered_packages || 0;
@@ -64,13 +63,15 @@ const DriverItem: React.FC<DriverItemProps> = ({
           message: `Active route: ${delivered} delivered, ${undelivered} undelivered${pending > 0 ? `, ${pending} pending` : ''}`, 
           color: theme.color.mediumPrimary 
         };
-      case 'completed':
+      }
+      case 'completed': {
         const completedDelivered = driverStatus.delivered_packages || 0;
         const completedUndelivered = driverStatus.undelivered_packages || 0;
         return { 
           message: `Completed: ${completedDelivered} delivered, ${completedUndelivered} undelivered`, 
           color: '#4CAF50' 
         };
+      }
       case 'completed_today':
         return { 
           message: `Completed today: ${driverStatus.delivered_packages} packages`, 
@@ -173,9 +174,7 @@ export default function StartJourneyScreen() {
   const [availableTrucks, setAvailableTrucks] = useState<Truck[]>([]);
   const [todaysPackages, setTodaysPackages] = useState<Package[]>([]);
   const [employees, setEmployees] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [driverStatuses, setDriverStatuses] = useState<{[key: string]: any}>({});
-  const [plannedRoutes, setPlannedRoutes] = useState<any[]>([]);
+  const [driverStatuses, setDriverStatuses] = useState<{[key: string]: unknown}>({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentDriverIndex, setCurrentDriverIndex] = useState(0);
 
@@ -213,7 +212,7 @@ export default function StartJourneyScreen() {
         const statusMap = statusResults.reduce((acc, result) => {
           acc[result.username] = result.status;
           return acc;
-        }, {} as {[key: string]: any});
+        }, {} as {[key: string]: unknown});
         
         setDriverStatuses(statusMap);
       } catch (error) {
@@ -335,8 +334,8 @@ export default function StartJourneyScreen() {
         await assignTruckAndStartJourney(
             driverUsername,
             truckLicensePlate,
-            route.route.map((wp: any) => wp.package_info),
-            route.route.flatMap((wp: any) => wp.route)
+            route.route.map((wp: { package_info: unknown }) => wp.package_info),
+            route.route.flatMap((wp: { route: unknown }) => wp.route)
         );
 
         setAvailableTrucks(availableTrucks.filter(t => t.licensePlate !== truckLicensePlate));
@@ -415,7 +414,7 @@ export default function StartJourneyScreen() {
           <View style={[styles.statCard, { backgroundColor: theme.color.white }]}>
             <MaterialIcons name="inventory" size={24} color={theme.color.mediumPrimary} />
             <Text style={[styles.statNumber, { color: theme.color.black }]}>{todaysPackages.length}</Text>
-            <Text style={[styles.statLabel, { color: theme.color.black }]}>Today's Packages</Text>
+            <Text style={[styles.statLabel, { color: theme.color.black }]}>Today&apos;s Packages</Text>
           </View>
         </View>
         <View style={[styles.recommendedCard, { backgroundColor: theme.color.white }]}>

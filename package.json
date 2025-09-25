@@ -7,9 +7,14 @@
     "react": "^18.2.0",
     "react-icons": "^5.5.0"
   },
+  "scripts": {
+    "lint:client": "npm --prefix Client run lint",
+    "lint": "npm run lint:client"
+  },
   "devDependencies": {
     "@types/react-helmet": "^6.1.11",
     "@types/react-icons": "^2.2.7",
+    "jiti": "^2.6.0",
     "react-native-dotenv": "^3.4.11"
   }
 }

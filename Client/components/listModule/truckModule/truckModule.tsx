@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import useStyles from "./styles";
 import { useTheme } from "@context/ThemeContext";

@@ -5,13 +5,12 @@ import { useLocalSearchParams, router } from "expo-router";
 import * as Location from "expo-location";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useTheme } from "@context/ThemeContext";
 
 interface LocationState {
   latitude?: string;
   longitude?: string;
   returnScreen: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }
 
 export default function PickLocationScreen() {
@@ -61,7 +60,7 @@ export default function PickLocationScreen() {
         if (data.results && data.results[0] && data.results[0].formatted) {
           address = data.results[0].formatted;
         }
-      } catch (error) {
+      } catch {
         // fallback: leave address blank
       }
     }

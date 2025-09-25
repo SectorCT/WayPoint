@@ -6,17 +6,13 @@ import {
   ActivityIndicator,
   SafeAreaView,
   TouchableOpacity,
-  Modal,
-  TextInput,
   StyleSheet,
-  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { makeAuthenticatedRequest } from "../../utils/api";
 import useStyles from "./styles/packageStyles";
 import { router, useLocalSearchParams } from "expo-router";
-import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 
 interface Office {
   id: number;
@@ -32,20 +28,11 @@ export default function OfficesScreen() {
   const params = useLocalSearchParams();
   const [offices, setOffices] = useState<Office[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newOffice, setNewOffice] = useState({ name: '', address: '', latitude: '', longitude: '' });
-  const [adding, setAdding] = useState(false);
   const styles = useStyles();
 
   // If returning from map picker, update form state
   useEffect(() => {
     if (params.returnScreen === "offices" && (params.latitude || params.longitude)) {
-      setNewOffice((prev) => ({
-        ...prev,
-        latitude: params.latitude as string || prev.latitude,
-        longitude: params.longitude as string || prev.longitude,
-        address: params.address as string || prev.address,
-      }));
       // Remove params from URL after using them
       router.replace("/(tabs)/offices");
     }
@@ -61,7 +48,7 @@ export default function OfficesScreen() {
       const res = await makeAuthenticatedRequest('/delivery/offices/', { method: 'GET' });
       const data = await res.json();
       setOffices(Array.isArray(data) ? data : []);
-    } catch (e) {
+    } catch {
       setOffices([]);
     } finally {
       setLoading(false);
@@ -78,37 +65,6 @@ export default function OfficesScreen() {
     }
   };
 
-  const handleAddOffice = async () => {
-    setAdding(true);
-    try {
-      await makeAuthenticatedRequest('/delivery/offices/', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...newOffice,
-          latitude: parseFloat(newOffice.latitude),
-          longitude: parseFloat(newOffice.longitude),
-          company: 1, // TODO: Replace with actual company ID from context/auth
-        }),
-      });
-      setModalVisible(false);
-      setNewOffice({ name: '', address: '', latitude: '', longitude: '' });
-      fetchOffices();
-    } catch (e) {
-      // handle error
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handlePickLocation = () => {
-    router.replace({
-      pathname: "/pickLocationFromMap",
-      params: {
-        ...newOffice,
-        returnScreen: "offices",
-      },
-    });
-  };
 
   function OfficeCard({ office, fetchUndeliveredCount }: { office: Office, fetchUndeliveredCount: (id: number) => Promise<number> }) {
     const [undeliveredCount, setUndeliveredCount] = useState<number | null>(null);
