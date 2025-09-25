@@ -1,8 +1,25 @@
-from rest_framework.views import exception_handler
+"""Utility functions for WayPoint Logistics server.
+
+This module contains custom exception handlers and utility functions
+for the Django REST Framework application.
+"""
 import traceback
 from django.conf import settings
+from rest_framework.views import exception_handler
 
 def custom_exception_handler(exc, context):
+    """Custom exception handler for Django REST Framework.
+    
+    This handler extends the default DRF exception handler to include
+    debug information when DEBUG mode is enabled.
+    
+    Args:
+        exc: The exception that was raised
+        context: The context in which the exception occurred
+        
+    Returns:
+        Response: The exception response with optional debug information
+    """
     # Call DRF's default handler first to get the standard error response
     response = exception_handler(exc, context)
 
