@@ -28,7 +28,6 @@ const Footer = () => {
       title: "Product",
       links: [
         { name: "Features", href: "#features" },
-        { name: "Technology", href: "#technology" },
         { name: "Pricing", href: "#pricing" },
         { name: "API Documentation", href: "/api-documentation" }
       ]

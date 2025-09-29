@@ -305,39 +305,6 @@ const Desktop = () => {
         </div>
       </section>
 
-      {/* Technology Section */}
-      <section className="py-24 bg-secondary/20 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
-              Enterprise-Grade
-              <span className="block text-primary">Technology</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Built with enterprise-grade technologies for scalability, security, and performance.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Monitor, title: "React TypeScript", desc: "Modern web interface" },
-              { icon: Shield, title: "Enterprise Security", desc: "JWT & role-based access" },
-              { icon: Database, title: "PostgreSQL", desc: "Robust data management" },
-              { icon: Settings, title: "Django REST", desc: "Scalable backend API" }
-            ].map((tech, index) => (
-              <Card key={index} className="border-0 bg-background/50 backdrop-blur-sm text-center slide-up" style={{animationDelay: `${index * 0.1}s`}}>
-                <CardContent className="pt-6">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <tech.icon className="h-8 w-8 text-primary" />
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-2">{tech.title}</h4>
-                  <p className="text-sm text-muted-foreground">{tech.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-24 relative z-10">
