@@ -93,40 +93,6 @@ const Features = () => {
           ))}
         </div>
 
-        {/* Technology Showcase */}
-        <div className="mt-20 text-center">
-          <h3 className="text-2xl font-bold text-foreground mb-8">Built with Modern Technology</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-3">
-                <Smartphone className="h-8 w-8 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-foreground">React Native</span>
-              <span className="text-xs text-muted-foreground">Cross-platform</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-3">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-foreground">Django</span>
-              <span className="text-xs text-muted-foreground">Secure Backend</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-3">
-                <MapPin className="h-8 w-8 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-foreground">OSRM</span>
-              <span className="text-xs text-muted-foreground">Route Engine</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-3">
-                <Clock className="h-8 w-8 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-foreground">Real-time</span>
-              <span className="text-xs text-muted-foreground">WebSocket</span>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

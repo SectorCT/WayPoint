@@ -376,40 +376,6 @@ const MobileApp = () => {
         </div>
       </section>
 
-      {/* Technology Section */}
-      <section className="py-24 bg-secondary/20">
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
-              Built with
-              <span className="block text-primary">Modern Technology</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Leveraging the latest mobile technologies for optimal performance, security, and user experience.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Smartphone, title: "React Native", desc: "Cross-platform development" },
-              { icon: Shield, title: "JWT Security", desc: "Secure authentication" },
-              { icon: Zap, title: "Real-time Sync", desc: "Instant updates" },
-              { icon: BarChart3, title: "Analytics", desc: "Performance insights" }
-            ].map((tech, index) => (
-              <Card key={index} className="border-0 bg-background/50 backdrop-blur-sm text-center slide-up" style={{animationDelay: `${index * 0.1}s`}}>
-                <CardContent className="pt-6">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <tech.icon className="h-8 w-8 text-primary" />
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-2">{tech.title}</h4>
-                  <p className="text-sm text-muted-foreground">{tech.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-24">
