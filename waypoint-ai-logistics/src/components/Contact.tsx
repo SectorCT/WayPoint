@@ -283,19 +283,19 @@ const Contact = () => {
                 <p className="text-muted-foreground mb-6">
                   Send us a direct email for quick responses and urgent inquiries.
                 </p>
-                                 <div className="flex items-center justify-between bg-background/50 rounded-lg p-4">
-                   <div>
+                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-background/50 rounded-lg p-4 gap-4">
+                   <div className="flex-1">
                      <p className="text-sm text-muted-foreground mb-1">
                        <strong>General Inquiries:</strong>
                      </p>
                      <a 
                        href="mailto:contact@waypoint.delivery" 
-                       className="text-primary hover:text-primary/80 transition-colors font-medium"
+                       className="text-primary hover:text-primary/80 transition-colors font-medium break-all sm:break-normal"
                      >
                        contact@waypoint.delivery
                      </a>
                    </div>
-                   <Button variant="professional" size="lg" asChild>
+                   <Button variant="professional" size="lg" asChild className="w-full sm:w-auto">
                      <a href="mailto:contact@waypoint.delivery">
                        <Mail className="h-4 w-4 mr-2" />
                        Send Email

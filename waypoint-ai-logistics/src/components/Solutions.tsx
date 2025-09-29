@@ -68,10 +68,10 @@ const Solutions = () => {
   };
 
   return (
-    <section id="solutions" className="py-24 bg-secondary/30">
+    <section id="solutions" className="py-16 sm:py-20 lg:py-24 bg-secondary/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-12 sm:mb-16 lg:mb-20">
           <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
             Complete
             <span className="block text-primary">Digital Solutions</span>
@@ -83,11 +83,11 @@ const Solutions = () => {
         </div>
 
         {/* Mobile App Section */}
-        <div className="mb-20">
+        <div className="mb-12 sm:mb-16 lg:mb-20">
           <Card className="border-0 bg-background/50 backdrop-blur-sm overflow-hidden transform transition-all duration-1000 ease-out hover:scale-[1.02] hover:shadow-xl slide-up">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
               {/* Content Side */}
-              <div className="p-8 lg:p-12 flex flex-col justify-center">
+              <div className="p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
                     <Smartphone className="h-6 w-6 text-primary" />
@@ -131,7 +131,7 @@ const Solutions = () => {
               </div>
 
               {/* Image Side - Mobile App Showcase */}
-              <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center relative overflow-hidden">
+              <div className="h-80 sm:h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5">
                   <div className="absolute top-10 left-10 w-20 h-20 bg-primary rounded-full"></div>
@@ -141,7 +141,7 @@ const Solutions = () => {
                 </div>
 
                 {/* Mobile Screenshots Grid */}
-                <div className="relative z-10 grid grid-cols-2 gap-6 max-w-md">
+                <div className="relative z-10 grid grid-cols-4 sm:grid-cols-2 gap-2 sm:gap-4 max-w-md">
                   {mobileScreenshots.map((screenshot, index) => (
                     <div 
                       key={index}
@@ -150,7 +150,7 @@ const Solutions = () => {
                       title={`Click to explore ${screenshot.title}`}
                     >
                       {/* Phone Mockup Container */}
-                      <div className="relative w-28 h-44 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg border-2 border-gray-700 overflow-hidden">
+                      <div className="relative w-18 h-40 sm:w-28 sm:h-44 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-lg border-2 border-gray-700 overflow-hidden">
                         <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-gray-600 rounded-full z-10"></div>
                         <img 
                           src={screenshot.src} 
@@ -160,8 +160,8 @@ const Solutions = () => {
                       </div>
                       
                       {/* Label */}
-                      <div className="mt-3 text-center">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="mt-2 text-center">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {screenshot.title}
                         </p>
                       </div>
@@ -189,7 +189,7 @@ const Solutions = () => {
           <Card className="border-0 bg-background/50 backdrop-blur-sm overflow-hidden transform transition-all duration-1000 ease-out hover:scale-[1.02] hover:shadow-xl slide-up slide-up-delay-1">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
               {/* Image Side */}
-              <div className="h-96 lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center order-2 lg:order-1 relative overflow-hidden">
+              <div className="h-96 sm:h-[28rem] lg:h-auto bg-gradient-to-br from-primary/10 to-primary/5 p-4 sm:p-6 flex items-center justify-center order-2 lg:order-1 relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5">
                   <div className="absolute top-10 left-10 w-20 h-20 bg-primary rounded-full"></div>
@@ -199,7 +199,7 @@ const Solutions = () => {
                 </div>
 
                 {/* Desktop Screenshots Grid - Horizontal Layout */}
-                <div className="relative z-10 grid grid-cols-2 gap-4 max-w-2xl">
+                <div className="relative z-10 grid grid-cols-2 gap-3 sm:gap-4 max-w-2xl">
                   {desktopScreenshots.map((screenshot, index) => (
                     <div 
                       key={index}
@@ -208,7 +208,7 @@ const Solutions = () => {
                       title={`Click to explore ${screenshot.title}`}
                     >
                       {/* Desktop Mockup Container */}
-                      <div className="relative w-full h-32 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg shadow-lg border-2 border-gray-700 overflow-hidden">
+                      <div className="relative w-full h-24 sm:h-32 mx-auto bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg shadow-lg border-2 border-gray-700 overflow-hidden">
                         <div className="absolute top-2 left-2 w-3 h-3 bg-red-500 rounded-full z-10"></div>
                         <div className="absolute top-2 left-6 w-3 h-3 bg-yellow-500 rounded-full z-10"></div>
                         <div className="absolute top-2 left-10 w-3 h-3 bg-green-500 rounded-full z-10"></div>
@@ -231,7 +231,7 @@ const Solutions = () => {
 
                 {/* View All Overlay */}
                 <div 
-                  className="absolute bottom-4 right-4 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-2 cursor-pointer"
+                  className="absolute bottom-4 right-4 sm:bottom-8 bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-2 cursor-pointer"
                   onClick={handleDesktopImageClick}
                 >
                   <p className="text-white text-xs font-semibold flex items-center">
@@ -242,7 +242,7 @@ const Solutions = () => {
               </div>
 
               {/* Content Side */}
-              <div className="p-8 lg:p-12 flex flex-col justify-center order-1 lg:order-2">
+              <div className="p-6 sm:p-8 lg:p-12 flex flex-col justify-center order-1 lg:order-2">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
                     <Monitor className="h-6 w-6 text-primary" />
