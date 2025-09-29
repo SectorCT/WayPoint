@@ -69,8 +69,7 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             <Button 
               variant="ghost" 
-              size="sm" 
-              className="text-muted-foreground hover:text-foreground hover:bg-secondary/20"
+              size="sm"
               onClick={() => window.open('http://localhost:3000/dashboard', '_blank')}
             >
               Go to Dashboard
@@ -107,12 +106,9 @@ const Header = () => {
                 </button>
               ))}
               <div className="pt-4 space-y-2">
-                <Button variant="ghost" className="w-full">
-                  Sign In
-                </Button>
                 <Button 
                   variant="ghost" 
-                  className="w-full text-muted-foreground hover:text-foreground hover:bg-secondary/20"
+                  className="w-full"
                   onClick={() => window.open('http://localhost:3000/dashboard', '_blank')}
                 >
                   Go to Dashboard
