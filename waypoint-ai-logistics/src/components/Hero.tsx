@@ -4,7 +4,7 @@ import heroImage from "@/assets/hero-logistics.jpg";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-24">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -23,7 +23,7 @@ const Hero = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-8 sm:pt-0">
         <div className="slide-up">
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6">
             Save Time, Cut Costs,
