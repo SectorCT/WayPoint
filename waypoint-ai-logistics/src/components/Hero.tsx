@@ -13,8 +13,8 @@ const Hero = () => {
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 hero-gradient opacity-90"></div>
-        {/* Fade to white gradient at bottom for smooth transition to Features section */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent"></div>
+        {/* Fade to white gradient at bottom for smooth transition to Features section - Mobile only */}
+        <div className="md:hidden absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent"></div>
       </div>
 
       {/* Animated Background Elements */}
@@ -69,7 +69,7 @@ const Hero = () => {
             </div>
             <p className="text-white/80">Cost Reduction</p>
           </div>
-          <div className="text-center">
+          <div className="text-center hidden sm:block">
             <div className="flex items-center justify-center mb-2">
               <TrendingUp className="h-6 w-6 text-primary-glow mr-2" />
               <span className="text-3xl font-bold text-white">99%</span>
