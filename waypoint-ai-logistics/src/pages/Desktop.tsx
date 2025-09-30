@@ -147,15 +147,6 @@ const Desktop = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10 relative overflow-hidden">
       <Header />
 
-      {/* Floating Background Images - Fewer but Quality */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Strategic placement for desktop dashboard feel */}
-        <div className="absolute top-24 right-16 w-20 h-20 bg-primary/8 rounded-lg animate-float" style={{animationDelay: '0s'}}></div>
-        <div className="absolute top-1/3 left-8 w-16 h-16 bg-primary/12 rounded-lg animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-2/3 right-12 w-14 h-14 bg-primary/10 rounded-lg animate-float" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-32 left-16 w-18 h-18 bg-primary/6 rounded-lg animate-float" style={{animationDelay: '3s'}}></div>
-        <div className="absolute bottom-20 right-8 w-12 h-12 bg-primary/14 rounded-lg animate-float" style={{animationDelay: '1.5s'}}></div>
-      </div>
 
       {/* Hero Section */}
       <section className="pt-24 pb-16 relative overflow-hidden z-10">
@@ -167,7 +158,7 @@ const Desktop = () => {
                 <Monitor className="h-6 w-6 text-primary" />
               </div>
               <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                React TypeScript Interface
+                Management Command Center
               </span>
             </div>
             
