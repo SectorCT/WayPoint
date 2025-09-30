@@ -13,6 +13,8 @@ const Hero = () => {
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 hero-gradient opacity-90"></div>
+        {/* Fade to white gradient at bottom for smooth transition to Features section */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent"></div>
       </div>
 
       {/* Animated Background Elements */}
@@ -77,8 +79,8 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+      {/* Scroll Indicator - Hidden on mobile to prevent overlap */}
+      <div className="hidden md:flex absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
         <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
           <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-bounce"></div>
         </div>
