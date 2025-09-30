@@ -3,6 +3,13 @@ import { ArrowRight, Play, TrendingUp, Clock, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-logistics.jpg";
 
 const Hero = () => {
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-24">
       {/* Background Image with Overlay */}
@@ -42,7 +49,7 @@ const Hero = () => {
 
         {/* CTA Buttons */}
         <div className="slide-up slide-up-delay-2 flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-          <Button variant="cta" size="lg" className="text-lg px-8 py-4">
+          <Button variant="cta" size="lg" className="text-lg px-8 py-4" onClick={scrollToContact}>
             Start Your Free Demo
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>

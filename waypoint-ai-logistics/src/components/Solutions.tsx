@@ -93,7 +93,7 @@ const Solutions = () => {
                     <Smartphone className="h-6 w-6 text-primary" />
                   </div>
                   <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                    React Native Cross-Platform
+                    Driver's Companion
                   </span>
                 </div>
                 
@@ -248,7 +248,7 @@ const Solutions = () => {
                     <Monitor className="h-6 w-6 text-primary" />
                   </div>
                   <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                    React TypeScript Interface
+                    Management Command Center
                   </span>
                 </div>
                 
