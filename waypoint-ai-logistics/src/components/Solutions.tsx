@@ -98,12 +98,12 @@ const Solutions = () => {
                 </div>
                 
                 <h3 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-                  Mobile App for Truckers
+                  Mobile App for Drivers
                 </h3>
                 
                                  <p className="text-lg text-muted-foreground mb-8">
                    Empower your delivery team with our intuitive mobile application designed for both 
-                   truckers and managers. Built with React Native for seamless cross-platform performance 
+                   drivers and managers. Built with React Native for seamless cross-platform performance 
                    with role-based interfaces for different user types.
                  </p>
 

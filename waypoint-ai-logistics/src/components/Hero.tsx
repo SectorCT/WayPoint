@@ -54,7 +54,7 @@ const Hero = () => {
         </div>
 
         {/* Stats */}
-        <div className="slide-up slide-up-delay-3 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="slide-up slide-up-delay-3 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16 sm:mb-0">
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Clock className="h-6 w-6 text-primary-glow mr-2" />
