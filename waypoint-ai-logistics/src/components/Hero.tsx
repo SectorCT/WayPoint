@@ -42,8 +42,8 @@ const Hero = () => {
         
         <div className="slide-up slide-up-delay-1">
           <p className="text-xl lg:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Revolutionize your delivery operations with AI-powered logistics management.
-            Intelligent routing, real-time tracking, and automated fleet optimization.
+            Transform your delivery operations with advanced logistics management.
+            Optimized routing, real-time tracking, and automated fleet coordination.
           </p>
         </div>
 

@@ -73,7 +73,7 @@ const Footer = () => {
               </div>
               
               <p className="text-background/80 mb-6 max-w-md">
-                Revolutionizing delivery operations with AI-powered logistics management. 
+                Transforming delivery operations with advanced logistics management. 
                 Save time, cut costs, and deliver smart with WayPoint.
               </p>
               

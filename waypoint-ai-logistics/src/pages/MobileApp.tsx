@@ -53,7 +53,7 @@ const MobileApp = () => {
     {
       icon: Navigation,
       title: "Route Optimization",
-      description: "AI-powered routing with OSRM integration for optimal delivery paths and fuel efficiency.",
+      description: "Advanced routing with OSRM integration for optimal delivery paths and fuel efficiency.",
       details: [
         "OSRM route calculation",
         "Geographic clustering",

@@ -28,7 +28,7 @@ const Features = () => {
     {
       icon: Route,
       title: "Advanced Routing & Optimization",
-      description: "OSRM integration for optimal route calculation with AI-powered planning.",
+      description: "OSRM integration for optimal route calculation with intelligent planning algorithms.",
       highlights: ["Geographic clustering", "Multi-stop optimization", "Route deviation detection"]
     },
     {
@@ -61,7 +61,7 @@ const Features = () => {
             <span className="block text-primary">Modern Logistics</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Everything you need to revolutionize your delivery operations with intelligent automation
+            Everything you need to optimize your delivery operations with powerful automation
             and real-time insights.
           </p>
         </div>

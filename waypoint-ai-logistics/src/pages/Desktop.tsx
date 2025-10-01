@@ -87,7 +87,7 @@ const Desktop = () => {
     {
       icon: MapPin,
       title: "Route Planning",
-      description: "AI-powered route optimization with geographic clustering and multi-stop planning.",
+      description: "Advanced route optimization with geographic clustering and multi-stop planning.",
       details: [
         "OSRM route calculation",
         "Geographic clustering",
