@@ -20,7 +20,8 @@ const Pricing = () => {
       icon: Package,
       features: [
         "1,000 tasks/month included",
-        "Unlimited drivers/managers",
+        "Up to 5 drivers",
+        "Unlimited managers",
         "Additional tasks at $0.12/task",
         "Route optimization",
         "Real-time tracking",
@@ -38,10 +39,11 @@ const Pricing = () => {
       icon: TrendingUp,
       features: [
         "3,000 tasks/month included",
-        "Unlimited drivers/managers",
+        "Up to 10 drivers",
+        "Unlimited managers",
         "Additional tasks at $0.09/task",
-        "1 customer booking form",
         "Advanced analytics & reporting",
+        "Priority support",
         "All Starter features"
       ],
       buttonText: "Try for Free"
@@ -55,10 +57,12 @@ const Pricing = () => {
       icon: Building2,
       features: [
         "6,000 tasks/month included",
-        "Unlimited drivers/managers",
+        "Up to 25 drivers",
+        "Unlimited managers",
         "Additional tasks at $0.07/task",
-        "2 customer booking forms",
-        "White-label branding option",
+        "Multi-depot management",
+        "Proof of delivery",
+        "Customer portal",
         "All Growth features"
       ],
       buttonText: "Try for Free"
@@ -72,11 +76,13 @@ const Pricing = () => {
       icon: Sparkles,
       features: [
         "10,000+ tasks/month",
+        "Unlimited drivers",
         "Custom driver/manager pricing",
-        "Dedicated account manager & SLA",
+        "White-label branding option",
         "API integrations with ERP/CRM",
         "Tailored analytics",
-        "Feature customization"
+        "Feature customization",
+        "All Standard features"
       ],
       buttonText: "Get in Touch"
     }
@@ -103,7 +109,7 @@ const Pricing = () => {
             return (
               <Card 
                 key={index} 
-                className={`relative h-full transition-all duration-300 hover:shadow-xl ${
+                className={`relative h-full flex flex-col transition-all duration-300 hover:shadow-xl ${
                   plan.popular 
                     ? 'border-primary shadow-lg ring-2 ring-primary/20 lg:scale-105' 
                     : plan.name === 'Enterprise'
@@ -146,8 +152,8 @@ const Pricing = () => {
                   </CardDescription>
                 </CardHeader>
                 
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2.5">
+                <CardContent className="flex flex-col flex-grow">
+                  <ul className="space-y-2.5 flex-grow">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start">
                         <Check className="h-3.5 w-3.5 text-success mr-2.5 flex-shrink-0 mt-0.5" />

@@ -1,4 +1,4 @@
-const EMAIL_API_URL = import.meta.env.VITE_EMAIL_API_URL || 'http://127.0.0.1:3001';
+const SIMPLYFORM_URL = 'https://www.simplyform.dev/api/form/submit/f4a8fb6a-a158-4534-bbeb-eb9963985a8c';
 
 export interface ContactFormData {
   firstName: string;
@@ -16,7 +16,7 @@ export interface EmailResponse {
 
 export const submitContactForm = async (formData: ContactFormData): Promise<EmailResponse> => {
   try {
-    const response = await fetch(`${EMAIL_API_URL}/api/contact`, {
+    const response = await fetch(SIMPLYFORM_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,15 +39,26 @@ export const submitContactForm = async (formData: ContactFormData): Promise<Emai
       };
     }
 
+    // SimplyForm might return different response structure, handle both
     const result = await response.json();
-    return result;
+    
+    // If SimplyForm returns a different structure, adapt it
+    if (result.success !== undefined) {
+      return result;
+    } else {
+      // Assume success if response is ok
+      return {
+        success: true,
+        message: 'Message sent successfully! We\'ll get back to you soon.'
+      };
+    }
 
   } catch (error) {
     // Check if it's a network/CORS error
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       return {
         success: false,
-        message: 'Cannot connect to email service. Please try again later.'
+        message: 'Cannot connect to form service. Please try again later.'
       };
     }
     

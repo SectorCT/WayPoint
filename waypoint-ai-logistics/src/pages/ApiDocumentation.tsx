@@ -80,7 +80,7 @@ const ApiDocumentation = () => {
         "Fuel cost minimization",
         "Delivery time optimization"
       ],
-      security: "AI-powered route sequencing, geographic clustering, distance matrix calculations"
+      security: "Advanced route sequencing, geographic clustering, distance matrix calculations"
     },
     {
       title: "Office Management API",
@@ -159,7 +159,7 @@ const ApiDocumentation = () => {
               WayPoint API Documentation
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Comprehensive RESTful service that powers our intelligent logistics management system. 
+              Comprehensive RESTful service that powers our advanced logistics management system. 
               Built with Django REST Framework, providing secure, scalable endpoints for managing packages, 
               fleet operations, routing optimization, and real-time tracking.
             </p>
