@@ -1,4 +1,6 @@
 // Development API URL (when running on device/simulator)
+// IMPORTANT: Update this IP to match your computer's IP on the same WiFi network
+// Run: hostname -I | awk '{print $1}' to get your IP
 const DEV_API_URL = "http://172.20.10.3:8000"; // Your current IP address from .env file
 
 // Production API URL (when deployed)
