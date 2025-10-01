@@ -7,6 +7,10 @@ import { Helmet } from 'react-helmet';
 
 const COLORS = ['#F39358', '#F05033', '#B2B2B2', '#4CAF50'];
 
+// API Configuration
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
+const API_VERSION = 'v1';
+
 interface StatisticsData {
   package_stats: {
     total: number;
@@ -64,7 +68,7 @@ const StatisticsPage: React.FC = () => {
         throw new Error('No access token found');
       }
 
-      const response = await fetch('http://localhost:8000/delivery/statistics/', {
+      const response = await fetch(`${API_BASE}/${API_VERSION}/delivery/statistics/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

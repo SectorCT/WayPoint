@@ -1,9 +1,10 @@
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
+const API_VERSION = 'v1';
 
 export async function login(email: string, password: string) {
   try {
     console.log('[API] Logging in:', email);
-    const res = await fetch(`${API_BASE}/auth/login/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/auth/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -24,7 +25,7 @@ export async function login(email: string, password: string) {
 export async function fetchPackages(token: string) {
   try {
     console.log('[API] Fetching packages');
-    const res = await fetch(`${API_BASE}/delivery/packages/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/packages/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -43,7 +44,7 @@ export async function fetchPackages(token: string) {
 export async function fetchAvailableTrucks(token: string) {
   try {
     console.log('[API] Fetching available trucks');
-    const res = await fetch(`${API_BASE}/delivery/trucks/available/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/trucks/available/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -62,7 +63,7 @@ export async function fetchAvailableTrucks(token: string) {
 export async function fetchAllTrucks(token: string) {
   try {
     console.log('[API] Fetching all trucks');
-    const res = await fetch(`${API_BASE}/delivery/trucks/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/trucks/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -81,7 +82,7 @@ export async function fetchAllTrucks(token: string) {
 export async function fetchTodaysPendingPackages(token: string) {
   try {
     console.log('[API] Fetching today\'s pending packages');
-    const res = await fetch(`${API_BASE}/delivery/packages/today-pending/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/packages/today-pending/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -100,7 +101,7 @@ export async function fetchTodaysPendingPackages(token: string) {
 export async function fetchDeliveryHistory(token: string, days: number = 7) {
   try {
     console.log('[API] Fetching delivery history');
-    const res = await fetch(`${API_BASE}/delivery/history/?days=${days}`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/history/?days=${days}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     console.log('[API] Response status:', res.status);
@@ -128,7 +129,7 @@ export async function fetchDeliveryHistory(token: string, days: number = 7) {
 export async function fetchUnverifiedTruckers(token: string) {
   try {
     console.log('[API] Fetching unverified truckers');
-    const res = await fetch(`${API_BASE}/delivery/truckers/unverified/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/truckers/unverified/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -145,7 +146,7 @@ export async function fetchUnverifiedTruckers(token: string) {
 
 export async function fetchDrivers(token: string) {
   try {
-    const res = await fetch(`${API_BASE}/auth/all/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/auth/all/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -162,7 +163,7 @@ export async function fetchDrivers(token: string) {
 
 export async function verifyTrucker(token: string, username: string) {
   try {
-    const res = await fetch(`${API_BASE}/delivery/truckers/verify/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/truckers/verify/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -183,7 +184,7 @@ export async function verifyTrucker(token: string, username: string) {
 
 export async function verifyUser(token: string, username: string) {
   try {
-    const res = await fetch(`${API_BASE}/delivery/truckers/verify/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/truckers/verify/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -204,7 +205,7 @@ export async function verifyUser(token: string, username: string) {
 
 export async function createTruck(token: string, licensePlate: string, kilogramCapacity: number) {
   try {
-    const res = await fetch(`${API_BASE}/delivery/trucks/create/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/trucks/create/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -225,7 +226,7 @@ export async function createTruck(token: string, licensePlate: string, kilogramC
 
 export async function createPackage(token: string, recipient: string, recipientPhoneNumber: string, weight: number, deliveryDate: string, address: string, lat: number, lng: number) {
   try {
-    const res = await fetch(`${API_BASE}/delivery/packages/create/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/packages/create/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -250,7 +251,7 @@ export async function createPackage(token: string, recipient: string, recipientP
 
 export async function fetchActiveRoutes(token: string) {
   try {
-    const res = await fetch(`${API_BASE}/delivery/route/all/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/route/all/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -267,7 +268,7 @@ export async function fetchActiveRoutes(token: string) {
 export async function fetchUndeliveredPackagesRoute(token: string, driverUsername: string) {
   try {
     console.log('[API] Fetching undelivered packages route for:', driverUsername);
-    const res = await fetch(`${API_BASE}/delivery/offices/undelivered_route/${driverUsername}/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/offices/undelivered_route/${driverUsername}/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -285,7 +286,7 @@ export async function fetchUndeliveredPackagesRoute(token: string, driverUsernam
 export async function fetchOfficeDeliveries(token: string, driverUsername: string) {
   try {
     console.log('[API] Fetching office deliveries for:', driverUsername);
-    const res = await fetch(`${API_BASE}/delivery/office-deliveries/${driverUsername}/`, {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/delivery/office-deliveries/${driverUsername}/`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();

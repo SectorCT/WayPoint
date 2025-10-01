@@ -10,6 +10,10 @@ import type { Feature, LineString } from 'geojson';
 import { Helmet } from 'react-helmet';
 import OfficeDeliveries from './OfficeDeliveries';
 
+// API Configuration
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
+const API_VERSION = 'v1';
+
 // Function to generate a color based on a value (same as mobile app)
 const generateColorFromValue = (value: string): string => {
   const colors = [
@@ -364,7 +368,7 @@ const DriverCard: React.FC<{ driver: any, token: string }> = ({ driver, token })
 
   React.useEffect(() => {
     setLoading(true);
-    fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:8000'}/delivery/route/checkDriverStatus/`, {
+    fetch(`${API_BASE}/${API_VERSION}/delivery/route/checkDriverStatus/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -775,7 +779,7 @@ const JourneysPage: React.FC = () => {
       if (!token) throw new Error('Not authenticated');
 
       // Step 1: Plan routes for the drivers
-      const routePlanningResponse = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:8000'}/delivery/route/`, {
+      const routePlanningResponse = await fetch(`${API_BASE}/${API_VERSION}/delivery/route/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -807,7 +811,7 @@ const JourneysPage: React.FC = () => {
         }
 
         // Call the backend to assign truck and start journey with the planned route data
-        const response = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:8000'}/delivery/route/assign/`, {
+        const response = await fetch(`${API_BASE}/${API_VERSION}/delivery/route/assign/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -4,6 +4,9 @@ const DEV_API_URL = "http://172.20.10.3:8000"; // Your current IP address from .
 // Production API URL (when deployed)
 const PROD_API_URL = "http://185.32.148.190:8000"; // External server IP for APK builds
 
+// API Version
+export const API_VERSION = 'v1';
+
 // Use environment variable if set, otherwise use development URL
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? DEV_API_URL;
 
@@ -15,6 +18,7 @@ export const getApiBaseUrl = () => {
   return PROD_API_URL;
 };
 
-export const SIGN_IN_ENDPOINT = '/auth/login';
-export const REGISTER_ENDPOINT = '/auth/register';
-export const REFRESH_TOKEN_ENDPOINT = '/auth/token/refresh'; 
+// API Endpoints with versioning
+export const SIGN_IN_ENDPOINT = `/${API_VERSION}/auth/login`;
+export const REGISTER_ENDPOINT = `/${API_VERSION}/auth/register`;
+export const REFRESH_TOKEN_ENDPOINT = `/${API_VERSION}/auth/token/refresh`; 

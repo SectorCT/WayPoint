@@ -4,6 +4,7 @@ import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
+import { API_VERSION } from "../config/env";
 import { router } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
@@ -32,7 +33,7 @@ export default function AddTruckScreen() {
       ).toFixed(6);
 
       const response = await makeAuthenticatedRequest(
-        "/delivery/trucks/create/",
+        `/${API_VERSION}/delivery/trucks/create/`,
         {
           method: "POST",
           headers: {
