@@ -7,6 +7,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
+import { API_VERSION } from "@/config/env";
 import House from "@assets/icons/house.svg";
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -1054,7 +1055,7 @@ export default function TruckerViewScreen() {
 
               // Fetch the office assignment for this package from the backend and log it
               try {
-                const res = await makeAuthenticatedRequest(`/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
+                const res = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
                 const pkg = await res.json();
                 if (pkg.office) {
                   console.log(`Package ${packageId} is now assigned to office: ${pkg.office.name} (ID: ${pkg.office.id})`);

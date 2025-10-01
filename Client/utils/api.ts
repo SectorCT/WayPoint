@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE_URL } from "../config/env";
+import { API_BASE_URL, API_VERSION } from "../config/env";
 
 const BASE_URL = API_BASE_URL;
 
@@ -26,7 +26,7 @@ export const makeAuthenticatedRequest = async (
 
     if (response.status === 401) {
       // Token expired, try to refresh
-      const refreshResponse = await fetch(`${BASE_URL}/auth/token/refresh/`, {
+      const refreshResponse = await fetch(`${BASE_URL}/${API_VERSION}/auth/token/refresh/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +64,7 @@ export const makeAuthenticatedRequest = async (
 
 export const getDeliveryHistory = async (days: number = 7): Promise<unknown[]> => {
   try {
-    const response = await makeAuthenticatedRequest(`/delivery/history/?days=${days}`);
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/history/?days=${days}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
