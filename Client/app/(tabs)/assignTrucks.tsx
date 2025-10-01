@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, Easing, Platform } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { assignTruckAndStartJourney } from '../../utils/journeyApi';
 import { router, useLocalSearchParams } from 'expo-router';

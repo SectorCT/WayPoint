@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-na
 import { useTheme } from '@context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../../config/env';
+import { API_BASE_URL, API_VERSION } from '../../config/env';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 
@@ -31,7 +31,7 @@ export default function VerifyTruckersScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      const url = `${API_BASE_URL}/delivery/truckers/unverified/`;
+      const url = `${API_BASE_URL}/${API_VERSION}/delivery/truckers/unverified/`;
       const headers = { 'Authorization': `Bearer ${token}` };
       if (!token) {
         setUnverifiedTruckers([]);
@@ -49,7 +49,7 @@ export default function VerifyTruckersScreen() {
   const handleVerifyTrucker = async (username: string) => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/delivery/truckers/verify/`, {
+      const response = await fetch(`${API_BASE_URL}/${API_VERSION}/delivery/truckers/verify/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

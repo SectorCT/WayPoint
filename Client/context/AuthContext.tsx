@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { API_BASE_URL } from '../config/env';
+import { API_BASE_URL, API_VERSION } from '../config/env';
 import { AuthResponse, AuthError, LoginRequest, RegisterRequest } from '../types/api';
 import { User } from '../types/objects';
 
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const loginRequest: LoginRequest = { email, password };
-      const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+      const response = await fetch(`${API_BASE_URL}/${API_VERSION}/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isManager && companyId) {
         registerRequest.company_id = companyId;
       }
-      const response = await fetch(`${API_BASE_URL}/auth/register/`, {
+      const response = await fetch(`${API_BASE_URL}/${API_VERSION}/auth/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
