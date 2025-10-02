@@ -12,6 +12,7 @@ import { useTheme } from "@context/ThemeContext";
 import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
+import { API_VERSION } from "../config/env";
 import { router, useLocalSearchParams } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -110,7 +111,7 @@ export default function AddPackageScreen() {
       console.log("Request body:", JSON.stringify(requestBody, null, 2));
 
       const response = await makeAuthenticatedRequest(
-        "/delivery/packages/create/",
+        `/${API_VERSION}/delivery/packages/create/`,
         {
           method: "POST",
           headers: {

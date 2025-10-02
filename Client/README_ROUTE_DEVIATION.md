@@ -66,7 +66,7 @@ This system automatically detects when drivers deviate from their planned route 
 
 2. **Monitor System Behavior**
    - Check for recalculation logs: `Recalculating route due to deviation...`
-   - Verify API calls to `/delivery/route/recalculate/`
+   - Verify API calls to `/v1/delivery/route/recalculate/`
 
 ## Test Scenarios
 
@@ -117,7 +117,7 @@ const MAX_DEVIATION_METERS = 500;
 ## API Endpoints
 
 ### New Endpoint: Route Recalculation
-- **URL**: `POST /delivery/route/recalculate/`
+- **URL**: `POST /v1/delivery/route/recalculate/`
 - **Purpose**: Recalculates route from current position
 - **Parameters**:
   - `username`: Driver username

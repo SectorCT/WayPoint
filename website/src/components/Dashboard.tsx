@@ -13,6 +13,10 @@ const FaUserTie = FaUserTieRaw as unknown as React.FC<any>;
 const FaSignOutAlt = FaSignOutAltRaw as unknown as React.FC<any>;
 const FaHistory = FaHistoryRaw as unknown as React.FC<any>;
 
+// API Configuration
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
+const API_VERSION = 'v1';
+
 const managerName = 'Manager'; // Placeholder, replace with real user data if available
 
 const TAB_JOURNEYS = 'Journeys';
@@ -46,7 +50,7 @@ const Dashboard: React.FC = () => {
       const token = localStorage.getItem('access');
       if (!token) throw new Error('Not authenticated');
       
-      const response = await fetch('http://localhost:8000/delivery/statistics/', {
+      const response = await fetch(`${API_BASE}/${API_VERSION}/delivery/statistics/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

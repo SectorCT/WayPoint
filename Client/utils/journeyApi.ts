@@ -1,39 +1,40 @@
 import { makeAuthenticatedRequest } from './api';
 import { Truck, Package, User, RouteData } from '../types/objects';
+import { API_VERSION } from '../config/env';
 
 
 export const getAvailableTrucks = async (): Promise<Truck[]> => {
-  const response = await makeAuthenticatedRequest("/delivery/trucks/available/", {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/trucks/available/`, {
     method: "GET",
   });
   return response.json();
 };
 
 export const getAllTrucks = async (): Promise<Truck[]> => {
-  const response = await makeAuthenticatedRequest("/delivery/trucks/", {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/trucks/`, {
     method: "GET",
   });
   return response.json();
 };
 
 export const getPackages = async (): Promise<Package[]> => {
-  const response = await makeAuthenticatedRequest('/delivery/packages/');
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages/`);
   return response.json();
 }; 
 
 export const getTodaysPendingPackages = async (): Promise<Package[]> => {
-  const response = await makeAuthenticatedRequest('/delivery/packages/today-pending/');
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages/today-pending/`);
   return response.json();
 };
 
 export const getEmployees = async (): Promise<User[]> => {
-  const response = await makeAuthenticatedRequest('/auth/all/');
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/auth/all/`);
   const data = await response.json();
   return data.filter((user: User) => user.isManager === false && user.verified === true);
 };
 
 export const getUserByUsername = async (username: string): Promise<User> => {
-  const allEmployeesRes = await makeAuthenticatedRequest('/auth/all/');
+  const allEmployeesRes = await makeAuthenticatedRequest(`/${API_VERSION}/auth/all/`);
   const allEmployees = await allEmployeesRes.json();
   const user = allEmployees.find((user: User) => user.username === username);
   if (!user) {
@@ -46,7 +47,7 @@ export const startJourney = async (drivers: string[]): Promise<unknown> => {
   const body = {
     drivers: drivers,
   }
-  const response = await makeAuthenticatedRequest('/delivery/route/', {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/`, {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -71,7 +72,7 @@ export const assignTruckAndStartJourney = async (
     packageSequence,
     mapRoute,
   };
-  const response = await makeAuthenticatedRequest('/delivery/route/assign/', {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/assign/`, {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -85,7 +86,7 @@ export const assignTruckAndStartJourney = async (
 };
 
 export const checkDriverStatus = async (username: string): Promise<unknown> => {
-  const response = await makeAuthenticatedRequest('/delivery/route/checkDriverStatus/', {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/checkDriverStatus/`, {
     method: "POST",
     body: JSON.stringify({
       username: username
@@ -95,7 +96,7 @@ export const checkDriverStatus = async (username: string): Promise<unknown> => {
 };
 
 export const getAllRoutes = async (): Promise<RouteData[]> => {
-  const response = await makeAuthenticatedRequest('/delivery/route/all/');
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/all/`);
   if (!response.ok) {
     return [];
   }
@@ -103,7 +104,7 @@ export const getAllRoutes = async (): Promise<RouteData[]> => {
 };
 
 export const getRoute = async (driverID: string): Promise<RouteData> => {
-  const response = await makeAuthenticatedRequest(`/delivery/route/getByDriver/`, {
+  const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/getByDriver/`, {
     method: "POST",
     body: JSON.stringify({
       "username": driverID
@@ -120,7 +121,7 @@ export const getReturnRoute = async (
   username: string
 ): Promise<[number, number][]> => {
   try {
-    const response = await makeAuthenticatedRequest('/delivery/route/return/', {
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/return/`, {
       method: "POST",
       body: JSON.stringify({
         currentLat,
@@ -149,13 +150,13 @@ export const getReturnRoute = async (
 };
 
 export const deleteTruck = async (licensePlate: string): Promise<Response> => {
-  return makeAuthenticatedRequest(`/delivery/trucks/${licensePlate}/`, {
+  return makeAuthenticatedRequest(`/${API_VERSION}/delivery/trucks/${licensePlate}/`, {
     method: "DELETE",
   });
 };
 
 export const markPackageAsDelivered = async (packageID: string, driverUsername: string, signature?: string): Promise<Response> => {
-  return makeAuthenticatedRequest(`/delivery/packages_mark/`, {
+  return makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages_mark/`, {
     method: "POST",
     body: JSON.stringify({
       packageID,
@@ -166,7 +167,7 @@ export const markPackageAsDelivered = async (packageID: string, driverUsername: 
 };
 
 export const markPackageAsUndelivered = async (packageID: string): Promise<Response> => {
-  return makeAuthenticatedRequest(`/delivery/packages_mark_undelivered/`, {
+  return makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages_mark_undelivered/`, {
     method: "POST",
     body: JSON.stringify({
       "packageID": packageID
@@ -180,7 +181,7 @@ export const recalculateRoute = async (
   currentLng: number
 ): Promise<{ route: [number, number][], message: string, remaining_packages: number }> => {
   try {
-    const response = await makeAuthenticatedRequest('/delivery/route/recalculate/', {
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/recalculate/`, {
       method: "POST",
       body: JSON.stringify({
         username,
@@ -208,7 +209,7 @@ export const recalculateRoute = async (
 
 export const getUndeliveredPackagesRoute = async (driverUsername: string): Promise<unknown> => {
   try {
-    const response = await makeAuthenticatedRequest(`/delivery/offices/undelivered_route/${driverUsername}/`, {
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/offices/undelivered_route/${driverUsername}/`, {
       method: "GET",
     });
     
@@ -230,7 +231,7 @@ export const saveOfficeDelivery = async (
   packageIds: string[]
 ): Promise<unknown> => {
   try {
-    const response = await makeAuthenticatedRequest('/delivery/office-delivery/', {
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/office-delivery/`, {
       method: "POST",
       body: JSON.stringify({
         driver_username: driverUsername,
@@ -258,7 +259,7 @@ export const optimizeOfficeRoute = async (
   officeIds: number[]
 ): Promise<unknown> => {
   try {
-    const response = await makeAuthenticatedRequest('/delivery/route/optimize-office/', {
+    const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/route/optimize-office/`, {
       method: "POST",
       body: JSON.stringify({
         driver_username: driverUsername,

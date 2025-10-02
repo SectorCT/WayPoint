@@ -6,6 +6,7 @@ import Trash from "@assets/icons/trash.svg";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { makeAuthenticatedRequest } from "../../../utils/api";
+import { API_VERSION } from "../../../config/env";
 
 export default function PackageModule({
   id,
@@ -43,7 +44,7 @@ export default function PackageModule({
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await makeAuthenticatedRequest(`/delivery/packages/${id}/`, {
+              const response = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages/${id}/`, {
                 method: "DELETE",
               });
               console.log(response);

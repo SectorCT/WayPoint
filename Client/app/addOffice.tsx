@@ -5,6 +5,7 @@ import { useAuth } from "@context/AuthContext";
 import { FormField } from "../components/basic/FormField";
 import { GradientButton } from "@components/basic/gradientButton/gradientButton";
 import { makeAuthenticatedRequest } from "../utils/api";
+import { API_VERSION } from "../config/env";
 import { router, useLocalSearchParams } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
@@ -67,7 +68,7 @@ export default function AddOfficeScreen() {
       };
       console.log("Add Office Request Body:", JSON.stringify(requestBody, null, 2));
       const response = await makeAuthenticatedRequest(
-        "/delivery/offices/",
+        `/${API_VERSION}/delivery/offices/`,
         {
           method: "POST",
           headers: {

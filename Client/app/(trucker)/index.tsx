@@ -3,10 +3,12 @@ import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linki
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery, optimizeOfficeRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
+import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
 import { makeAuthenticatedRequest } from "@/utils/api";
+import { API_VERSION } from "@/config/env";
 import House from "@assets/icons/house.svg";
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -222,6 +224,7 @@ export default function TruckerViewScreen() {
   const { user } = useAuth();
   const { position } = usePosition();
   const { logout } = useAuth();
+  const { theme } = useTheme();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
@@ -1054,7 +1057,7 @@ export default function TruckerViewScreen() {
 
               // Fetch the office assignment for this package from the backend and log it
               try {
-                const res = await makeAuthenticatedRequest(`/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
+                const res = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/packages/${packageId}/`); // TODO: Replace with actual endpoint if needed
                 const pkg = await res.json();
                 if (pkg.office) {
                   console.log(`Package ${packageId} is now assigned to office: ${pkg.office.name} (ID: ${pkg.office.id})`);

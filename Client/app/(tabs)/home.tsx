@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import { getDeliveryHistory } from "../../utils/api";
+import { getAllRoutes } from "../../utils/journeyApi";
 import useStyles from "./styles/homeStyles";
 import { router } from "expo-router";
 import CurrentJourney from "@/components/listModule/currentJourney/currentJourney";
@@ -34,15 +35,18 @@ interface PastEntryType {
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [pastEntries, setPastEntries] = useState<PastEntryType[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [journeyStarted, setJourneyStarted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const styles = useStyles();
 
-  // Fetch delivery history on component mount
+  // Fetch delivery history and journey status on component mount
   useEffect(() => {
     fetchDeliveryHistory();
+    checkJourneyStatus();
   }, []);
 
   const fetchDeliveryHistory = async () => {
@@ -58,9 +62,24 @@ export default function HomeScreen() {
     }
   };
 
+  const checkJourneyStatus = async () => {
+    try {
+      setLoading(true);
+      const routes = await getAllRoutes();
+      // Check if there's any active route
+      const hasActiveRoute = routes && routes.length > 0;
+      setJourneyStarted(hasActiveRoute);
+    } catch (error) {
+      console.error('Error checking journey status:', error);
+      setJourneyStarted(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchDeliveryHistory();
+    await Promise.all([fetchDeliveryHistory(), checkJourneyStatus()]);
     setRefreshing(false);
   };
 

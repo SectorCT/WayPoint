@@ -7,10 +7,12 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { makeAuthenticatedRequest } from "../../utils/api";
+import { API_VERSION } from "../../config/env";
 import useStyles from "./styles/packageStyles";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -45,7 +47,7 @@ export default function OfficesScreen() {
   const fetchOffices = async () => {
     setLoading(true);
     try {
-      const res = await makeAuthenticatedRequest('/delivery/offices/', { method: 'GET' });
+      const res = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/offices/`, { method: 'GET' });
       const data = await res.json();
       setOffices(Array.isArray(data) ? data : []);
     } catch {
@@ -57,7 +59,7 @@ export default function OfficesScreen() {
 
   const fetchUndeliveredCount = async (officeId: number): Promise<number> => {
     try {
-      const res = await makeAuthenticatedRequest(`/delivery/offices/${officeId}/undelivered/`, { method: 'GET' });
+      const res = await makeAuthenticatedRequest(`/${API_VERSION}/delivery/offices/${officeId}/undelivered/`, { method: 'GET' });
       const data = await res.json();
       return Array.isArray(data) ? data.length : 0;
     } catch {
