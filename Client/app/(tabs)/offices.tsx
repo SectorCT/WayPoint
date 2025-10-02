@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";

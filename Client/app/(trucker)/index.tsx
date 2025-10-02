@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linki
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { getRoute, markPackageAsDelivered, markPackageAsUndelivered, getReturnRoute, recalculateRoute, getUndeliveredPackagesRoute, saveOfficeDelivery, optimizeOfficeRoute } from "../../utils/journeyApi";
 import { usePosition } from "@context/PositionContext";
+import { useTheme } from "@context/ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { DrawerLayout } from 'react-native-gesture-handler';
 import { useAuth } from "@context/AuthContext";
@@ -223,6 +224,7 @@ export default function TruckerViewScreen() {
   const { user } = useAuth();
   const { position } = usePosition();
   const { logout } = useAuth();
+  const { theme } = useTheme();
   const drawerRef = useRef<DrawerLayout>(null);
   const mapRef = useRef<MapView>(null);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
