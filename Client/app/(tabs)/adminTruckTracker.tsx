@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, Linking, ActivityIndicator, Platform } from "react-native";
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "@context/ThemeContext";
@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import House from "@assets/icons/house.svg";
 import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../../config/env';
+import { API_BASE_URL, API_VERSION } from '../../config/env';
 
 interface Coordinate {
   latitude: number;
@@ -256,7 +256,7 @@ const AdminTruckTrackerScreen: React.FC = () => {
         setLoadingTruckers(false);
         return;
       }
-      const response = await fetch(`${API_BASE_URL}/delivery/truckers/unverified/`, {
+      const response = await fetch(`${API_BASE_URL}/${API_VERSION}/delivery/truckers/unverified/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

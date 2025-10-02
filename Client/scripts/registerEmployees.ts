@@ -1,5 +1,6 @@
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+const API_VERSION = 'v1';
 
 interface RegisterRequest {
     email: string;
@@ -45,7 +46,7 @@ async function registerEmployee(index: number): Promise<void> {
     };
 
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/register/`, {
+        const response = await fetch(`${API_BASE_URL}/${API_VERSION}/auth/register/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

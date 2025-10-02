@@ -217,8 +217,6 @@ export default function StartJourneyScreen() {
         setDriverStatuses(statusMap);
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
