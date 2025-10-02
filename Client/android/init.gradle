@@ -1,0 +1,8 @@
+allprojects {
+    beforeEvaluate { project ->
+        project.ext.buildToolsVersion = "35.0.1"
+        project.ext.compileSdkVersion = 35
+        project.ext.targetSdkVersion = 34
+    }
+}
+
