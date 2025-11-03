@@ -9,6 +9,11 @@ services:
       POSTGRES_DB: waypoint_db
       POSTGRES_USER: waypoint_user
       POSTGRES_PASSWORD: waypoint_password_2024
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waypoint_user -d waypoint_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
@@ -17,7 +22,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       SECRET_KEY: ${SECRET_KEY:-django-insecure-placeholder-key-change-in-production}
       ALLOWED_HOSTS: '*'
