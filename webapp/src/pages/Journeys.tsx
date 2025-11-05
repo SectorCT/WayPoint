@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { routeAPI, userAPI, truckAPI, officeDeliveryAPI } from '@/lib/api';
+import { routeAPI, userAPI, truckAPI, officeDeliveryAPI, packageAPI } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +20,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Map, Marker, Source, Layer } from '@vis.gl/react-maplibre';
+import { Map as MapLibreMap, Marker, Source, Layer } from '@vis.gl/react-maplibre';
 import { MapPin, Package, Truck as TruckIcon, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 
 const Journeys = () => {
+  const navigate = useNavigate();
   const [routes, setRoutes] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [trucks, setTrucks] = useState<any[]>([]);
@@ -33,6 +35,8 @@ const Journeys = () => {
   const [assignedTrucks, setAssignedTrucks] = useState<Map<string, string>>(new Map());
   const [officeDeliveries, setOfficeDeliveries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startingJourney, setStartingJourney] = useState(false);
+  const [availablePackagesCount, setAvailablePackagesCount] = useState<number>(0);
 
   useEffect(() => {
     fetchData();
@@ -49,10 +53,11 @@ const Journeys = () => {
 
   const fetchData = async () => {
     try {
-      const [routesRes, usersRes, trucksRes] = await Promise.all([
+      const [routesRes, usersRes, trucksRes, packagesRes] = await Promise.all([
         routeAPI.getAll(),
         userAPI.getAll(),
         truckAPI.getAvailable(),
+        packageAPI.getTodayPending().catch(() => ({ data: [] })), // Don't fail if this errors
       ]);
 
       setRoutes(routesRes.data);
@@ -63,6 +68,7 @@ const Journeys = () => {
       );
       setDrivers(driverList);
       setTrucks(trucksRes.data);
+      setAvailablePackagesCount(packagesRes.data?.length || 0);
     } catch (error) {
       toast.error('Failed to fetch data');
     } finally {
@@ -112,24 +118,222 @@ const Journeys = () => {
       return;
     }
 
+    setStartingJourney(true);
     try {
-      // Plan routes
+      toast.loading('Planning routes...', { id: 'journey-start' });
+      
+      // Plan routes - API expects "drivers" not "selected_drivers"
       const planResponse = await routeAPI.plan({
-        selected_drivers: Array.from(selectedDrivers),
+        drivers: Array.from(selectedDrivers),
       });
 
-      // Assign trucks
-      for (const [username, licensePlate] of assignedTrucks) {
-        await routeAPI.assign({ username, licensePlate });
+      const plannedRoutes = planResponse.data || [];
+      
+      if (plannedRoutes.length === 0) {
+        toast.error(
+          'No routes were planned. Make sure you have packages with status "pending" and delivery date today or earlier.', 
+          { id: 'journey-start', duration: 5000 }
+        );
+        setStartingJourney(false);
+        return;
       }
 
-      toast.success('Journey started successfully!');
+      // Log the response structure for debugging
+      console.log('Planned routes response:', plannedRoutes);
+
+      toast.loading('Assigning trucks and starting journeys...', { id: 'journey-start' });
+
+      // Refresh truck availability before assignment
+      let refreshedTrucks: any[] = [];
+      try {
+        const refreshedTrucksRes = await truckAPI.getAvailable();
+        refreshedTrucks = refreshedTrucksRes.data;
+      } catch (error) {
+        console.warn('Failed to refresh truck list, proceeding with cached data');
+      }
+
+      // Check if assigned trucks are still available
+      const unavailableTrucks: string[] = [];
+      for (const [username, licensePlate] of assignedTrucks) {
+        const truck = refreshedTrucks.find((t: any) => t.licensePlate === licensePlate);
+        if (!truck || truck.isUsed) {
+          unavailableTrucks.push(licensePlate);
+        }
+      }
+
+      if (unavailableTrucks.length > 0) {
+        toast.error(
+          `Truck(s) ${unavailableTrucks.join(', ')} are no longer available. Please refresh and select different trucks.`, 
+          { id: 'journey-start', duration: 6000 }
+        );
+        setStartingJourney(false);
+        // Refresh data to update truck status
+        await fetchData();
+        return;
+      }
+
+      // Assign trucks and start journeys using the planned route data
+      const assignmentPromises = [];
+      
+      for (const [username, licensePlate] of assignedTrucks) {
+        // Find the planned route for this driver
+        // The API returns "user" field, not "driverUsername"
+        const plannedRoute = plannedRoutes.find((route: any) => 
+          String(route.user || route.driverUsername || '').trim() === String(username).trim()
+        );
+
+        if (!plannedRoute) {
+          console.warn(`No planned route found for driver: ${username}. Available routes:`, plannedRoutes.map((r: any) => r.user || r.driverUsername));
+          continue;
+        }
+
+        // The API response already contains packageSequence and mapRoute in the correct format
+        // Response structure: { user, packageSequence, mapRoute, truck, routeID, dateOfCreation }
+        const packageSequence = plannedRoute.packageSequence || [];
+        const mapRoute = plannedRoute.mapRoute || [];
+
+        // Validate that we have the required data
+        if (!packageSequence || packageSequence.length === 0) {
+          console.error(`No package sequence found for driver ${username}:`, plannedRoute);
+          toast.error(`No packages in route for ${username}`, { id: 'journey-start' });
+          continue;
+        }
+
+        if (!mapRoute || mapRoute.length === 0) {
+          console.error(`No map route found for driver ${username}:`, plannedRoute);
+          toast.error(`No map route for ${username}`, { id: 'journey-start' });
+          continue;
+        }
+
+        console.log(`Assigning truck ${licensePlate} to driver ${username} with ${packageSequence.length} packages`);
+
+        // Call assign with the full route data
+        assignmentPromises.push(
+          routeAPI.assign({
+            driverUsername: username,
+            truckLicensePlate: licensePlate,
+            packageSequence: packageSequence,
+            mapRoute: mapRoute,
+          })
+        );
+      }
+
+      // Wait for all assignments to complete, but handle individual failures
+      if (assignmentPromises.length === 0) {
+        toast.error('No routes to assign. Please check the planned routes.', { id: 'journey-start' });
+        setStartingJourney(false);
+        return;
+      }
+
+      const results = await Promise.allSettled(assignmentPromises);
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      if (failed > 0) {
+        const rejectedReasons = results
+          .filter(r => r.status === 'rejected')
+          .map(r => {
+            if (r.status === 'rejected') {
+              const reason = r.reason;
+              if (reason?.response?.data?.error) {
+                const errorMsg = reason.response.data.error;
+                // If truck is already in use, suggest refreshing
+                if (errorMsg.includes('already in use')) {
+                  return `${errorMsg} Please refresh the page and try again.`;
+                }
+                return errorMsg;
+              } else if (reason?.message) {
+                return reason.message;
+              }
+              return 'Unknown error';
+            }
+            return '';
+          });
+        
+        console.error('Some assignments failed:', results.filter(r => r.status === 'rejected'));
+        console.error('Rejection reasons:', rejectedReasons);
+        
+        if (successful > 0) {
+          toast.warning(
+            `${successful} journey(s) started, but ${failed} failed. ${rejectedReasons[0] || ''}`, 
+            { id: 'journey-start', duration: 5000 }
+          );
+        } else {
+          const failureReason = rejectedReasons[0] || 'Check console for details';
+          toast.error(
+            `All assignments failed. ${failureReason}`, 
+            { id: 'journey-start', duration: 6000 }
+          );
+          // Refresh data to update truck status
+          await fetchData();
+          setStartingJourney(false);
+          return;
+        }
+      } else {
+        toast.success(`${successful} journey(s) started successfully!`, { id: 'journey-start' });
+      }
+
       setSelectedDrivers(new Set());
       setAssignedTrucks(new Map());
       setShowTruckModal(false);
-      fetchData();
+      
+      // Refresh data to show the new routes
+      await fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to start journey');
+      // Show more detailed error message
+      let errorMessage = 'Failed to start journey';
+      let errorDetails = '';
+      
+      if (error.response) {
+        // Try to parse JSON error response
+        try {
+          const errorData = error.response.data;
+          if (typeof errorData === 'string' && errorData.includes('<!DOCTYPE')) {
+            // HTML error page - extract meaningful message
+            if (errorData.includes('RuntimeError')) {
+              errorMessage = 'Server error occurred. Please check server logs.';
+            } else {
+              errorMessage = 'Server error occurred.';
+            }
+          } else if (errorData?.error) {
+            errorMessage = errorData.error;
+            
+            // Add helpful context for common errors
+            if (errorMessage.includes('No packages available')) {
+              errorDetails = `Packages must have status "pending" and delivery date today or earlier. Currently ${availablePackagesCount} package(s) available. Go to Packages page to create packages.`;
+            } else if (errorMessage.includes('No valid drivers')) {
+              errorDetails = 'Please select at least one verified driver.';
+            } else if (errorMessage.includes('No available truck')) {
+              errorDetails = 'Make sure there are available trucks with sufficient capacity.';
+            }
+          } else if (errorData?.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch (parseError) {
+          // If response is HTML or other non-JSON, use default message
+          errorMessage = error.response.status === 500 
+            ? 'Server error occurred. Please try again later.'
+            : 'Failed to start journey';
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      // Show error with details if available
+      if (errorDetails) {
+        toast.error(`${errorMessage}. ${errorDetails}`, { 
+          id: 'journey-start', 
+          duration: 6000 
+        });
+      } else {
+        toast.error(errorMessage, { id: 'journey-start' });
+      }
+      
+      console.error('Journey start error:', error.response?.data || error);
+    } finally {
+      setStartingJourney(false);
     }
   };
 
@@ -207,8 +411,22 @@ const Journeys = () => {
       <h1 className="text-3xl font-bold">Journey Management</h1>
 
       {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+      <div className="flex flex-col md:flex-row gap-4">
+        <Card className="flex-1">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Available Packages</p>
+                <p className="text-2xl font-bold">{availablePackagesCount}</p>
+                {availablePackagesCount === 0 && (
+                  <p className="text-xs text-warning mt-1">Create packages to start journey</p>
+                )}
+              </div>
+              <Package className="h-8 w-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="flex-1">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -219,7 +437,7 @@ const Journeys = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -230,244 +448,260 @@ const Journeys = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Packages</p>
-                <p className="text-2xl font-bold">{allPackages.length}</p>
-              </div>
-              <Package className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Driver Selection Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Drivers</CardTitle>
-            <CardDescription>
-              Choose drivers for new journey
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              placeholder="Search drivers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2">
-                {availableDrivers.map((driver) => (
-                  <div
-                    key={driver.username}
-                    className={`p-3 rounded-lg border cursor-pointer transition-smooth ${
-                      selectedDrivers.has(driver.username)
-                        ? 'bg-primary/10 border-primary'
-                        : 'hover:shadow-soft'
-                    }`}
-                    onClick={() => handleDriverToggle(driver.username)}
-                  >
-                    <p className="font-semibold">{driver.username}</p>
-                    <p className="text-sm text-muted-foreground">{driver.email}</p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            {selectedDrivers.size > 0 && (
-              <Button
-                className="w-full gradient-primary text-white"
-                onClick={() => setShowTruckModal(true)}
-              >
-                Assign Trucks ({selectedDrivers.size})
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Map View */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Active Routes</CardTitle>
-            <CardDescription>View routes on map</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[500px] rounded-lg overflow-hidden">
-              <Map
-                mapStyle="https://demotiles.maplibre.org/style.json"
-                style={{ width: '100%', height: '100%' }}
-                initialViewState={
-                  mapBounds
-                    ? {
-                        bounds: [
-                          [mapBounds.minLng, mapBounds.minLat],
-                          [mapBounds.maxLng, mapBounds.maxLat],
-                        ],
-                      }
-                    : undefined
-                }
-              >
-                {/* Render routes */}
-                {activeRoutes.map((route) => {
-                  if (!route.mapRoute || route.mapRoute.length === 0) return null;
-                  
-                  const routeColor = stringToColor(route.user);
-                  const routeGeoJson = {
-                    type: 'Feature' as const,
-                    geometry: {
-                      type: 'LineString' as const,
-                      coordinates: route.mapRoute,
-                    },
-                  };
-
-                  return (
-                    <Source
-                      key={route.routeID}
-                      id={`route-${route.routeID}`}
-                      type="geojson"
-                      data={routeGeoJson}
+      {/* Main Content Area: Sidebar + Map */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar: Driver Selection + Office Deliveries */}
+        <div className="flex flex-col gap-6 lg:w-80 flex-shrink-0">
+          {/* Driver Selection Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Select Drivers</CardTitle>
+              <CardDescription>
+                Choose drivers for new journey
+                {availablePackagesCount === 0 && (
+                  <span className="block mt-2 text-warning text-sm">
+                    ⚠️ No packages available. <button 
+                      onClick={() => navigate('/packages')}
+                      className="underline hover:text-primary"
                     >
-                      <Layer
-                        id={`route-layer-${route.routeID}`}
-                        type="line"
-                        paint={{
-                          'line-color':
-                            selectedRoute === route.routeID
-                              ? '#FF4136'
-                              : routeColor,
-                          'line-width': selectedRoute === route.routeID ? 6 : 4,
-                        }}
-                      />
-                    </Source>
-                  );
-                })}
-
-                {/* Render package markers */}
-                {allPackages.map((pkg) => (
-                  <Marker
-                    key={pkg.packageID}
-                    longitude={parseFloat(pkg.longitude)}
-                    latitude={parseFloat(pkg.latitude)}
-                  >
-                    <div className="relative">
-                      <div
-                        className={`rounded-full p-2 text-white text-xs font-bold ${
-                          pkg.isDelivered
-                            ? 'bg-success'
-                            : selectedRouteData?.packageSequence?.some(
-                                (p: any) => p.packageID === pkg.packageID
-                              )
-                            ? 'bg-destructive'
-                            : 'bg-primary'
-                        }`}
-                      >
-                        {pkg.isDelivered ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <Package className="h-4 w-4" />
-                        )}
-                      </div>
-                    </div>
-                  </Marker>
-                ))}
-              </Map>
-            </div>
-
-            {/* Active Routes List */}
-            <div className="mt-4 space-y-2">
-              <ScrollArea className="h-32">
-                {activeRoutes.map((route) => (
-                  <div
-                    key={route.routeID}
-                    className={`p-3 rounded-lg border cursor-pointer transition-smooth ${
-                      selectedRoute === route.routeID
-                        ? 'bg-primary/10 border-primary'
-                        : 'hover:shadow-soft'
-                    }`}
-                    onClick={() => setSelectedRoute(route.routeID)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{route.user}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {route.packageSequence?.length || 0} packages
-                        </p>
-                      </div>
-                      <Badge
-                        variant={
-                          route.status === 'active' ? 'success' : 'default'
-                        }
-                      >
-                        {route.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </ScrollArea>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Office Deliveries Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Office Deliveries</CardTitle>
-            <CardDescription>
-              {selectedRoute ? 'Packages by office' : 'Select a route'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[500px]">
-              {!selectedRoute ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Select a route to view office deliveries
-                </p>
-              ) : officeDeliveries.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No office deliveries for this route
-                </p>
-              ) : (
+                      Create packages
+                    </button> to start a journey.
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                placeholder="Search drivers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+              <ScrollArea className="h-[400px]">
                 <div className="space-y-2">
-                  {officeDeliveries.map((office) => (
-                    <Collapsible key={office.office.id}>
-                      <CollapsibleTrigger className="w-full">
-                        <div className="p-3 rounded-lg border flex justify-between items-center hover:shadow-soft transition-smooth w-full">
-                          <div>
-                            <p className="font-semibold">{office.office.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {office.office.address}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge>{office.packages.length}</Badge>
-                            <ChevronDown className="h-4 w-4" />
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="pl-3 pt-2 space-y-2">
-                          {office.packages.map((pkg: any) => (
-                            <div
-                              key={pkg.packageID}
-                              className="p-2 rounded border bg-muted/50"
-                            >
-                              <p className="text-sm font-medium">{pkg.recipient}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {pkg.weight} kg
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                  {availableDrivers.map((driver) => (
+                    <div
+                      key={driver.username}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                        selectedDrivers.has(driver.username)
+                          ? 'bg-primary/10 border-primary shadow-soft'
+                          : 'hover:bg-muted/50 hover:shadow-soft'
+                      }`}
+                      onClick={() => handleDriverToggle(driver.username)}
+                    >
+                      <p className="font-semibold text-foreground">{driver.username}</p>
+                      <p className="text-sm text-muted-foreground">{driver.email}</p>
+                    </div>
                   ))}
                 </div>
+              </ScrollArea>
+              {selectedDrivers.size > 0 && (
+                <Button
+                  className="w-full gradient-primary text-white"
+                  onClick={() => setShowTruckModal(true)}
+                >
+                  Assign Trucks ({selectedDrivers.size})
+                </Button>
               )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Office Deliveries Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Office Deliveries</CardTitle>
+              <CardDescription>
+                {selectedRoute ? 'Packages by office' : 'Select a route'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                {!selectedRoute ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Select a route to view office deliveries
+                  </p>
+                ) : officeDeliveries.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No office deliveries for this route
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {officeDeliveries.map((office) => (
+                      <Collapsible key={office.office.id}>
+                        <CollapsibleTrigger className="w-full">
+                          <div className="p-3 rounded-lg border flex justify-between items-center hover:bg-muted/50 hover:shadow-soft transition-all duration-200 w-full">
+                            <div>
+                              <p className="font-semibold">{office.office.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {office.office.address}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge>{office.packages.length}</Badge>
+                              <ChevronDown className="h-4 w-4" />
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-3 pt-2 space-y-2">
+                            {office.packages.map((pkg: any) => (
+                              <div
+                                key={pkg.packageID}
+                                className="p-2 rounded border bg-muted/50"
+                              >
+                                <p className="text-sm font-medium">{pkg.recipient}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {pkg.weight} kg
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Panel: Map View */}
+        <div className="flex-1 min-w-0">
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Active Routes</CardTitle>
+              <CardDescription>View routes on map</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              {/* Map Container - Edge to edge with proper containment */}
+              <div className="h-[600px] w-full rounded-lg overflow-hidden">
+                <MapLibreMap
+                  mapStyle="https://demotiles.maplibre.org/style.json"
+                  style={{ width: '100%', height: '100%' }}
+                  initialViewState={
+                    mapBounds
+                      ? {
+                          bounds: [
+                            [mapBounds.minLng, mapBounds.minLat],
+                            [mapBounds.maxLng, mapBounds.maxLat],
+                          ],
+                        }
+                      : undefined
+                  }
+                >
+                  {/* Render routes */}
+                  {activeRoutes.map((route) => {
+                    if (!route.mapRoute || route.mapRoute.length === 0) return null;
+                    
+                    const routeColor = stringToColor(route.user);
+                    const routeGeoJson = {
+                      type: 'Feature' as const,
+                      geometry: {
+                        type: 'LineString' as const,
+                        coordinates: route.mapRoute,
+                      },
+                    };
+
+                    return (
+                      <Source
+                        key={route.routeID}
+                        id={`route-${route.routeID}`}
+                        type="geojson"
+                        data={routeGeoJson}
+                      >
+                        <Layer
+                          id={`route-layer-${route.routeID}`}
+                          type="line"
+                          paint={{
+                            'line-color':
+                              selectedRoute === route.routeID
+                                ? '#FF4136'
+                                : routeColor,
+                            'line-width': selectedRoute === route.routeID ? 6 : 4,
+                          }}
+                        />
+                      </Source>
+                    );
+                  })}
+
+                  {/* Render package markers */}
+                  {allPackages.map((pkg) => (
+                    <Marker
+                      key={pkg.packageID}
+                      longitude={parseFloat(pkg.longitude)}
+                      latitude={parseFloat(pkg.latitude)}
+                    >
+                      <div className="relative">
+                        <div
+                          className={`rounded-full p-2 text-white text-xs font-bold ${
+                            pkg.isDelivered
+                              ? 'bg-success'
+                              : selectedRouteData?.packageSequence?.some(
+                                  (p: any) => p.packageID === pkg.packageID
+                                )
+                              ? 'bg-destructive'
+                              : 'bg-primary'
+                          }`}
+                        >
+                          {pkg.isDelivered ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <Package className="h-4 w-4" />
+                          )}
+                        </div>
+                      </div>
+                    </Marker>
+                  ))}
+                </MapLibreMap>
+              </div>
+
+              {/* Active Routes List */}
+              <div className="p-4 space-y-2 border-t">
+                <h3 className="font-semibold text-sm mb-2">Active Routes</h3>
+                <ScrollArea className="h-32">
+                  {activeRoutes.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4 text-sm">
+                      No active routes
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeRoutes.map((route) => (
+                        <div
+                          key={route.routeID}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                            selectedRoute === route.routeID
+                              ? 'bg-primary/10 border-primary shadow-soft'
+                              : 'hover:bg-muted/50 hover:shadow-soft'
+                          }`}
+                          onClick={() => setSelectedRoute(route.routeID)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{route.user}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {route.packageSequence?.length || 0} packages
+                              </p>
+                            </div>
+                            <Badge
+                              variant={
+                                route.status === 'active' ? 'success' : 'default'
+                              }
+                            >
+                              {route.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Truck Assignment Modal */}
@@ -506,19 +740,45 @@ const Journeys = () => {
                 </div>
               );
             })}
-            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-              {trucks.map((truck) => (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Available Trucks</p>
                 <Button
-                  key={truck.licensePlate}
-                  variant="outline"
-                  onClick={() => handleTruckAssign(truck)}
-                  disabled={Array.from(assignedTrucks.values()).includes(
-                    truck.licensePlate
-                  )}
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const refreshedTrucksRes = await truckAPI.getAvailable();
+                      setTrucks(refreshedTrucksRes.data);
+                      toast.success('Truck list refreshed');
+                    } catch (error) {
+                      toast.error('Failed to refresh trucks');
+                    }
+                  }}
                 >
-                  {truck.licensePlate} ({truck.kilogramCapacity} kg)
+                  Refresh
                 </Button>
-              ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {trucks.filter(t => !t.isUsed).map((truck) => (
+                  <Button
+                    key={truck.licensePlate}
+                    variant="outline"
+                    onClick={() => handleTruckAssign(truck)}
+                    disabled={Array.from(assignedTrucks.values()).includes(
+                      truck.licensePlate
+                    )}
+                    className={truck.isUsed ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
+                    {truck.licensePlate} ({truck.kilogramCapacity} kg)
+                  </Button>
+                ))}
+                {trucks.filter(t => !t.isUsed).length === 0 && (
+                  <p className="col-span-2 text-center text-muted-foreground py-4 text-sm">
+                    No available trucks. All trucks are currently in use.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -533,10 +793,11 @@ const Journeys = () => {
               onClick={handleConfirmJourney}
               disabled={
                 assignedTrucks.size !== selectedDrivers.size ||
-                selectedDrivers.size === 0
+                selectedDrivers.size === 0 ||
+                startingJourney
               }
             >
-              Start Journey
+              {startingJourney ? 'Starting...' : 'Start Journey'}
             </Button>
           </DialogFooter>
         </DialogContent>
