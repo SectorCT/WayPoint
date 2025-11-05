@@ -90,3 +90,9 @@
 /* MapLibre GL Styles */
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
+/* Ensure MapLibre maps fill their containers */
+.maplibregl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
