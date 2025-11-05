@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Map, Marker } from '@vis.gl/react-maplibre';
+import { Map as MapLibreMap, Marker } from '@vis.gl/react-maplibre';
 import { Package as PackageIcon, MapPin } from 'lucide-react';
 
 const Packages = () => {
@@ -306,7 +306,7 @@ const Packages = () => {
             <DialogTitle>Select Package Location</DialogTitle>
           </DialogHeader>
           <div className="h-full">
-            <Map
+            <MapLibreMap
               mapStyle="https://demotiles.maplibre.org/style.json"
               style={{ width: '100%', height: '100%' }}
               onClick={handleMapClick}
@@ -336,7 +336,7 @@ const Packages = () => {
                 <p>{previewPackage.weight} kg</p>
               </div>
               <div className="h-64">
-                <Map
+                <MapLibreMap
                   mapStyle="https://demotiles.maplibre.org/style.json"
                   style={{ width: '100%', height: '100%' }}
                   initialViewState={{
@@ -353,7 +353,7 @@ const Packages = () => {
                       <MapPin className="h-4 w-4" />
                     </div>
                   </Marker>
-                </Map>
+                </MapLibreMap>
               </div>
             </div>
           )}
