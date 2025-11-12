@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { userAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, ArrowLeft } from 'lucide-react';
 
 const VerifyUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,11 +17,8 @@ const VerifyUsers = () => {
 
   const fetchUnverifiedUsers = async () => {
     try {
-      const response = await userAPI.getAll();
-      const unverified = response.data.filter(
-        (user: any) => !user.verified && !user.isManager
-      );
-      setUsers(unverified);
+      const response = await userAPI.getUnverified();
+      setUsers(response.data);
     } catch (error) {
       toast.error('Failed to fetch users');
     } finally {
@@ -47,8 +46,13 @@ const VerifyUsers = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">User Verification</h1>
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
       </div>
 
       <Card>

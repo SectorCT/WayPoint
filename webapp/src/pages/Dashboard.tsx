@@ -85,9 +85,10 @@ const Dashboard = () => {
         statisticsAPI.get(),
       ]);
 
-      const activeRoutes = routesRes.data.filter(
-        (route: any) => route.status === 'active'
-      ).length;
+      // The backend endpoint /delivery/route/all/ already filters for active routes
+      // (isActive=True and dateOfCreation=today), so all routes returned are active
+      // The serializer doesn't include isActive/status fields, so we just count all returned routes
+      const activeRoutes = routesRes.data.length;
 
       setStats({
         activeJourneys: activeRoutes,
@@ -97,9 +98,11 @@ const Dashboard = () => {
       });
 
       // Process chart data
+      // The backend returns date as formatted string (e.g., '20th March')
+      // We use the formatted date as-is for the chart, and get delivered packages count
       const dailyData = historyRes.data.map((item: any) => ({
-        day: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
-        value: item.delivered_count || 0,
+        day: item.date || 'Unknown',
+        value: item.delivered?.numPackages || 0,
       }));
 
       const truckData = statsRes.data.truck_usage_data || [];

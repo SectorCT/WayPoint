@@ -21,7 +21,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Map as MapLibreMap, Marker, Source, Layer } from '@vis.gl/react-maplibre';
-import { MapPin, Package, Truck as TruckIcon, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import { MapPin, Package, Truck as TruckIcon, ChevronDown, ChevronUp, CheckCircle, ArrowLeft } from 'lucide-react';
 
 const Journeys = () => {
   const navigate = useNavigate();
@@ -489,7 +489,14 @@ const Journeys = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Journey Management</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Journey Management</h1>
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+      </div>
 
       {/* Header Stats */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -541,16 +548,6 @@ const Journeys = () => {
               <CardTitle>Select Drivers</CardTitle>
               <CardDescription>
                 Choose drivers for new journey
-                {availablePackagesCount === 0 && (
-                  <span className="block mt-2 text-warning text-sm">
-                    ⚠️ No packages available. <button 
-                      onClick={() => navigate('/packages')}
-                      className="underline hover:text-primary"
-                    >
-                      Create packages
-                    </button> to start a journey.
-                  </span>
-                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -721,9 +718,10 @@ const Journeys = () => {
                     const isWarehouse = pkg.packageID === 'ADMIN';
                     
                     // Coordinates are already validated and converted to numbers in allPackages
+                    // Include sequenceIndex in key to ensure uniqueness even when multiple routes share the same packageID (e.g., ADMIN)
                     return (
                       <Marker
-                        key={`${pkg.routeID}-${pkg.packageID}`}
+                        key={`${pkg.routeID}-${pkg.sequenceIndex}-${pkg.packageID}`}
                         longitude={pkg.longitude}
                         latitude={pkg.latitude}
                       >

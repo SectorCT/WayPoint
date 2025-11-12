@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { packageAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -19,9 +20,10 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Map as MapLibreMap, Marker } from '@vis.gl/react-maplibre';
-import { Package as PackageIcon, MapPin } from 'lucide-react';
+import { Package as PackageIcon, MapPin, ArrowLeft } from 'lucide-react';
 
 const Packages = () => {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -141,7 +143,14 @@ const Packages = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Package Management</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Package Management</h1>
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Create Package Form */}
