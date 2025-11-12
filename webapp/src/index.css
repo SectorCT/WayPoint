@@ -1,3 +1,6 @@
+/* MapLibre GL Styles - must be at the top */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,9 +89,6 @@
     transition: var(--transition-smooth);
   }
 }
-
-/* MapLibre GL Styles */
-@import 'maplibre-gl/dist/maplibre-gl.css';
 
 /* Ensure MapLibre maps fill their containers */
 .maplibregl-map {

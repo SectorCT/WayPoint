@@ -108,6 +108,12 @@ const Journeys = () => {
   };
 
   const handleConfirmJourney = async () => {
+    // Prevent multiple simultaneous calls
+    if (startingJourney) {
+      console.warn('Journey start already in progress, ignoring duplicate call');
+      return;
+    }
+
     if (selectedDrivers.size === 0) {
       toast.error('Please select at least one driver');
       return;
@@ -123,9 +129,27 @@ const Journeys = () => {
       toast.loading('Planning routes...', { id: 'journey-start' });
       
       // Plan routes - API expects "drivers" not "selected_drivers"
-      const planResponse = await routeAPI.plan({
-        drivers: Array.from(selectedDrivers),
-      });
+      let planResponse;
+      try {
+        planResponse = await routeAPI.plan({
+          drivers: Array.from(selectedDrivers),
+        });
+      } catch (planError: any) {
+        // Handle specific error from plan endpoint
+        const errorMsg = planError.response?.data?.error || planError.message;
+        if (errorMsg?.includes('No packages available')) {
+          toast.error(
+            'No packages available. Packages may have already been assigned, or there are no pending packages with delivery date today or earlier. Please refresh the page and check the Packages page.', 
+            { id: 'journey-start', duration: 6000 }
+          );
+          // Refresh data to show current state
+          await fetchData();
+        } else {
+          throw planError; // Re-throw to be handled by outer catch
+        }
+        setStartingJourney(false);
+        return;
+      }
 
       const plannedRoutes = planResponse.data || [];
       
@@ -135,6 +159,8 @@ const Journeys = () => {
           { id: 'journey-start', duration: 5000 }
         );
         setStartingJourney(false);
+        // Refresh data to show current state
+        await fetchData();
         return;
       }
 
@@ -206,6 +232,8 @@ const Journeys = () => {
         }
 
         console.log(`Assigning truck ${licensePlate} to driver ${username} with ${packageSequence.length} packages`);
+        console.log('Package sequence:', JSON.stringify(packageSequence, null, 2));
+        console.log('Map route length:', mapRoute.length);
 
         // Call assign with the full route data
         assignmentPromises.push(
@@ -214,6 +242,9 @@ const Journeys = () => {
             truckLicensePlate: licensePlate,
             packageSequence: packageSequence,
             mapRoute: mapRoute,
+          }).catch((error: any) => {
+            console.error(`Failed to assign truck to ${username}:`, error.response?.data || error.message);
+            throw error;
           })
         );
       }
@@ -277,7 +308,8 @@ const Journeys = () => {
       setAssignedTrucks(new Map());
       setShowTruckModal(false);
       
-      // Refresh data to show the new routes
+      // Refresh data to show the new routes - wait a bit for backend to process
+      await new Promise(resolve => setTimeout(resolve, 500));
       await fetchData();
     } catch (error: any) {
       // Show more detailed error message
@@ -339,8 +371,18 @@ const Journeys = () => {
 
   // Filter drivers by search and exclude those with active routes
   const availableDrivers = useMemo(() => {
+    // Get all active route driver usernames (use same logic as activeRoutes)
     const activeDriverUsernames = new Set(
-      routes.filter((r) => r.status === 'active').map((r) => r.user)
+      routes
+        .filter((r) => {
+          // If status field exists and is not 'active', exclude it
+          if (r.hasOwnProperty('status') && r.status && r.status !== 'active') return false;
+          // If isActive field exists and is false, exclude it
+          if (r.hasOwnProperty('isActive') && r.isActive === false) return false;
+          // Otherwise, include it (API already filters for active routes)
+          return true;
+        })
+        .map((r) => r.user)
     );
 
     return drivers.filter(
@@ -363,15 +405,44 @@ const Journeys = () => {
 
   // Get all packages from active routes
   const allPackages = useMemo(() => {
-    const activeRoutes = routes.filter((r) => r.status === 'active');
+    // Use same filtering logic as activeRoutes
+    const activeRoutes = routes.filter((r) => {
+      // If status field exists and is not 'active', exclude it
+      if (r.hasOwnProperty('status') && r.status && r.status !== 'active') return false;
+      // If isActive field exists and is false, exclude it
+      if (r.hasOwnProperty('isActive') && r.isActive === false) return false;
+      // Otherwise, include it (API already filters for active routes)
+      return true;
+    });
+    
     const packages: any[] = [];
     activeRoutes.forEach((route) => {
-      if (route.packageSequence) {
-        route.packageSequence.forEach((pkg: any) => {
-          packages.push({ ...pkg, routeID: route.routeID, driver: route.user });
+      if (route.packageSequence && Array.isArray(route.packageSequence)) {
+        route.packageSequence.forEach((pkg: any, index: number) => {
+          // Only include packages that have valid coordinates
+          // Check both number and string formats
+          const lat = pkg.latitude != null ? parseFloat(pkg.latitude) : null;
+          const lng = pkg.longitude != null ? parseFloat(pkg.longitude) : null;
+          
+          if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+            packages.push({ 
+              ...pkg, 
+              routeID: route.routeID, 
+              driver: route.user,
+              sequenceIndex: index, // Store the index in the sequence
+              latitude: lat, // Ensure it's a number
+              longitude: lng // Ensure it's a number
+            });
+          }
         });
       }
     });
+    
+    // Debug: log packages found
+    if (packages.length > 0) {
+      console.log('Packages found for map:', packages.length, packages.slice(0, 3));
+    }
+    
     return packages;
   }, [routes]);
 
@@ -404,7 +475,17 @@ const Journeys = () => {
     );
   }
 
-  const activeRoutes = routes.filter((r) => r.status === 'active');
+  // The API endpoint /route/all/ already filters for active routes (isActive=True and dateOfCreation=today)
+  // So all routes returned should be considered active
+  // However, we still check for status/isActive fields if they exist for robustness
+  const activeRoutes = routes.filter((r) => {
+    // If status field exists and is not 'active', exclude it
+    if (r.hasOwnProperty('status') && r.status && r.status !== 'active') return false;
+    // If isActive field exists and is false, exclude it
+    if (r.hasOwnProperty('isActive') && r.isActive === false) return false;
+    // Otherwise, include it (API already filters for active routes)
+    return true;
+  });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -579,17 +660,20 @@ const Journeys = () => {
               {/* Map Container - Edge to edge with proper containment */}
               <div className="h-[600px] w-full rounded-lg overflow-hidden">
                 <MapLibreMap
-                  mapStyle="https://demotiles.maplibre.org/style.json"
+                  mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
                   style={{ width: '100%', height: '100%' }}
                   initialViewState={
                     mapBounds
                       ? {
-                          bounds: [
-                            [mapBounds.minLng, mapBounds.minLat],
-                            [mapBounds.maxLng, mapBounds.maxLat],
-                          ],
+                          latitude: (mapBounds.minLat + mapBounds.maxLat) / 2,
+                          longitude: (mapBounds.minLng + mapBounds.maxLng) / 2,
+                          zoom: 12,
                         }
-                      : undefined
+                      : {
+                          latitude: 37.4220,
+                          longitude: -122.0841,
+                          zoom: 12,
+                        }
                   }
                 >
                   {/* Render routes */}
@@ -628,33 +712,41 @@ const Journeys = () => {
                   })}
 
                   {/* Render package markers */}
-                  {allPackages.map((pkg) => (
-                    <Marker
-                      key={pkg.packageID}
-                      longitude={parseFloat(pkg.longitude)}
-                      latitude={parseFloat(pkg.latitude)}
-                    >
-                      <div className="relative">
-                        <div
-                          className={`rounded-full p-2 text-white text-xs font-bold ${
-                            pkg.isDelivered
-                              ? 'bg-success'
-                              : selectedRouteData?.packageSequence?.some(
-                                  (p: any) => p.packageID === pkg.packageID
-                                )
-                              ? 'bg-destructive'
-                              : 'bg-primary'
-                          }`}
-                        >
-                          {pkg.isDelivered ? (
-                            <CheckCircle className="h-4 w-4" />
+                  {allPackages.map((pkg) => {
+                    // Use the sequenceIndex (already set in allPackages)
+                    const packageIndex = pkg.sequenceIndex ?? 0;
+                    
+                    const isDelivered = pkg.status === 'delivered';
+                    const isUndelivered = pkg.status === 'undelivered';
+                    const isWarehouse = pkg.packageID === 'ADMIN';
+                    
+                    // Coordinates are already validated and converted to numbers in allPackages
+                    return (
+                      <Marker
+                        key={`${pkg.routeID}-${pkg.packageID}`}
+                        longitude={pkg.longitude}
+                        latitude={pkg.latitude}
+                      >
+                        <div className="relative">
+                          {isWarehouse ? (
+                            <div className="text-2xl">🏠</div>
                           ) : (
-                            <Package className="h-4 w-4" />
+                            <div
+                              className={`rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold border-2 ${
+                                isDelivered
+                                  ? 'bg-green-100 border-green-500 text-green-700'
+                                  : isUndelivered
+                                  ? 'bg-red-100 border-red-500 text-red-700'
+                                  : 'bg-white border-blue-500 text-blue-700'
+                              }`}
+                            >
+                              {isDelivered ? '✓' : isUndelivered ? '✗' : packageIndex + 1}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </Marker>
-                  ))}
+                      </Marker>
+                    );
+                  })}
                 </MapLibreMap>
               </div>
 
