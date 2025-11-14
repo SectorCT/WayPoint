@@ -1032,7 +1032,12 @@ class CheckDriverStatusView(APIView):
 
 
 class AssignTruckAndStartJourneyView(APIView):
-    """Persist a prepared route (manual override / import)."""
+    """Persist a prepared route (manual override / import).
+    
+    This endpoint handles both creating new routes and updating existing routes.
+    If a route already exists for the driver (e.g., from the plan endpoint),
+    it will update that route instead of creating a new one.
+    """
 
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated, IsManager]
@@ -1056,30 +1061,64 @@ class AssignTruckAndStartJourneyView(APIView):
         except Truck.DoesNotExist:
             return Response({"error": f"Truck '{truck_license_plate}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        if truck.isUsed:
-            return Response({"error": f"Truck '{truck_license_plate}' is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if a route already exists for this driver (from plan endpoint)
+        existing_route = RouteAssignment.objects.filter(driver=driver, isActive=True).first()
+        
+        if existing_route:
+            # Update existing route instead of creating a new one
+            old_truck = existing_route.truck
+            
+            # Check if the new truck is already in use by another route
+            if truck.isUsed and (not old_truck or old_truck.pk != truck.pk):
+                # Check if truck is used by a different route
+                other_route = RouteAssignment.objects.filter(truck=truck, isActive=True).exclude(pk=existing_route.pk).first()
+                if other_route:
+                    return Response({"error": f"Truck '{truck_license_plate}' is already in use by another route."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update route data
+            existing_route.packageSequence = package_sequence
+            existing_route.mapRoute = map_route
+            
+            # Handle truck assignment
+            if not old_truck or old_truck.pk != truck.pk:
+                # Release old truck if different
+                if old_truck:
+                    old_truck.isUsed = False
+                    old_truck.save()
+                
+                # Assign new truck
+                existing_route.truck = truck
+                truck.isUsed = True
+                truck.save()
+            
+            existing_route.save()
+            route_instance = existing_route
+        else:
+            # Create new route
+            try:
+                route_instance = RouteAssignment.objects.create_route(
+                    driver=driver,
+                    packageSequence=package_sequence,
+                    mapRoute=map_route,
+                    truck=truck,
+                    dateOfCreation=timezone.now().date(),
+                )
+            except serializers.ValidationError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:  # fail soft
+                return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        try:
-            route_instance = RouteAssignment.objects.create_route(
-                driver=driver,
-                packageSequence=package_sequence,
-                mapRoute=map_route,
-                truck=truck,
-                dateOfCreation=timezone.now().date(),
-            )
-        except serializers.ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:  # fail soft
-            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            truck.isUsed = True
+            truck.save()
 
-        truck.isUsed = True
-        truck.save()
-
+        # Mark packages as in transit
         package_ids = [pkg.get("packageID") for pkg in package_sequence if pkg.get("packageID") != "ADMIN"]
         Package.objects.filter(packageID__in=package_ids).update(status="in_transit")
 
         serializer = RouteAssignmentSerializer(route_instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Return 200 OK if updating existing route, 201 CREATED if creating new route
+        response_status = status.HTTP_200_OK if existing_route else status.HTTP_201_CREATED
+        return Response(serializer.data, status=response_status)
 
 
 class recalculateRoute(APIView):
