@@ -21,6 +21,12 @@ export const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION || 'v1';
 // Use environment variable if set, otherwise use development URL
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? DEV_API_URL;
 
+// Debug: Log the API base URL to verify environment variable is loaded
+if (__DEV__) {
+  console.log('API_BASE_URL:', API_BASE_URL);
+  console.log('EXPO_PUBLIC_API_BASE_URL from env:', process.env.EXPO_PUBLIC_API_BASE_URL);
+}
+
 // For production builds, you can override this
 export const getApiBaseUrl = () => {
   if (__DEV__) {
