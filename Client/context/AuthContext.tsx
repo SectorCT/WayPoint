@@ -47,7 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const loginRequest: LoginRequest = { email, password };
-      const response = await fetch(`${API_BASE_URL}/${API_VERSION}/auth/login/`, {
+      const loginUrl = `${API_BASE_URL}/${API_VERSION}/auth/login/`;
+      console.log('Login URL:', loginUrl);
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
