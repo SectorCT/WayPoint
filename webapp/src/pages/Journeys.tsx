@@ -51,6 +51,11 @@ const Journeys = () => {
     }
   }, [selectedRoute, routes]);
 
+  // Debug: Log modal state changes
+  useEffect(() => {
+    console.log('Modal state changed:', showTruckModal);
+  }, [showTruckModal]);
+
   const fetchData = async () => {
     try {
       const [routesRes, usersRes, trucksRes, packagesRes] = await Promise.all([
@@ -169,34 +174,8 @@ const Journeys = () => {
 
       toast.loading('Assigning trucks and starting journeys...', { id: 'journey-start' });
 
-      // Refresh truck availability before assignment
-      let refreshedTrucks: any[] = [];
-      try {
-        const refreshedTrucksRes = await truckAPI.getAvailable();
-        refreshedTrucks = refreshedTrucksRes.data;
-      } catch (error) {
-        console.warn('Failed to refresh truck list, proceeding with cached data');
-      }
-
-      // Check if assigned trucks are still available
-      const unavailableTrucks: string[] = [];
-      for (const [username, licensePlate] of assignedTrucks) {
-        const truck = refreshedTrucks.find((t: any) => t.licensePlate === licensePlate);
-        if (!truck || truck.isUsed) {
-          unavailableTrucks.push(licensePlate);
-        }
-      }
-
-      if (unavailableTrucks.length > 0) {
-        toast.error(
-          `Truck(s) ${unavailableTrucks.join(', ')} are no longer available. Please refresh and select different trucks.`, 
-          { id: 'journey-start', duration: 6000 }
-        );
-        setStartingJourney(false);
-        // Refresh data to update truck status
-        await fetchData();
-        return;
-      }
+      // Note: We let the backend validate truck availability instead of pre-checking
+      // This avoids race conditions and stale data issues
 
       // Assign trucks and start journeys using the planned route data
       const assignmentPromises = [];
@@ -253,12 +232,17 @@ const Journeys = () => {
       if (assignmentPromises.length === 0) {
         toast.error('No routes to assign. Please check the planned routes.', { id: 'journey-start' });
         setStartingJourney(false);
+        // Don't close modal here - let user see the error and try again
         return;
       }
+
+      console.log(`Starting ${assignmentPromises.length} truck assignments...`);
 
       const results = await Promise.allSettled(assignmentPromises);
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
+
+      console.log(`Assignment results: ${successful} successful, ${failed} failed`);
 
       if (failed > 0) {
         const rejectedReasons = results
@@ -268,9 +252,9 @@ const Journeys = () => {
               const reason = r.reason;
               if (reason?.response?.data?.error) {
                 const errorMsg = reason.response.data.error;
-                // If truck is already in use, suggest refreshing
-                if (errorMsg.includes('already in use')) {
-                  return `${errorMsg} Please refresh the page and try again.`;
+                // If truck is already in use or unavailable, provide helpful message
+                if (errorMsg.includes('already in use') || errorMsg.includes('not available') || errorMsg.includes('does not exist')) {
+                  return `${errorMsg} Please refresh and select different trucks.`;
                 }
                 return errorMsg;
               } else if (reason?.message) {
@@ -289,28 +273,79 @@ const Journeys = () => {
             `${successful} journey(s) started, but ${failed} failed. ${rejectedReasons[0] || ''}`, 
             { id: 'journey-start', duration: 5000 }
           );
+          // Even with partial success, close modal and reset state FIRST
+          // User can start a new journey for remaining drivers if needed
+          setSelectedDrivers(new Set());
+          setAssignedTrucks(new Map());
+          setStartingJourney(false);
+          setShowTruckModal(false);
+          // Refresh data to show updated routes - wrap in try-catch
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await fetchData();
+          } catch (refreshError) {
+            console.warn('Error refreshing data after partial journey creation:', refreshError);
+            // Modal is already closed, so we can just log the error
+          }
+          return;
         } else {
+          // All assignments failed - check if it's due to truck unavailability
           const failureReason = rejectedReasons[0] || 'Check console for details';
+          const isTruckUnavailable = failureReason.includes('already in use') || 
+                                     failureReason.includes('not available') || 
+                                     failureReason.includes('does not exist');
+          
           toast.error(
             `All assignments failed. ${failureReason}`, 
             { id: 'journey-start', duration: 6000 }
           );
+          
+          // Refresh truck list to show current availability
+          try {
+            const refreshedTrucksRes = await truckAPI.getAvailable();
+            setTrucks(refreshedTrucksRes.data);
+          } catch (refreshError) {
+            console.warn('Failed to refresh truck list:', refreshError);
+          }
+          
           // Refresh data to update truck status
           await fetchData();
           setStartingJourney(false);
+          // Keep modal open if it's a truck availability issue so user can reassign
+          if (!isTruckUnavailable) {
+            setShowTruckModal(false);
+          }
           return;
         }
-      } else {
-        toast.success(`${successful} journey(s) started successfully!`, { id: 'journey-start' });
       }
 
+      // All assignments succeeded - close modal and reset state FIRST
+      // This ensures modal closes even if refresh fails
+      console.log('All assignments succeeded, closing modal and refreshing data');
+      toast.success(`${successful} journey(s) started successfully!`, { id: 'journey-start' });
+      
+      // Reset state and close modal immediately
       setSelectedDrivers(new Set());
       setAssignedTrucks(new Map());
+      setStartingJourney(false);
       setShowTruckModal(false);
       
       // Refresh data to show the new routes - wait a bit for backend to process
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await fetchData();
+      // Wrap in try-catch so errors during refresh don't affect modal state
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await fetchData();
+        // Scroll to map area to show the new routes
+        setTimeout(() => {
+          const mapElement = document.querySelector('[class*="Map"]') || document.querySelector('canvas');
+          if (mapElement) {
+            mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      } catch (refreshError) {
+        console.warn('Error refreshing data after successful journey creation:', refreshError);
+        // Modal is already closed, so we can just log the error
+      }
     } catch (error: any) {
       // Show more detailed error message
       let errorMessage = 'Failed to start journey';
@@ -335,8 +370,15 @@ const Journeys = () => {
               errorDetails = `Packages must have status "pending" and delivery date today or earlier. Currently ${availablePackagesCount} package(s) available. Go to Packages page to create packages.`;
             } else if (errorMessage.includes('No valid drivers')) {
               errorDetails = 'Please select at least one verified driver.';
-            } else if (errorMessage.includes('No available truck')) {
+            } else if (errorMessage.includes('No available truck') || errorMessage.includes('already in use')) {
               errorDetails = 'Make sure there are available trucks with sufficient capacity.';
+              // Refresh truck list so user can see current availability
+              try {
+                const refreshedTrucksRes = await truckAPI.getAvailable();
+                setTrucks(refreshedTrucksRes.data);
+              } catch (refreshError) {
+                console.warn('Failed to refresh truck list after error:', refreshError);
+              }
             }
           } else if (errorData?.message) {
             errorMessage = errorData.message;
@@ -795,7 +837,17 @@ const Journeys = () => {
       </div>
 
       {/* Truck Assignment Modal */}
-      <Dialog open={showTruckModal} onOpenChange={setShowTruckModal}>
+      <Dialog 
+        open={showTruckModal} 
+        onOpenChange={(open) => {
+          // Only prevent closing if journey is actively starting
+          if (!open && startingJourney) {
+            // Don't allow closing while starting journey
+            return;
+          }
+          setShowTruckModal(open);
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Assign Trucks to Drivers</DialogTitle>
