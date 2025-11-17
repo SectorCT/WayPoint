@@ -31,7 +31,7 @@ const Desktop = () => {
 
   const handleDashboardClick = () => {
     // Navigate to the actual dashboard URL
-    window.open('http://localhost:3000/dashboard', '_blank');
+    window.open('https://dashboard.waypoint.delivery/', '_blank');
   };
 
   const handleContactClick = () => {

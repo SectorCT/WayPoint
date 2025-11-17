@@ -70,7 +70,7 @@ const Header = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => window.open('http://localhost:3000/dashboard', '_blank')}
+              onClick={() => window.open('https://dashboard.waypoint.delivery/', '_blank')}
             >
               Go to Dashboard
             </Button>
@@ -109,7 +109,7 @@ const Header = () => {
                 <Button 
                   variant="ghost" 
                   className="w-full"
-                  onClick={() => window.open('http://localhost:3000/dashboard', '_blank')}
+                  onClick={() => window.open('https://dashboard.waypoint.delivery/', '_blank')}
                 >
                   Go to Dashboard
                 </Button>
