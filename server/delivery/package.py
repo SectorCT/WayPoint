@@ -15,6 +15,7 @@ import logging
 from .models import User, OfficeDelivery
 from .serializers import OfficeDeliverySerializer
 from .email_service import DeliveryEmailService
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -309,11 +310,16 @@ class UndeliveredPackagesByOffice(APIView):
 
 class UndeliveredPackagesRouteSuggestion(APIView):
     def get(self, request, driver_username):
-        # Get all undelivered packages for this driver's active route
-        try:
-            route = RouteAssignment.objects.get(driver__username=driver_username, isActive=True)
-        except RouteAssignment.DoesNotExist:
-            return Response({"error": "No active route for this driver."}, status=status.HTTP_404_NOT_FOUND)
+        # Get all undelivered packages for this driver's route
+        # First try active route, then try today's route (even if inactive)
+        today = timezone.now().date()
+        route = RouteAssignment.objects.filter(
+            driver__username=driver_username,
+            dateOfCreation=today
+        ).order_by('-isActive', '-id').first()
+        
+        if not route:
+            return Response({"error": "No route found for this driver today."}, status=status.HTTP_404_NOT_FOUND)
         
         # Get packages that are still undelivered (not delivered to offices)
         undelivered = []
@@ -399,11 +405,15 @@ def save_office_delivery(request):
         except (User.DoesNotExist, Office.DoesNotExist):
             return Response({"error": "Driver or office not found"}, status=404)
         
-        # Get the active route for this driver
-        try:
-            route = RouteAssignment.objects.get(driver=driver, isActive=True)
-        except RouteAssignment.DoesNotExist:
-            return Response({"error": "No active route found for this driver"}, status=404)
+        # Get the route for this driver (active or today's route)
+        today = timezone.now().date()
+        route = RouteAssignment.objects.filter(
+            driver=driver,
+            dateOfCreation=today
+        ).order_by('-isActive', '-id').first()
+        
+        if not route:
+            return Response({"error": "No route found for this driver today"}, status=404)
         
         # Create office delivery record
         office_delivery = OfficeDelivery.objects.create(
