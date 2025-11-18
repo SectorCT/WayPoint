@@ -11,7 +11,9 @@
     "test": "jest --watchAll",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "registerEmployees": "ts-node ./scripts/registerEmployees.ts"
+    "registerEmployees": "ts-node ./scripts/registerEmployees.ts",
+    "build:android:local": "./build-android-local.sh",
+    "build:android:apk": "cd android && ./gradlew assembleRelease"
   },
   "jest": {
     "preset": "jest-expo"

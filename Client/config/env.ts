@@ -12,8 +12,9 @@ const PHYSICAL_DEVICE_URL = "http://172.20.10.3:8000";
 // Production API URL (when deployed)
 const PROD_API_URL = "http://185.32.148.190:8000";
 
-// Default to Android Emulator URL (most common for Docker development)
-const DEV_API_URL = ANDROID_EMULATOR_URL;
+// Default to localhost for local builds (no queue, direct connection)
+// For physical device testing, change this to your machine's IP address
+const DEV_API_URL = "http://localhost:8000";
 
 // API Version
 export const API_VERSION = process.env.EXPO_PUBLIC_API_VERSION || 'v1';
