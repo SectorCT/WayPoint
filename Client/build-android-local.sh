@@ -1,4 +1,4 @@
-#!/bin/bash
+    #!/bin/bash
 
 # WayPoint Android APK Local Build Script
 # This script builds the Android APK locally without using EAS (no queue wait)
@@ -79,14 +79,38 @@ if [ -f ".env" ]; then
     echo "   ✅ Loaded environment variables from .env"
     echo "   EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-not set}"
     echo "   EXPO_PUBLIC_GEOAPIFY_API_KEY=${EXPO_PUBLIC_GEOAPIFY_API_KEY:+set}"
+    echo "   GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:+set}"
 else
     echo "⚠️  No .env file found. Environment variables may not be loaded."
+fi
+
+# Check for Google Maps API Key (from .env or gradle.properties)
+if [ -z "$GOOGLE_MAPS_API_KEY" ]; then
+    # Try to read from gradle.properties
+    if [ -f "android/gradle.properties" ]; then
+        GRADLE_KEY=$(grep "^GOOGLE_MAPS_API_KEY=" android/gradle.properties | cut -d'=' -f2- | tr -d ' ' | head -1)
+        if [ -n "$GRADLE_KEY" ] && [ "$GRADLE_KEY" != "YOUR_ANDROID_API_KEY" ]; then
+            export GOOGLE_MAPS_API_KEY="$GRADLE_KEY"
+            echo "✅ Found Google Maps API Key in gradle.properties"
+        fi
+    fi
+fi
+
+if [ -z "$GOOGLE_MAPS_API_KEY" ] || [ "$GOOGLE_MAPS_API_KEY" = "YOUR_ANDROID_API_KEY" ]; then
+    echo "⚠️  WARNING: GOOGLE_MAPS_API_KEY is not set or is still a placeholder!"
+    echo "   The map will appear black in the built APK."
+    echo "   Set it in .env file or gradle.properties:"
+    echo "   GOOGLE_MAPS_API_KEY=your_actual_api_key_here"
+    echo ""
 fi
 
 # Patch React Native std::format issue
 echo "🔧 Checking for React Native std::format patch..."
 if [ -f "./patch-react-native.sh" ]; then
+    chmod +x ./patch-react-native.sh
     ./patch-react-native.sh
+else
+    echo "⚠️  patch-react-native.sh not found. std::format errors may occur."
 fi
 
 # Patch expo-blur BlurView dependency if JitPack is having issues
@@ -121,7 +145,34 @@ echo "🧹 Cleaning previous builds..."
 echo "🔨 Building release APK with environment variables..."
 echo "   EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-not set}"
 echo "   EXPO_PUBLIC_GEOAPIFY_API_KEY=${EXPO_PUBLIC_GEOAPIFY_API_KEY:+set}"
-./gradlew assembleRelease -PEXPO_PUBLIC_API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL}" -PEXPO_PUBLIC_GEOAPIFY_API_KEY="${EXPO_PUBLIC_GEOAPIFY_API_KEY}"
+echo "   GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:+set}"
+
+# Build with output capture
+set +e  # Temporarily disable exit on error
+./gradlew assembleRelease -PEXPO_PUBLIC_API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL}" -PEXPO_PUBLIC_GEOAPIFY_API_KEY="${EXPO_PUBLIC_GEOAPIFY_API_KEY}" -PGOOGLE_MAPS_API_KEY="${GOOGLE_MAPS_API_KEY}" 2>&1 | tee /tmp/gradle_build.log
+BUILD_STATUS=${PIPESTATUS[0]}
+set -e  # Re-enable exit on error
+
+# If build failed, check if it's due to std::format error
+if [ $BUILD_STATUS -ne 0 ]; then
+    if grep -q "no member named 'format' in namespace 'std'" /tmp/gradle_build.log; then
+        echo ""
+        echo "🔧 Build failed due to std::format error. Patching and retrying..."
+        if [ -f "../patch-react-native.sh" ]; then
+            cd ..
+            ./patch-react-native.sh
+            cd android
+            echo "🔄 Retrying build after patch..."
+            ./gradlew assembleRelease -PEXPO_PUBLIC_API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL}" -PEXPO_PUBLIC_GEOAPIFY_API_KEY="${EXPO_PUBLIC_GEOAPIFY_API_KEY}" -PGOOGLE_MAPS_API_KEY="${GOOGLE_MAPS_API_KEY}"
+        else
+            echo "❌ Build failed and patch script not found. Please run patch-react-native.sh manually."
+            exit 1
+        fi
+    else
+        echo "❌ Build failed with a different error. Check the logs above."
+        exit 1
+    fi
+fi
 
 # Check if APK was created
 APK_PATH="app/build/outputs/apk/release/app-release.apk"
