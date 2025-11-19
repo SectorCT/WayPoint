@@ -93,6 +93,27 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        
+        // Google Maps API Key - can be set via gradle.properties or environment variable
+        def googleMapsApiKey = findProperty('GOOGLE_MAPS_API_KEY') ?: System.getenv('GOOGLE_MAPS_API_KEY') ?: ''
+        if (!googleMapsApiKey || googleMapsApiKey == 'YOUR_ANDROID_API_KEY') {
+            // Try reading from root project gradle.properties
+            def rootProps = new Properties()
+            def rootPropsFile = rootProject.file('gradle.properties')
+            if (rootPropsFile.exists()) {
+                rootProps.load(new FileInputStream(rootPropsFile))
+                googleMapsApiKey = rootProps.getProperty('GOOGLE_MAPS_API_KEY', '')
+            }
+        }
+        
+        if (googleMapsApiKey && googleMapsApiKey != 'YOUR_ANDROID_API_KEY' && !googleMapsApiKey.isEmpty()) {
+            manifestPlaceholders = [GOOGLE_MAPS_API_KEY: googleMapsApiKey]
+            println "✅ Google Maps API Key found and will be injected into manifest"
+        } else {
+            manifestPlaceholders = [GOOGLE_MAPS_API_KEY: 'YOUR_ANDROID_API_KEY']
+            println "⚠️  WARNING: Google Maps API Key not found! Map will not work."
+            println "   Set GOOGLE_MAPS_API_KEY in android/gradle.properties"
+        }
     }
     signingConfigs {
         debug {
