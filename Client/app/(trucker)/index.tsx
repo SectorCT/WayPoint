@@ -281,29 +281,10 @@ export default function TruckerViewScreen() {
     
     if (undeliveredLocations.length === 0) return null;
     
-    // If we have current position, find the closest undelivered package
-    if (position.latitude && position.longitude) {
-      const currentPos: Coordinate = {
-        latitude: position.latitude,
-        longitude: position.longitude
-      };
-      
-      let closestLocation = undeliveredLocations[0];
-      let minDistance = Infinity;
-      
-      undeliveredLocations.forEach((location: RouteLocation) => {
-        const distance = calculateDistance(currentPos, location);
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestLocation = location;
-        }
-      });
-      
-      return closestLocation;
-    }
-    
-    // Otherwise return the first undelivered package
-    return undeliveredLocations[0];
+    // Return the first undelivered package in sequence order (by waypoint_index)
+    // This respects the optimized route order
+    const sortedBySequence = undeliveredLocations.sort((a, b) => a.waypoint_index - b.waypoint_index);
+    return sortedBySequence[0];
   };
 
   // Function to get route points to next delivery
@@ -332,14 +313,48 @@ export default function TruckerViewScreen() {
     };
     const { index: deliveryRouteIndex } = findClosestRoutePoint(nextDeliveryPos, routePoints);
 
-    // Get the route segment from current position to next delivery
+    // Ensure we're going forward in the route (from current position to next delivery)
+    // The route should always progress forward, so deliveryRouteIndex should be >= currentRouteIndex
+    // If somehow we're past the delivery point, still show route to it
     const startIndex = Math.min(currentRouteIndex, deliveryRouteIndex);
     const endIndex = Math.max(currentRouteIndex, deliveryRouteIndex);
     
-    // Add current position at the beginning and next delivery at the end
+    // Get the route segment from current position to next delivery
     const routeSegment = routePoints.slice(startIndex, endIndex + 1);
     
-    return [currentPos, ...routeSegment, nextDeliveryPos];
+    // Build the result route: start from current position, follow route segment, end at delivery
+    const result: Coordinate[] = [];
+    
+    // Always start with current position
+    result.push(currentPos);
+    
+    // Add route points that are between current position and delivery
+    // Skip points that are too close to avoid duplicates
+    routeSegment.forEach((point, idx) => {
+      const distanceToCurrent = calculateDistance(currentPos, point);
+      const distanceToDelivery = calculateDistance(point, nextDeliveryPos);
+      
+      // Only add points that are:
+      // 1. At least 20 meters from current position (to avoid duplicates)
+      // 2. Not too close to delivery point (unless it's the last point in segment)
+      if (distanceToCurrent > 20 && (idx === routeSegment.length - 1 || distanceToDelivery > 20)) {
+        result.push(point);
+      }
+    });
+    
+    // Always add the delivery point at the end
+    const lastPoint = result[result.length - 1];
+    const distanceToDelivery = calculateDistance(lastPoint, nextDeliveryPos);
+    if (distanceToDelivery > 10) { // Only add if more than 10 meters away from last point
+      result.push(nextDeliveryPos);
+    }
+    
+    // Ensure we have at least 2 points for a valid route
+    if (result.length < 2) {
+      return [currentPos, nextDeliveryPos];
+    }
+    
+    return result;
   };
 
   // Function to check for route deviation and recalculate if necessary
@@ -1041,19 +1056,28 @@ export default function TruckerViewScreen() {
                 console.error('Failed to mark package as undelivered:', response);
               }
 
-              // Update the status of the package in locations
-              const updatedLocations = locations.map(location => 
-                location.package_info.packageID === packageId 
-                  ? { 
-                      ...location, 
-                      package_info: { 
-                        ...location.package_info, 
-                        status: 'undelivered' as const 
-                      } 
-                    }
-                  : location
-              );
-              setLocations(updatedLocations);
+              // Refresh route data after marking as undelivered to ensure consistency
+              if (user) {
+                try {
+                  const data = await getRoute(user.username);
+                  setCurrentZone(data);
+                } catch (err) {
+                  console.error('Error refreshing route after marking as undelivered:', err);
+                  // Fallback: update local state only
+                  const updatedLocations = locations.map(location => 
+                    location.package_info.packageID === packageId 
+                      ? { 
+                          ...location, 
+                          package_info: { 
+                            ...location.package_info, 
+                            status: 'undelivered' as const 
+                          } 
+                        }
+                      : location
+                  );
+                  setLocations(updatedLocations);
+                }
+              }
 
               // Fetch the office assignment for this package from the backend and log it
               try {
