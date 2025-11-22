@@ -249,6 +249,11 @@ export default function TruckerViewScreen() {
   // Add state to track if camera should follow heading
   const [isFollowingHeading, setIsFollowingHeading] = useState(false);
   
+  // Route trail removal state - track furthest point reached on route
+  const [furthestRoutePointIndex, setFurthestRoutePointIndex] = useState(0);
+  const lastPositionCheckRef = useRef<Coordinate | null>(null);
+  const routeProgressCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   // Add state for steps and next step
   const [routeSteps, setRouteSteps] = useState<unknown[]>([]);
   const [nextStep, setNextStep] = useState<unknown | null>(null);
@@ -285,6 +290,144 @@ export default function TruckerViewScreen() {
     // This respects the optimized route order
     const sortedBySequence = undeliveredLocations.sort((a, b) => a.waypoint_index - b.waypoint_index);
     return sortedBySequence[0];
+  };
+
+  // Function to get the next office delivery point (for office delivery mode)
+  const getNextOfficeDeliveryPoint = (): RouteLocation | null => {
+    if (!isUndeliveredRouteMode || !officeLocations.length) return null;
+    
+    const undeliveredOffices = officeLocations.filter(
+      (location: RouteLocation) => !deliveredOffices.has(location.package_info.packageID)
+    );
+    
+    if (undeliveredOffices.length === 0) return null;
+    
+    // Return the first undelivered office in sequence order (by waypoint_index)
+    const sortedBySequence = undeliveredOffices.sort((a, b) => a.waypoint_index - b.waypoint_index);
+    return sortedBySequence[0];
+  };
+
+  // Function to get route points with trail removal (only show ahead of current position)
+  const getRoutePointsWithTrailRemoval = (routePointsToFilter: Coordinate[]): Coordinate[] => {
+    if (!position.latitude || !position.longitude || routePointsToFilter.length === 0) {
+      return routePointsToFilter;
+    }
+
+    // If we haven't reached any point yet, return all points
+    if (furthestRoutePointIndex === 0) {
+      return routePointsToFilter;
+    }
+
+    // Return only points ahead of the furthest reached point
+    // Add a small buffer (5 points) to ensure smooth rendering
+    const startIndex = Math.max(0, furthestRoutePointIndex - 5);
+    return routePointsToFilter.slice(startIndex);
+  };
+
+  // Function to update route progress - checks if driver has passed route points
+  const updateRouteProgress = () => {
+    if (!position.latitude || !position.longitude || routePoints.length === 0) {
+      return;
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    // Check if position has changed significantly (at least 20 meters)
+    if (lastPositionCheckRef.current) {
+      const distanceFromLastCheck = calculateDistance(currentPos, lastPositionCheckRef.current);
+      if (distanceFromLastCheck < 20) {
+        // Not moved enough, skip check to save power
+        return;
+      }
+    }
+
+    // Find the closest point on the route
+    const { index: closestIndex, distance } = findClosestRoutePoint(currentPos, routePoints);
+
+    // If we're within 50 meters of a route point and it's ahead of our furthest point, update
+    if (distance < 50 && closestIndex > furthestRoutePointIndex) {
+      setFurthestRoutePointIndex(closestIndex);
+    }
+
+    // Also check if we've passed any points behind us (in case we backtracked or route was recalculated)
+    // Look at points between furthest and current to see if we've passed any
+    for (let i = furthestRoutePointIndex; i < Math.min(closestIndex + 10, routePoints.length); i++) {
+      const pointDistance = calculateDistance(currentPos, routePoints[i]);
+      if (pointDistance < 50 && i > furthestRoutePointIndex) {
+        setFurthestRoutePointIndex(i);
+        break; // Only update to the first point we've passed
+      }
+    }
+
+    lastPositionCheckRef.current = currentPos;
+  };
+
+  // Function to get route points to next office delivery (for office delivery mode)
+  const getRouteToNextOfficeDelivery = (): Coordinate[] => {
+    if (!position.latitude || !position.longitude || !routePoints.length) {
+      return routePoints;
+    }
+
+    const nextOffice = getNextOfficeDeliveryPoint();
+    if (!nextOffice) {
+      return routePoints; // Return full route if no next office
+    }
+
+    const currentPos: Coordinate = {
+      latitude: position.latitude,
+      longitude: position.longitude
+    };
+
+    // Find the closest point on the current route to our position
+    const { index: currentRouteIndex } = findClosestRoutePoint(currentPos, routePoints);
+    
+    // Find the closest point on the route to the next office
+    const nextOfficePos: Coordinate = {
+      latitude: nextOffice.latitude,
+      longitude: nextOffice.longitude
+    };
+    const { index: officeRouteIndex } = findClosestRoutePoint(nextOfficePos, routePoints);
+
+    // Ensure we're going forward in the route
+    const startIndex = Math.min(currentRouteIndex, officeRouteIndex);
+    const endIndex = Math.max(currentRouteIndex, officeRouteIndex);
+    
+    // Get the route segment from current position to next office
+    const routeSegment = routePoints.slice(startIndex, endIndex + 1);
+    
+    // Build the result route: start from current position, follow route segment, end at office
+    const result: Coordinate[] = [];
+    
+    // Always start with current position
+    result.push(currentPos);
+    
+    // Add route points that are between current position and office
+    routeSegment.forEach((point, idx) => {
+      const distanceToCurrent = calculateDistance(currentPos, point);
+      const distanceToOffice = calculateDistance(point, nextOfficePos);
+      
+      // Only add points that are at least 20 meters from current position
+      if (distanceToCurrent > 20 && (idx === routeSegment.length - 1 || distanceToOffice > 20)) {
+        result.push(point);
+      }
+    });
+    
+    // Always add the office point at the end
+    const lastPoint = result[result.length - 1];
+    const distanceToOffice = calculateDistance(lastPoint, nextOfficePos);
+    if (distanceToOffice > 10) {
+      result.push(nextOfficePos);
+    }
+    
+    // Ensure we have at least 2 points for a valid route
+    if (result.length < 2) {
+      return [currentPos, nextOfficePos];
+    }
+    
+    return result;
   };
 
   // Function to get route points to next delivery
@@ -402,6 +545,10 @@ export default function TruckerViewScreen() {
 
         setRoutePoints(newRoutePoints);
         
+        // Reset route progress tracking when route is recalculated
+        setFurthestRoutePointIndex(0);
+        lastPositionCheckRef.current = null;
+        
         // Refresh route data
         const updatedRouteData = await getRoute(user.username);
         setCurrentZone(updatedRouteData);
@@ -462,6 +609,38 @@ export default function TruckerViewScreen() {
       }
     };
   }, [routePoints, position.latitude, position.longitude, isReturnMode]);
+
+  // Set up periodic route progress checking (for trail removal)
+  // Works for normal routes, office routes, and return routes
+  useEffect(() => {
+    if (routePoints.length > 0) {
+      // Clear any existing interval
+      if (routeProgressCheckIntervalRef.current) {
+        clearInterval(routeProgressCheckIntervalRef.current);
+      }
+
+      // Check route progress every 5 seconds (less frequent than deviation check to save power)
+      routeProgressCheckIntervalRef.current = setInterval(() => {
+        updateRouteProgress();
+      }, 5000); // 5 seconds
+
+      // Initial check
+      updateRouteProgress();
+    }
+
+    // Cleanup interval on unmount or when route changes
+    return () => {
+      if (routeProgressCheckIntervalRef.current) {
+        clearInterval(routeProgressCheckIntervalRef.current);
+      }
+    };
+  }, [routePoints, position.latitude, position.longitude]);
+
+  // Reset route progress when route changes
+  useEffect(() => {
+    setFurthestRoutePointIndex(0);
+    lastPositionCheckRef.current = null;
+  }, [routePoints.length]); // Reset when route length changes (new route loaded)
 
   useEffect(() => {
     const fetchRoute = async () => {
@@ -526,9 +705,15 @@ export default function TruckerViewScreen() {
       if (baseRoutePoints.length > 0) {
         setRoutePoints([...baseRoutePoints, baseRoutePoints[0]]);
       }
+      // Reset route progress when switching to return mode
+      setFurthestRoutePointIndex(0);
+      lastPositionCheckRef.current = null;
     } else if (!allPackagesCompleted) {
       setRoutePoints(baseRoutePoints);
       setIsReturning(false);
+      // Reset route progress when route changes
+      setFurthestRoutePointIndex(0);
+      lastPositionCheckRef.current = null;
     }
   }, [currentZone?.mapRoute, locations, isReturning, isUndeliveredRouteMode]);
 
@@ -1478,7 +1663,11 @@ export default function TruckerViewScreen() {
           {!isReturnMode && !isUndeliveredRouteMode && routePoints.length > 0 && (
             <Polyline
               key="normal-route-polyline"
-              coordinates={showFullJourney ? routePoints : getRouteToNextDelivery()}
+              coordinates={
+                showFullJourney 
+                  ? getRoutePointsWithTrailRemoval(routePoints)
+                  : getRouteToNextDelivery()
+              }
               strokeColor={routeColor}
               strokeWidth={3}
             />
@@ -1488,7 +1677,11 @@ export default function TruckerViewScreen() {
           {isUndeliveredRouteMode && routePoints.length > 0 && (
             <Polyline
               key="office-route-polyline"
-              coordinates={routePoints}
+              coordinates={
+                showFullJourney 
+                  ? getRoutePointsWithTrailRemoval(routePoints)
+                  : getRouteToNextOfficeDelivery()
+              }
               strokeColor="#0074D9"
               strokeWidth={3}
               zIndex={1000}
@@ -1499,7 +1692,11 @@ export default function TruckerViewScreen() {
 
           {isReturnMode && routePoints.length > 0 && (
             <Polyline
-              coordinates={routePoints}
+              coordinates={
+                showFullJourney 
+                  ? getRoutePointsWithTrailRemoval(routePoints)
+                  : routePoints // Return route always shows full route in Next mode
+              }
               strokeColor="#0074D9"
               strokeWidth={3}
             />
@@ -1715,11 +1912,14 @@ export default function TruckerViewScreen() {
         )}
 
         {/* Route Mode Indicator */}
-        {!showFullJourney && !isReturnMode && !isUndeliveredRouteMode && (
+        {!showFullJourney && !isReturnMode && (
           <View style={[styles.routeModeIndicator, { backgroundColor: '#666666' }]}>
             <MaterialIcons name="navigation" size={14} color="#FFFFFF" />
             <Text style={styles.routeModeIndicatorText}>
-              {getNextDeliveryPoint() ? `Next: ${getNextDeliveryPoint()?.package_info.recipient}` : 'No more deliveries'}
+              {isUndeliveredRouteMode 
+                ? (getNextOfficeDeliveryPoint() ? `Next: ${getNextOfficeDeliveryPoint()?.package_info.recipient}` : 'No more offices')
+                : (getNextDeliveryPoint() ? `Next: ${getNextDeliveryPoint()?.package_info.recipient}` : 'No more deliveries')
+              }
             </Text>
           </View>
         )}
