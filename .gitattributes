@@ -1,0 +1,20 @@
+# Normalize text files to LF in the repository; let Git pick the working-copy
+# line endings for everything else.
+* text=auto
+
+# Files executed or parsed inside Linux containers must always be LF, even on a
+# Windows checkout with core.autocrlf=true (a CRLF shebang becomes "/bin/sh\r"
+# and the container fails with "./wait-for-db.sh: not found").
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pptx binary
+*.pyc binary

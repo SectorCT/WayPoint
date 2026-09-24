@@ -1,71 +1,84 @@
 # Waypoint - Smart Logistics Management System
 
-![Waypoint Logo](https://cdn.discordapp.com/attachments/1338576342438117466/1352586583135748136/image-removebg-preview12.png?ex=67de8deb&is=67dd3c6b&hm=dbb01fcd8e92e5f8898094fdbe362c8ac828763792d6371f9851f9cf30dbd93e&)
+**Save Time, Cut Costs, Deliver Smart.**
 
-## 🚀 About Waypoint
-
-**Waypoint** is a powerful logistics management system designed to streamline package delivery. It optimally assigns packages to drivers, provides the most efficient routes, and ensures smooth operations for delivery services.
-
-**Slogan:** *Save Time, Cut Costs, Deliver Smart.*
+Waypoint plans daily delivery routes for a company's trucks. A manager adds packages and trucks and picks which drivers work today. Waypoint then clusters the day's packages into one zone per driver, matches each zone to a truck with enough capacity, and orders the stops into an optimised round trip. Truckers follow their route in the app, collect a signature at each drop-off, and hand anything they couldn't deliver to the nearest company office.
 
 ## ✨ Features
 
-- 📦 **Package Management** - Assign, track, and manage deliveries effortlessly.
-- 🚚 **Driver Assignment** - Automatically allocates packages to available drivers.
-- 🛣️ **Optimized Routing** - Provides the most efficient routes to minimize fuel costs and delivery time.
-- 📊 **Real-time Tracking** - Monitor package and driver status in real time.
-- 📅 **Scheduling & Notifications** - Set up delivery schedules and notify drivers/customers accordingly.
-- 📡 **API Integration** - Easily integrates with third-party services and apps.
+- 📦 **Packages and trucks.** Add packages (address, recipient, weight, delivery date) and trucks (capacity). Each company sees only its own data.
+- 🧭 **Route planning.** Today's and overdue packages are split into one zone per selected driver using K-means clustering. Each zone gets the smallest free truck that can carry it, and the stops are ordered with [OSRM](https://project-osrm.org/).
+- 🚚 **Trucker app.** Shows the route on a map in visiting order. The trucker marks each package delivered, with the recipient's signature, or not delivered. The route is recalculated if they go off course.
+- 🏢 **Office drop-off.** Undelivered packages are assigned to the nearest company office and routed there at the end of the day.
+- 🗺️ **Manager map.** Shows every active route with per-driver progress. An API for live truck positions is available for the app to use.
+- 📊 **Dashboard and history.** Package, truck and driver statistics, plus a daily delivery history.
+- ✉️ **Email notifications.** Recipients are emailed on delivery or office drop-off, once SMTP is configured (see [server/README.md](server/README.md)).
+- 🔐 **Roles.** JWT authentication with separate manager and trucker roles. Truckers join a company with its company ID and are verified by the manager.
 
 ## 📷 Screenshots
 
-_Add screenshots of the application here_
+| Login | Start journey | Delivery route | Signature | Route summary |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="images/login.png" width="160"> | <img src="images/journey.png" width="160"> | <img src="images/driverdelivery.png" width="160"> | <img src="images/signature.png" width="160"> | <img src="images/routesummary.png" width="160"> |
 
-## 🛠️ Installation & Setup
+**Manager: journeys map**
 
-### Prerequisites
-- Node.js / Python
-- Database (PostgreSQL)
-- API Keys (Google Maps, OSRM)
+<img src="images/desktopjourney.png" width="800">
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/SectorCT/WayPoint.git
-   cd WayPoint
-   cd client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   # EXPO_PUBLIC_API_BASE_URL=
-   # EXPO_PUBLIC_GEOAPIFY_API_KEY=
-   ```
-4. Run the application:
-   ```bash
-   npm start
-   ```
-4. Run the application:
-   ```bash
-   cd ..
-   cd server
-   docker compose up -d
-   ```
+**Manager: packages**
 
-## 🏗️ Tech Stack
+<img src="images/packages.png" width="800">
 
-- **Frontend:** React Native
-- **Backend:** Node.js / Python / Django
-- **Database:** PostgreSQL
-- **Mapping & Routing:** Google Maps API / OpenStreetMap
+## 🗂️ Repository layout
+
+| Path | Contents |
+|---|---|
+| [`server/`](server/) | Django REST API: authentication, packages, trucks, routing, history, statistics and live positions. |
+| [`Client/`](Client/) | The original React Native (Expo) client. It is being replaced by a Flutter app that lives in its own repository. |
+| [`images/`](images/) | Screenshots used in this README. |
+
+## 🛠️ Getting started
+
+Prerequisites: [Docker](https://docs.docker.com/get-docker/) with Docker Compose.
+
+```bash
+git clone https://github.com/SectorCT/WayPoint.git
+cd WayPoint/server
+docker compose up -d --build
+docker compose exec web python manage.py all   # wipe the database and load demo data
+```
+
+The API runs at `http://localhost:8000/v1/`. No configuration is needed for local development. Everything is optional and set through `server/.env` (template: [`server/.env.example`](server/.env.example)).
+
+Demo accounts (password `radiradi` for all):
+
+| Role | Email |
+|---|---|
+| Manager | `sarah.chen@waypoint.delivery` |
+| Truckers | `mike.rodriguez@`, `james.wong@`, `carlos.martinez@`, `david.kim@`, `antonio.garcia@` (all `@waypoint.delivery`) |
+
+The demo company ID for registering new truckers is `SFLOGISTICS2024`. Only `mike.rodriguez` and `james.wong` start out verified.
+
+Point a client at `http://localhost:8000` (from an Android emulator, use `http://10.0.2.2:8000`).
+
+[server/README.md](server/README.md) covers the rest:
+- configuration (time zone, CORS, secrets)
+- running the tests
+- the permission model
+- email setup
+- running your own OSRM routing server instead of the public demo server
+
+## 🏗️ Tech stack
+
+- **Backend:** Python 3.10, Django 5.2, Django REST Framework, Simple JWT
+- **Database:** PostgreSQL 16
+- **Routing:** OSRM (public demo server by default, self-hostable via Docker), scikit-learn K-means for zoning
+- **Clients:** Flutter (current); React Native / Expo (legacy, in `Client/`)
+- **Maps:** OpenStreetMap data
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
@@ -76,11 +89,13 @@ We welcome contributions! To contribute:
 4. Push to your branch (`git push origin feature-branch`)
 5. Create a Pull Request
 
+Please run the backend tests before opening a PR: `docker compose exec web python manage.py test`.
+
 ## 📞 Contact & Support
 
 For support, suggestions, or feedback, please contact:
 - Email: contact@sectorct.com
-- Website: Sooon sectorct.com
+- Website: sectorct.com (coming soon)
 
 ---
 🚀 **Waypoint - Revolutionizing Logistics, One Delivery at a Time!**

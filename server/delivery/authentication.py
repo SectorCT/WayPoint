@@ -1,18 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from .models import User
 from rest_framework import status
-from authentication.models import Company
-
-class IsManager(BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.isManager)
+from .permissions import IsManager, get_user_company
 
 class ListUnverifiedTruckers(APIView):
     permission_classes = [IsAuthenticated, IsManager]
     def get(self, request):
-        company = getattr(request.user, 'managed_company', None)
+        company = get_user_company(request.user)
         if not company:
             return Response({'detail': 'Manager does not have a company.'}, status=status.HTTP_400_BAD_REQUEST)
         truckers = User.objects.filter(company=company, isManager=False, verified=False)
@@ -26,11 +22,12 @@ class VerifyTrucker(APIView):
         username = request.data.get('username')
         if not username:
             return Response({'detail': 'Username is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        company = get_user_company(request.user)
         try:
             trucker = User.objects.get(username=username, isManager=False)
         except User.DoesNotExist:
             return Response({'detail': 'Trucker not found.'}, status=status.HTTP_404_NOT_FOUND)
-        if trucker.company != getattr(request.user, 'managed_company', None):
+        if company is None or trucker.company_id != company.id:
             return Response({'detail': 'Trucker does not belong to your company.'}, status=status.HTTP_403_FORBIDDEN)
         trucker.verified = True
         trucker.save()

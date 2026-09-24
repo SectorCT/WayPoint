@@ -25,7 +25,7 @@ class Command(BaseCommand):
         from datetime import timedelta
         
         # Get packages from last 7 days
-        today = timezone.now().date()
+        today = timezone.localdate()
         for i in range(7):
             delivery_date = today - timedelta(days=i)
             daily_packages = delivered_packages.filter(deliveryDate=delivery_date)

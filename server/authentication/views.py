@@ -5,9 +5,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView    
 from rest_framework import status, views
 from .models import User
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.exceptions import TokenError
+from delivery.permissions import IsManager, get_user_company
 
 class RegisterView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -24,7 +29,8 @@ class RegisterView(APIView):
         return Response({"detail": error_messages}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(views.APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
+    authentication_classes = []
     
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -42,37 +48,49 @@ class LoginView(views.APIView):
     
 
 class LogoutView(APIView):
+    # The client logs out without an access token; the refresh token in the
+    # body is the credential being revoked.
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
     def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if refresh_token is None:
+            return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            refresh_token = request.data.get("refresh")
-            if refresh_token is None:
-                return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
-            
             token = RefreshToken(refresh_token)
             token.blacklist()
+        except TokenError:
+            return Response({"error": "Invalid or expired refresh token."}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
 
 class getAllUsers(APIView):
+    """Members of the requesting manager's company."""
+    permission_classes = [IsAuthenticated, IsManager]
+
     def get(self, request):
-        users = User.objects.all()
+        company = get_user_company(request.user)
+        users = User.objects.filter(company=company) if company else User.objects.none()
         
         serializer = UserSerializer(users, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class getUser(APIView):
+    permission_classes = [IsAuthenticated, IsManager]
+
     def post(self, request):
-        user = User.objects.get(username = request.data.get("username"))
+        company = get_user_company(request.user)
+        try:
+            if company is None:
+                raise User.DoesNotExist
+            user = User.objects.get(username=request.data.get("username"), company=company)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response({
             'email': user.email,
             'username': user.username,
             'phoneNumber': user.phoneNumber,
             'isManager': user.isManager
         })
-
-class IsManager(BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.isManager)

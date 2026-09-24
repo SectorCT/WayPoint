@@ -7,9 +7,11 @@ from django.contrib.auth import get_user_model
 from .models import DeliveryHistory, Package, RouteAssignment
 from .serializers import DeliveryHistorySerializer, DeliveryHistorySummarySerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from .permissions import IsManager
+from .permissions import IsManager, get_user_company, ensure_same_company
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -18,7 +20,6 @@ class CreateDeliveryHistoryView(APIView):
     """
     Create delivery history when a route is finished
     """
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):
@@ -40,6 +41,7 @@ class CreateDeliveryHistoryView(APIView):
                     {"error": "Driver not found"}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
+            ensure_same_company(request.user, driver)
 
             # Get the active route for this driver
             try:
@@ -63,7 +65,7 @@ class CreateDeliveryHistoryView(APIView):
 
             # Create or update delivery history
             delivery_history, created = DeliveryHistory.objects.get_or_create(
-                delivery_date=timezone.now().date(),
+                delivery_date=timezone.localdate(),
                 driver=driver,
                 defaults={
                     'truck': route.truck,
@@ -90,8 +92,11 @@ class CreateDeliveryHistoryView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            if getattr(e, 'status_code', None) == 403:
+                raise
+            logger.exception("Error creating delivery history")
             return Response(
-                {"error": f"Error creating delivery history: {str(e)}"}, 
+                {"error": "Error creating delivery history."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -100,15 +105,16 @@ class GetDeliveryHistoryView(APIView):
     """
     Get delivery history for the past N days
     """
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated, IsManager]
 
     def get(self, request):
         try:
             days = int(request.query_params.get('days', 7))
+            company = get_user_company(request.user)
             
             # Get delivery history for the specified number of days
             history = DeliveryHistory.objects.get_recent_history(days=days)
+            history = history.filter(driver__company=company) if company else history.none()
             
             # Group by date and aggregate stats
             daily_stats = {}
@@ -139,18 +145,19 @@ class GetDeliveryHistoryView(APIView):
             from django.db.models import Sum
             from datetime import timedelta
             
-            today = timezone.now().date()
+            today = timezone.localdate()
+            company_packages = Package.objects.for_company(company)
             for i in range(days):
                 check_date = today - timedelta(days=i)
                 
                 # Get all delivered packages for this date
-                delivered_packages = Package.objects.filter(
+                delivered_packages = company_packages.filter(
                     deliveryDate=check_date,
                     status='delivered'
                 )
                 
                 # Get all undelivered packages for this date
-                undelivered_packages = Package.objects.filter(
+                undelivered_packages = company_packages.filter(
                     deliveryDate=check_date,
                     status='undelivered'
                 )
@@ -204,9 +211,15 @@ class GetDeliveryHistoryView(APIView):
 
             return Response(formatted_history, status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except ValueError:
             return Response(
-                {"error": f"Error retrieving delivery history: {str(e)}"}, 
+                {"error": "days must be an integer"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception:
+            logger.exception("Error retrieving delivery history")
+            return Response(
+                {"error": "Error retrieving delivery history."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -235,7 +248,6 @@ class GetDetailedDeliveryHistoryView(APIView):
     """
     Get detailed delivery history for a specific date
     """
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsManager]
 
     def get(self, request):
@@ -258,14 +270,18 @@ class GetDetailedDeliveryHistoryView(APIView):
                 )
 
             # Get delivery history for the specific date
-            history = DeliveryHistory.objects.filter(delivery_date=target_date)
+            history = DeliveryHistory.objects.filter(
+                delivery_date=target_date,
+                driver__company=get_user_company(request.user),
+            ) if get_user_company(request.user) else DeliveryHistory.objects.none()
             serializer = DeliveryHistorySerializer(history, many=True)
             
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except Exception:
+            logger.exception("Error retrieving detailed delivery history")
             return Response(
-                {"error": f"Error retrieving detailed delivery history: {str(e)}"}, 
+                {"error": "Error retrieving detailed delivery history."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -274,18 +290,17 @@ class CreateTodayDeliveryHistoryView(APIView):
     """
     Manually create delivery history for today's delivered packages (for testing)
     """
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):
         try:
             from .models import Package
             from django.db.models import Sum
             
-            today = timezone.now().date()
+            today = timezone.localdate()
             
             # Get all delivered packages for today
-            delivered_packages = Package.objects.filter(
+            delivered_packages = Package.objects.for_company(get_user_company(request.user)).filter(
                 deliveryDate=today,
                 status='delivered'
             )
@@ -329,7 +344,10 @@ class CreateTodayDeliveryHistoryView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
+            if getattr(e, 'status_code', None) == 403:
+                raise
+            logger.exception("Error creating delivery history")
             return Response(
-                {"error": f"Error creating delivery history: {str(e)}"}, 
+                {"error": "Error creating delivery history."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             ) 

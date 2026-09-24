@@ -4,19 +4,31 @@ from rest_framework import status
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta, datetime
+from rest_framework.permissions import IsAuthenticated
 from .models import Package, Truck, RouteAssignment, DeliveryHistory
+from .permissions import IsManager, get_user_company
 from authentication.models import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class StatisticsView(APIView):
     """
     Get comprehensive statistics for the dashboard
     """
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated, IsManager]
 
     def get(self, request):
         try:
+            # Everything is scoped to the manager's company. "pending" uses the
+            # same definition as packages/today-pending (the client subtracts one
+            # from the other).
+            company = get_user_company(request.user)
+            packages = Package.objects.for_company(company)
+            trucks_qs = Truck.objects.for_company(company)
+            routes = RouteAssignment.objects.for_company(company)
+            drivers = User.objects.filter(company=company, isManager=False) if company else User.objects.none()
             # Initialize default values
             package_stats = {
                 'total_packages': 0,
@@ -38,32 +50,32 @@ class StatisticsView(APIView):
             
             # Try to get package stats
             try:
-                package_stats = Package.objects.aggregate(
+                package_stats = packages.aggregate(
                     total_packages=Count('id'),
-                    pending_packages=Count('id', filter=Q(status='pending')),
+                    pending_packages=Count('id', filter=Q(pk__in=Package.objects.pending_for_company(company).values('pk'))),
                     in_transit_packages=Count('id', filter=Q(status='in_transit')),
                     delivered_packages=Count('id', filter=Q(status='delivered')),
                     undelivered_packages=Count('id', filter=Q(status='undelivered'))
                 )
-            except Exception as e:
-                print(f"Error getting package stats: {e}")
+            except Exception:
+                logger.exception("Error getting package stats")
             
             # Try to get truck stats
             try:
-                truck_stats = Truck.objects.aggregate(
+                truck_stats = trucks_qs.aggregate(
                     total_trucks=Count('id'),
                     used_trucks=Count('id', filter=Q(isUsed=True)),
                     available_trucks=Count('id', filter=Q(isUsed=False))
                 )
-            except Exception as e:
-                print(f"Error getting truck stats: {e}")
+            except Exception:
+                logger.exception("Error getting truck stats")
 
             # Try to get truck usage details
             try:
-                trucks = Truck.objects.all()
+                trucks = trucks_qs
                 for truck in trucks:
                     try:
-                        active_routes = RouteAssignment.objects.filter(
+                        active_routes = routes.filter(
                             truck=truck,
                             isActive=True
                         )
@@ -79,25 +91,25 @@ class StatisticsView(APIView):
                             'capacity': float(truck.kilogramCapacity),
                             'isUsed': truck.isUsed
                         })
-                    except Exception as e:
-                        print(f"Error processing truck {truck.licensePlate}: {e}")
+                    except Exception:
+                        logger.exception("Error processing truck %s", truck.licensePlate)
                         truck_usage_data.append({
                             'truck': truck.licensePlate,
                             'used': 0,
                             'capacity': float(truck.kilogramCapacity),
                             'isUsed': truck.isUsed
                         })
-            except Exception as e:
-                print(f"Error getting truck usage data: {e}")
+            except Exception:
+                logger.exception("Error getting truck usage data")
 
             # Try to get daily deliveries
             try:
-                today = timezone.now().date()
+                today = timezone.localdate()
                 for i in range(7):
                     date = today - timedelta(days=i)
                     day_name = date.strftime('%a')
                     
-                    delivered_count = Package.objects.filter(
+                    delivered_count = packages.filter(
                         deliveryDate=date,
                         status='delivered'
                     ).count()
@@ -109,8 +121,8 @@ class StatisticsView(APIView):
                     })
                 
                 daily_deliveries.reverse()
-            except Exception as e:
-                print(f"Error getting daily deliveries: {e}")
+            except Exception:
+                logger.exception("Error getting daily deliveries")
                 # Provide default data
                 daily_deliveries = [
                     {'day': 'Mon', 'value': 0, 'date': ''},
@@ -124,12 +136,12 @@ class StatisticsView(APIView):
 
             # Try to get additional statistics
             try:
-                active_routes = RouteAssignment.objects.filter(isActive=True).count()
-                total_drivers = User.objects.filter(isManager=False).count()
-                verified_drivers = User.objects.filter(isManager=False, verified=True).count()
+                active_routes = routes.filter(isActive=True).count()
+                total_drivers = drivers.count()
+                verified_drivers = drivers.filter(verified=True).count()
                 unverified_drivers = total_drivers - verified_drivers
-            except Exception as e:
-                print(f"Error getting additional stats: {e}")
+            except Exception:
+                logger.exception("Error getting additional stats")
                 active_routes = 0
                 total_drivers = 0
                 verified_drivers = 0
@@ -137,7 +149,7 @@ class StatisticsView(APIView):
 
             # Try to get recent activity
             try:
-                recent_packages = Package.objects.order_by('-id')[:10]
+                recent_packages = packages.order_by('-id')[:10]
                 for package in recent_packages:
                     if package.status == 'delivered':
                         activity_text = f"Package delivered to {package.recipient}"
@@ -157,8 +169,8 @@ class StatisticsView(APIView):
                         'type': activity_type,
                         'time': package.deliveryDate.isoformat() if package.deliveryDate else None
                     })
-            except Exception as e:
-                print(f"Error getting recent activity: {e}")
+            except Exception:
+                logger.exception("Error getting recent activity")
 
             response_data = {
                 'package_stats': {
@@ -192,10 +204,9 @@ class StatisticsView(APIView):
 
             return Response(response_data, status=status.HTTP_200_OK)
 
-        except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
+        except Exception:
+            logger.exception("Error retrieving statistics")
             return Response(
-                {"error": f"Error retrieving statistics: {str(e)}", "details": error_details}, 
+                {"error": "Error retrieving statistics."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

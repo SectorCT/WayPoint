@@ -2,7 +2,11 @@ from rest_framework import serializers
 from .models import Package, Truck
 from .models import Package, RouteAssignment, DeliveryHistory
 from .models import Office, OfficeDelivery
-from datetime import date
+import logging
+
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class RouteAssignmentSerializer(serializers.ModelSerializer):
@@ -41,8 +45,15 @@ class PackageSerializer(serializers.ModelSerializer):
         model = Package
         fields = [
             'address', 'deliveryDate', 'latitude', 'longitude', 
-            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight', 'office'
+            'packageID', 'recipient', 'recipientPhoneNumber', 'status', 'weight', 'office',
+            'company', 'recipientEmail',
         ]
+        extra_kwargs = {
+            # Optional: packages without an address simply get no notification.
+            'recipientEmail': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }
+        # Set by the view from the requesting manager, never by the client.
+        read_only_fields = ['company']
 
     def validate_latitude(self, value):
         if value < -90 or value > 90:
@@ -62,7 +73,7 @@ class PackageSerializer(serializers.ModelSerializer):
         return value
 
     def validate_deliveryDate(self, value):
-        if value < date.today():
+        if value < timezone.localdate():
             raise serializers.ValidationError('Delivery date cannot be in the past.')
         return value
 
@@ -81,11 +92,14 @@ class PackageSerializer(serializers.ModelSerializer):
                 recipientPhoneNumber=validated_data['recipientPhoneNumber'],
                 deliveryDate=validated_data['deliveryDate'],
                 weight=validated_data['weight'],
-                status=validated_data.get('status', 'pending')
+                status=validated_data.get('status', 'pending'),
+                company=validated_data.get('company'),
+                recipientEmail=validated_data.get('recipientEmail') or None,
             )
             return package
-        except Exception as e:
-            raise serializers.ValidationError(f"Error creating package: {str(e)}")
+        except Exception:
+            logger.exception("Error creating package")
+            raise serializers.ValidationError("Error creating package.")
 
     def update(self, instance, validated_data):
         instance.address = validated_data.get('address', instance.address)
@@ -103,7 +117,8 @@ class PackageSerializer(serializers.ModelSerializer):
 class TruckSerializer(serializers.ModelSerializer):
     class Meta:
         model = Truck
-        fields = ['licensePlate', 'kilogramCapacity', 'isUsed']
+        fields = ['licensePlate', 'kilogramCapacity', 'isUsed', 'company']
+        read_only_fields = ['company']
     
     def validate(self, data):
         # Add any custom validation if needed
@@ -113,11 +128,13 @@ class TruckSerializer(serializers.ModelSerializer):
         try:
             truck = Truck.objects.create_truck(
                 licensePlate=validated_data['licensePlate'],
-                kilogramCapacity=validated_data['kilogramCapacity']
+                kilogramCapacity=validated_data['kilogramCapacity'],
+                company=validated_data.get('company'),
             )
             return truck
-        except Exception as e:
-            raise serializers.ValidationError(f"Error creating truck: {str(e)}")
+        except Exception:
+            logger.exception("Error creating truck")
+            raise serializers.ValidationError("Error creating truck.")
 
 
 class DeliveryHistorySerializer(serializers.ModelSerializer):

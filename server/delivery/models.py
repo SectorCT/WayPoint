@@ -11,6 +11,16 @@ def generate_package_id():
     return secrets.token_hex(6)
 
 class PackageManager(models.Manager):
+    def for_company(self, company):
+        """Packages belonging to `company`; empty when the company is unknown."""
+        if company is None:
+            return self.none()
+        return self.filter(company=company)
+
+    def pending_for_company(self, company):
+        """The single definition of "pending" shared by today-pending and statistics."""
+        return self.for_company(company).filter(status='pending')
+
     def pending_packages(self):
         return self.filter(status='pending')
 
@@ -21,11 +31,12 @@ class PackageManager(models.Manager):
         return self.filter(status='delivered')
 
     def recent_deliveries(self, days=7):
-        from django.utils.timezone import now
-        return self.filter(status='delivered', deliveryDate__gte=now() - timedelta(days=days))
+        from django.utils.timezone import localdate
+        return self.filter(status='delivered', deliveryDate__gte=localdate() - timedelta(days=days))
     
-    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending', recipientEmail='dimitrovradoslav12@gmail.com'):
+    def create_package(self, address, latitude, recipient, recipientPhoneNumber, deliveryDate, longitude, weight=0.00, status='pending', recipientEmail=None, company=None):
         package = self.model(
+            company=company,
             address=address,
             latitude=latitude,
             recipient=recipient,
@@ -68,8 +79,7 @@ class Package(models.Model):
     recipientEmail = models.EmailField(
         max_length=254,
         blank=True, null=True,
-        default='dimitrovradoslav12@gmail.com',
-        help_text="Email address of the package recipient for notifications"
+        help_text="Email address of the package recipient for notifications; none means no email is sent"
     )
 
     deliveryDate = models.DateField(blank=False, null=False)
@@ -96,12 +106,20 @@ class Package(models.Model):
 
     delivered_to_office = models.BooleanField(default=False, null=False, help_text='Whether the package was delivered to an office instead of the recipient')
 
+    company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.SET_NULL, related_name='packages', help_text='Company that owns this package')
+
     objects = PackageManager()
 
     def __str__(self):
         return f"Package {self.id}: {self.recipient} ({self.status})"
 
 class TruckManager(models.Manager):
+    def for_company(self, company):
+        """Trucks belonging to `company`; empty when the company is unknown."""
+        if company is None:
+            return self.none()
+        return self.filter(company=company)
+
     def available_trucks(self, min_capacity=0):
         return self.filter(kilogramCapacity__gte=min_capacity)
     
@@ -118,6 +136,7 @@ class Truck(models.Model):
     licensePlate = models.CharField(max_length=15, unique=True)
     kilogramCapacity = models.DecimalField(max_digits=7, decimal_places=2)
     isUsed = models.BooleanField(default=False)
+    company = models.ForeignKey(Company, null=True, blank=True, on_delete=models.SET_NULL, related_name='trucks', help_text='Company that owns this truck')
     objects = TruckManager()
 
     def __str__(self):
@@ -143,6 +162,25 @@ class RouteManager(models.Manager):
 
     def routes_for_driver(self, driver):
         return self.filter(driver=driver)
+
+    def active_for(self, driver):
+        """The driver's active route (whatever its date), or None."""
+        return self.filter(driver=driver, isActive=True).order_by('-id').first()
+
+    def current_for(self, driver):
+        """The driver's active route (any date), otherwise today's latest route."""
+        from django.db.models import Q
+        from django.utils import timezone
+        return self.filter(
+            Q(isActive=True) | Q(dateOfCreation=timezone.localdate()),
+            driver=driver,
+        ).order_by('-isActive', '-id').first()
+
+    def for_company(self, company):
+        """Routes whose driver belongs to `company`; empty when unknown."""
+        if company is None:
+            return self.none()
+        return self.filter(driver__company=company)
 
     def update_route(self, route_id, package_sequence=None, map_route=None):
         try:
@@ -185,9 +223,21 @@ class RouteAssignment(models.Model):
     
     isActive = models.BooleanField(default=True)
 
+    # Set on creation to the local date (settings.TIME_ZONE).
     dateOfCreation = models.DateField(auto_now_add=True)
 
     objects = RouteManager()
+
+    class Meta:
+        constraints = [
+            # Any active route blocks its driver, whatever its date; the views
+            # (route/all, checkDriverStatus, create_route) all follow this rule.
+            models.UniqueConstraint(
+                fields=['driver'],
+                condition=models.Q(isActive=True),
+                name='one_active_route_per_driver',
+            ),
+        ]
 
     def __str__(self):
         return f"Route assigned to {self.driver.username}"
@@ -199,9 +249,8 @@ class DeliveryHistoryManager(models.Manager):
     
     def get_recent_history(self, days=7):
         """Get delivery history for the last N days"""
-        from django.utils.timezone import now
-        from datetime import timedelta
-        end_date = now().date()
+        from django.utils.timezone import localdate
+        end_date = localdate()
         start_date = end_date - timedelta(days=days)
         return self.filter(delivery_date__range=[start_date, end_date]).order_by('-delivery_date')
 
@@ -304,3 +353,17 @@ class OfficeDelivery(models.Model):
 
     def __str__(self):
         return f"Office delivery by {self.driver.username} to {self.office.name} on {self.delivery_date}"
+
+
+class TruckerLocation(models.Model):
+    """A trucker's latest reported position (one row per trucker, overwritten)."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='live_location')
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    heading = models.FloatField(null=True, blank=True, help_text='Degrees clockwise from north, [0, 360)')
+    speed = models.FloatField(null=True, blank=True, help_text='Metres per second')
+    accuracy = models.FloatField(null=True, blank=True, help_text='Horizontal accuracy in metres')
+    recorded_at = models.DateTimeField(auto_now=True, help_text='Server time of the last update')
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.latitude},{self.longitude}"

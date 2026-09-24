@@ -1,14 +1,18 @@
+# Local development stack. Values come from server/.env when it exists (see
+# .env.example); every variable has a development default, so a fresh clone
+# runs with just `docker compose up --build`.
 services:
   db:
     image: postgres:16-alpine
     volumes:
       - pgdata:/var/lib/postgresql/data/
     environment:
-      POSTGRES_DB: waypoint_db
-      POSTGRES_USER: waypoint_user
-      POSTGRES_PASSWORD: waypoint_password_2024
+      # Only applied when the volume is first initialised.
+      POSTGRES_DB: ${DB_NAME:-waypoint_db}
+      POSTGRES_USER: ${DB_USER:-waypoint_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-waypoint_password_2024}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U waypoint_user -d waypoint_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,13 +27,59 @@ services:
       db:
         condition: service_healthy
     environment:
+      DEBUG: ${DEBUG:-True}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-placeholder-key-change-in-production}
-      ALLOWED_HOSTS: '*'
-      DB_NAME: waypoint_db
-      DB_USER: waypoint_user
-      DB_PASSWORD: waypoint_password_2024
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      TIME_ZONE: ${TIME_ZONE:-Europe/Sofia}
+      DB_NAME: ${DB_NAME:-waypoint_db}
+      DB_USER: ${DB_USER:-waypoint_user}
+      DB_PASSWORD: ${DB_PASSWORD:-waypoint_password_2024}
       DB_HOST: db
       DB_PORT: 5432
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-http://router.project-osrm.org}
+      OSRM_PROFILE: ${OSRM_PROFILE:-driving}
+      OSRM_TIMEOUT_S: ${OSRM_TIMEOUT_S:-20}
+
+  # --- Optional self-hosted OSRM (see README "Self-hosted OSRM") -------------
+  # One-time data preparation (profile osrm-setup), then the router (profile
+  # osrm). None of these start with a plain `docker compose up`.
+  osrm-fetch:
+    image: debian:bookworm-slim
+    profiles: ["osrm-setup"]
+    volumes:
+      - osrm-data:/data
+      - ./osrm:/scripts:ro
+    environment:
+      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/north-america/us/california/norcal-latest.osm.pbf}
+      # South Bay / Peninsula: covers the seed data. Empty = whole extract.
+      OSRM_BBOX: ${OSRM_BBOX--122.25,37.25,-121.78,37.52}
+      OSRM_FORCE_DOWNLOAD: ${OSRM_FORCE_DOWNLOAD:-}
+    command: ["sh", "/scripts/fetch_and_clip.sh"]
+
+  osrm-prepare:
+    image: ghcr.io/project-osrm/osrm-backend:v26.4.0
+    profiles: ["osrm-setup"]
+    volumes:
+      - osrm-data:/data
+      - ./osrm:/scripts:ro
+    environment:
+      OSRM_THREADS: ${OSRM_THREADS:-2}
+    command: ["sh", "/scripts/prepare.sh"]
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v26.4.0
+    profiles: ["osrm"]
+    volumes:
+      - osrm-data:/data
+    command: ["osrm-routed", "--algorithm", "mld", "--max-trip-size", "500", "/data/region.osrm"]
+    # Reachable from the web container as http://osrm:5000; published on the
+    # host loopback only, for debugging.
+    ports:
+      - "127.0.0.1:5001:5000"
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  osrm-data:

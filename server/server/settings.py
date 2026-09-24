@@ -14,11 +14,29 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-placeholder-key-change-in-production')
 
-DEBUG = True
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+
+def env_list(name, default=''):
+    return [item.strip() for item in os.getenv(name, default).split(',') if item.strip()]
+
+
+# Safe-by-default: production must opt in to DEBUG. docker-compose.yml turns it
+# on for local development.
+DEBUG = env_bool('DEBUG', False)
+
+_PLACEHOLDER_SECRET_KEY = 'django-insecure-placeholder-key-change-in-production'
+SECRET_KEY = os.getenv('SECRET_KEY') or _PLACEHOLDER_SECRET_KEY
+if not DEBUG and SECRET_KEY == _PLACEHOLDER_SECRET_KEY:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('Set SECRET_KEY in the environment when DEBUG is off.')
+
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -87,6 +105,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    # Deny by default; public endpoints (login, register, logout, token refresh)
+    # opt out explicitly with AllowAny.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -106,7 +129,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Business dates ("today") follow this zone via timezone.localdate().
+TIME_ZONE = os.getenv('TIME_ZONE', 'Europe/Sofia')
 
 USE_I18N = True
 
@@ -129,13 +153,30 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'authentication.User'
 
-# Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')  # Default to Gmail
+# Email (delivery notifications to package recipients).
+# Until SMTP credentials are configured, emails are printed to the server log
+# (console backend) instead of failing on every delivery. EMAIL_BACKEND can
+# override the choice explicitly.
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')  # Your email address
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # Your email password or app password
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'asrr3fl3x@gmail.com')
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND') or (
+    'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_USER
+    else 'django.core.mail.backends.console.EmailBackend'
+)
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'WayPoint <noreply@waypoint.local>'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Browsers only (the Flutter web build); native apps are unaffected by CORS.
+# Defaults to allow-all only while DEBUG is on, so `flutter run -d chrome` works
+# locally on whatever port it picks.
+CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', DEBUG)
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
+
+# Route optimisation backend (delivery/routing.py). The default is the public
+# OSRM demo server, which is rate-limited and not meant for production; see
+# README "Self-hosted OSRM" for running your own.
+OSRM_BASE_URL = os.getenv('OSRM_BASE_URL', 'http://router.project-osrm.org').rstrip('/')
+OSRM_PROFILE = os.getenv('OSRM_PROFILE', 'driving')
+OSRM_TIMEOUT_S = float(os.getenv('OSRM_TIMEOUT_S', '20'))

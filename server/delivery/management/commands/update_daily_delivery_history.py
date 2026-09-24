@@ -27,7 +27,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Invalid date format. Use YYYY-MM-DD'))
                 return
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
         
         self.stdout.write(f'Updating delivery history for {target_date}')
         
