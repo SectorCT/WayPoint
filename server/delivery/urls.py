@@ -6,6 +6,7 @@ from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBas
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
 from .authentication import ListUnverifiedTruckers, VerifyTrucker
 from .statistics import StatisticsView
+from .location import UpdateMyLocationView, CompanyLocationsView
 
 urlpatterns = [
     path('packages/', getAllPackages.as_view(), name='get-all-packages'),
@@ -53,4 +54,8 @@ urlpatterns = [
     
     # Statistics endpoint
     path('statistics/', StatisticsView.as_view(), name='statistics'),
+
+    # Live truck positions
+    path('location/', UpdateMyLocationView.as_view(), name='update-my-location'),
+    path('locations/', CompanyLocationsView.as_view(), name='company-locations'),
 ]

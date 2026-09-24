@@ -15,7 +15,7 @@ class Command(BaseCommand):
         self.stdout.write('Creating delivery history for real packages...')
         
         # Get all delivered packages from the last 7 days
-        today = timezone.now().date()
+        today = timezone.localdate()
         for i in range(7):
             delivery_date = today - timedelta(days=i)
             delivered_packages = Package.objects.filter(deliveryDate=delivery_date, status='delivered')

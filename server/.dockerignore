@@ -1,0 +1,8 @@
+# Secrets are provided at runtime (docker-compose env / .env), never baked in.
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+venv/
+osrm-data/

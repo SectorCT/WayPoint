@@ -133,16 +133,22 @@ class Command(BaseCommand):
         for truck_data in trucks_data:
             truck, created = Truck.objects.get_or_create(
                 licensePlate=truck_data['licensePlate'],
-                defaults={'kilogramCapacity': truck_data['kilogramCapacity']}
+                defaults={'kilogramCapacity': truck_data['kilogramCapacity'], 'company': company}
             )
+            if truck.company_id != company.id:
+                truck.company = company
+                truck.save()
             if created:
                 self.stdout.write(self.style.SUCCESS(f'Created truck: {truck.licensePlate}'))
             else:
                 self.stdout.write(f'Truck {truck.licensePlate} already exists')
 
-        # Create packages with better geographic distribution
-        # Distribution: 20 packages for today, 5 packages for tomorrow
-        today = timezone.now().date()
+        # Create packages with better geographic distribution.
+        # The first 20 addresses are due today and the rest (currently 19) tomorrow;
+        # 4 of today's packages are then pre-marked undelivered (see below), so
+        # 16 are left pending for today's route planning.
+        # Business dates use the local date (settings.TIME_ZONE), like the views.
+        today = timezone.localdate()
         tomorrow = today + timedelta(days=1)
         
         for i, address in enumerate(SAN_JOSE_ADDRESSES):
@@ -168,7 +174,7 @@ class Command(BaseCommand):
                 lat = 37.3382 + random.uniform(-0.015, 0.015)
                 lng = -121.8863 + random.uniform(-0.015, 0.015)
             
-            # First 20 packages go to today, remaining 5 to tomorrow
+            # First 20 packages go to today, the remaining ones to tomorrow
             delivery_date = today if i < 20 else tomorrow
             
             # Realistic recipient names for San Francisco Bay Area
@@ -189,7 +195,8 @@ class Command(BaseCommand):
                 deliveryDate=delivery_date,
                 weight=random.uniform(1.0, 20.0),
                 status='pending',
-                delivered_to_office=False
+                delivered_to_office=False,
+                company=company,
             )
             self.stdout.write(self.style.SUCCESS(f'Created package: {package.packageID}'))
 
@@ -214,7 +221,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'Created office: {office.name}'))
 
         # Assign some packages as undelivered and to offices
-        for i, package in enumerate(Package.objects.all()[:4]):
+        for i, package in enumerate(Package.objects.filter(deliveryDate=today).order_by('id')[:4]):
             package.status = 'undelivered'
             package.office = offices[i % len(offices)]
             package.delivered_to_office = True

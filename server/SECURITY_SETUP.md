@@ -6,7 +6,7 @@ This project uses environment variables to store sensitive configuration data. F
 
 ### 1. Copy the example environment file
 ```bash
-cp env_example.txt .env
+cp .env.example .env
 ```
 
 ### 2. Update the .env file with your actual values

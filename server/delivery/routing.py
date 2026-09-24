@@ -18,7 +18,8 @@ improving structure, readability, type-safety, and debuggability. Major changes:
    `logger.warning()` calls so you can control verbosity in Django settings.
 6. **Type hints** throughout to aid IDEs and static tools.
 7. **Safer error surfaces** – consistent error envelopes and exceptions.
-8. **Configurable constants** – OSRM endpoint & timeout; can be overridden in Django settings.
+8. **Configurable OSRM** – endpoint, profile & timeout come from Django settings
+   (`OSRM_BASE_URL`, `OSRM_PROFILE`, `OSRM_TIMEOUT_S`, set via environment variables).
 
 ---
 
@@ -75,32 +76,31 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import requests
 
 from datetime import timedelta
+from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Case, When, IntegerField, Sum
 from rest_framework import serializers, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework_simplejwt.authentication import JWTAuthentication
 
 # Local imports (adjust package path if this file moves)
 from .models import Package, Truck, RouteAssignment, DeliveryHistory
 from .serializers import RouteAssignmentSerializer
-from .permissions import IsManager  # noqa: F401  # unused in demo; keep for future
+from .permissions import (
+    IsManager,
+    IsTrucker,
+    ensure_own_username,
+    ensure_same_company,
+    get_user_company,
+)
 from .clusterLocations import cluster_locations
 
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-OSRM_BASE_URL = "http://router.project-osrm.org"  # override in settings if self-hosted
-OSRM_PROFILE = "driving"  # public demo expects 'driving' (NOT 'car')
-OSRM_TIMEOUT_S = 20
 
 
 # ---------------------------------------------------------------------------
@@ -190,15 +190,18 @@ def osrm_trip(locations: Sequence[Location]) -> Dict[str, Any]:
     if not locations:
         return {"error": "no-locations"}
 
+    # Read at call time so settings overrides (and tests) take effect. The
+    # public demo server expects the profile 'driving'; a self-hosted
+    # osrm-routed serves one dataset and accepts any profile name.
     coord_str = ";".join(loc.to_coord_str() for loc in locations)
     url = (
-        f"{OSRM_BASE_URL}/trip/v1/{OSRM_PROFILE}/{coord_str}?"
+        f"{settings.OSRM_BASE_URL}/trip/v1/{settings.OSRM_PROFILE}/{coord_str}?"
         "source=first&roundtrip=true&steps=true&geometries=geojson&annotations=false&overview=full"
     )
     logger.debug("[OSRM] GET %s", url if len(url) < 500 else url[:500] + "…")
 
     try:
-        resp = requests.get(url, timeout=OSRM_TIMEOUT_S)
+        resp = requests.get(url, timeout=settings.OSRM_TIMEOUT_S)
     except Exception as e:  # network error
         logger.error("[OSRM] request failed: %s", e)
         return {"error": "request", "exception": str(e)}
@@ -542,7 +545,6 @@ def create_routes_from_json(
             packageSequence=package_sequence,
             mapRoute=map_route,
             truck=truck,
-            dateOfCreation=timezone.now().date(),
         )
         # Mark truck as in use
         truck.isUsed = True
@@ -568,16 +570,17 @@ def create_routes_from_json(
 # Clustering & Zone Preparation
 # ---------------------------------------------------------------------------
 
-def update_clustered_data_with_truck_and_driver(clustered_data: List[Dict[str, Any]], drivers: List[str]) -> List[Dict[str, Any]]:
+def update_clustered_data_with_truck_and_driver(clustered_data: List[Dict[str, Any]], drivers: List[str], company=None) -> List[Dict[str, Any]]:
     """Attach trucks and driver usernames to clustered zone dicts.
 
-    Picks the *smallest* truck with enough capacity for each zone (greedy).
-    Pulls driver usernames from the provided list when not already assigned.
+    Picks the *smallest* free truck of `company` with enough capacity for each
+    zone (greedy). Pulls driver usernames from the provided list when not
+    already assigned.
     """
     updated_zones: List[Dict[str, Any]] = []
 
-    # Greedy: iterate trucks sorted by capacity ascending
-    available_trucks = list(Truck.objects.all().order_by("kilogramCapacity"))
+    # Greedy: iterate the company's free trucks sorted by capacity ascending
+    available_trucks = list(Truck.objects.for_company(company).filter(isUsed=False).order_by("kilogramCapacity"))
 
     for zone_data in clustered_data:
         if isinstance(zone_data, dict):
@@ -678,18 +681,44 @@ def get_package_display_order(package_sequence: Sequence[Dict[str, Any]]) -> Dic
 # ---------------------------------------------------------------------------
 # API VIEWS
 # ---------------------------------------------------------------------------
+
+def _company_driver(request, username):
+    """Look up a driver by username within the requesting manager's company.
+
+    Returns (driver, None) or (None, error Response).
+    """
+    try:
+        driver = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return None, Response({"error": f"Driver '{username}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
+    ensure_same_company(request.user, driver)
+    return driver, None
+
+
+def _route_package_ids(route: RouteAssignment) -> List[str]:
+    return [pkg.get("packageID") for pkg in route.packageSequence if pkg.get("packageID") != "ADMIN"]
+
+
 class RoutePlannerView(APIView):
     """Cluster today's packages, assign resources, optimize routes, persist."""
 
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request, *args, **kwargs):  # noqa: D401
         today = timezone.localdate()
+        company = get_user_company(request.user)
+
+        drivers = request.data.get("drivers")
+        if not isinstance(drivers, list) or not drivers:
+            return Response({"error": "No valid drivers provided."}, status=status.HTTP_400_BAD_REQUEST)
+        for username in drivers:
+            _, error = _company_driver(request, username)
+            if error:
+                return error
+        drivers = list(drivers)  # consumed by update_clustered_data_with_truck_and_driver
 
         # Collect candidate packages (pending & due today or overdue only)
-        packages_qs = Package.objects.filter(
-            status__in=["pending"],
+        packages_qs = Package.objects.pending_for_company(company).filter(
             deliveryDate__lte=today,  # Only today and overdue packages
         ).annotate(
             priority=Case(
@@ -715,17 +744,13 @@ class RoutePlannerView(APIView):
             for pkg in packages_qs
         ]
 
-        drivers = request.data.get("drivers")
-        if not isinstance(drivers, list) or not drivers:
-            return Response({"error": "No valid drivers provided."}, status=status.HTTP_400_BAD_REQUEST)
-
         # Add check for empty packages_data
         if not packages_data:
             return Response({"error": "No packages available for the selected drivers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Cluster + assign trucks/drivers
         clustered_data = cluster_locations(packages_data=packages_data, driverUsernames=drivers)
-        clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers)
+        clustered_data = update_clustered_data_with_truck_and_driver(clustered_data, drivers=drivers, company=company)
         logger.debug("DEBUG clustered_data: %s", clustered_data)
 
         missing_truck_zones = [zone.get("zone") for zone in clustered_data if not zone.get("truckLicensePlate")]
@@ -736,13 +761,21 @@ class RoutePlannerView(APIView):
             )
 
         # Build optimized OSRM routes
-        final_routes = connect_routes_and_assignments(clustered_data)
+        try:
+            final_routes = connect_routes_and_assignments(clustered_data)
+        except RuntimeError:
+            logger.exception("Route planning failed while calling OSRM")
+            return Response({"error": "Routing service unavailable. Try again later."}, status=status.HTTP_502_BAD_GATEWAY)
         logger.debug("DEBUG final_routes: %s", final_routes)
 
+        # All drivers' routes are persisted together or not at all.
         try:
-            created_routes, response_payload = create_routes_from_json(
-                final_routes, include_return_leg_in_sequence=True
-            )
+            with transaction.atomic():
+                created_routes, response_payload = create_routes_from_json(
+                    final_routes, include_return_leg_in_sequence=True
+                )
+        except serializers.ValidationError as e:  # e.g. driver already has an active route
+            return Response({"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError as e:  # user / data error
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -750,24 +783,29 @@ class RoutePlannerView(APIView):
 
 
 class getRoutingBasedOnDriver(APIView):
-    """Return a driver's assigned route + live OSRM leg info (optional)."""
+    """Return a driver's assigned route + live OSRM leg info (optional).
 
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    A trucker may only fetch their own route; a manager may fetch any driver's
+    route in their company.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):  # noqa: D401
         username = request.data.get("username")
-        if not username:
-            return Response({"error": "Username required."}, status=status.HTTP_400_BAD_REQUEST)
+        if IsManager().has_permission(request, self):
+            if not username:
+                return Response({"error": "Username required."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                driver = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
+            ensure_same_company(request.user, driver)
+        else:
+            driver = ensure_own_username(request, username)
 
-        try:
-            driver = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            route = RouteAssignment.objects.get(driver=driver)
-        except RouteAssignment.DoesNotExist:
+        route = RouteAssignment.objects.current_for(driver)
+        if route is None:
             return Response({"error": "No route assignment found for this driver"}, status=status.HTTP_404_NOT_FOUND)
 
         package_display_order = get_package_display_order(route.packageSequence)
@@ -802,27 +840,37 @@ class getRoutingBasedOnDriver(APIView):
 
 
 class getAllRoutings(APIView):
+    """All active routes of the manager's company.
+
+    Any active route counts, whatever its creation date: a route left active
+    from an earlier day still blocks its driver, so it must be visible here.
+    """
+
+    permission_classes = [IsAuthenticated, IsManager]
+
     def get(self, request):  # noqa: D401
-        today = timezone.localdate()
-        routes_today = RouteAssignment.objects.filter(dateOfCreation=today, isActive=True)
-        serializer = RouteAssignmentSerializer(routes_today, many=True)
+        routes = RouteAssignment.objects.for_company(get_user_company(request.user)).filter(isActive=True)
+        serializer = RouteAssignmentSerializer(routes, many=True)
         return Response(serializer.data)
 
 
 class finishRoute(APIView):
+    permission_classes = [IsAuthenticated, IsTrucker]
+
     def post(self, request):  # noqa: D401
-        driver = User.objects.get(username=request.data.get("username"))
-        route = RouteAssignment.objects.get(driver=driver)
-        if route.isActive:
-            route.isActive = False
-        else:
-            return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
+        driver = ensure_own_username(request, request.data.get("username"))
+        route = RouteAssignment.objects.active_for(driver)
+        if route is None:
+            if RouteAssignment.objects.current_for(driver) is not None:
+                return Response({"detail": "Route is already inactive"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No route assignment found for this driver"}, status=status.HTTP_404_NOT_FOUND)
+        route.isActive = False
         route.save()
 
         # Create delivery history directly
         try:
             delivered_packages = Package.objects.filter(
-                packageID__in=[pkg.get("packageID") for pkg in route.packageSequence if pkg.get("packageID") != "ADMIN"],
+                packageID__in=_route_package_ids(route),
                 status="delivered",
             )
 
@@ -830,7 +878,7 @@ class finishRoute(APIView):
             duration_hours = request.data.get("duration_hours", 0)
 
             delivery_history, created = DeliveryHistory.objects.get_or_create(
-                delivery_date=timezone.now().date(),
+                delivery_date=timezone.localdate(),
                 driver=driver,
                 defaults={
                     "truck": route.truck,
@@ -862,17 +910,20 @@ class finishRoute(APIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
-        except Exception as e:  # fail soft
+        except Exception:  # fail soft
+            logger.exception("Failed to create delivery history for %s", driver.username)
             return Response(
                 {
                     "detail": "Marked route as finished but failed to create delivery history",
-                    "error": str(e),
+                    "error": "Delivery history could not be created.",
                 },
                 status=status.HTTP_201_CREATED,
             )
 
 
 class getReturnRoute(APIView):
+    permission_classes = [IsAuthenticated, IsTrucker]
+
     def post(self, request):  # noqa: D401
         try:
             current_lat = float(request.data.get("currentLat"))
@@ -882,6 +933,8 @@ class getReturnRoute(APIView):
             driver_username = request.data.get("username")
         except (TypeError, ValueError):
             return Response({"error": "Invalid coordinates provided"}, status=status.HTTP_400_BAD_REQUEST)
+        if driver_username:
+            ensure_own_username(request, driver_username)
 
         osrm_locs = [
             Location(lon=current_lng, lat=current_lat, package_info={}),
@@ -897,15 +950,15 @@ class getReturnRoute(APIView):
             if driver_username:  # treat as driver finishing
                 try:
                     logger.debug("Creating delivery history for driver: %s", driver_username)
-                    driver = User.objects.get(username=driver_username)
+                    driver = request.user
                     route = RouteAssignment.objects.get(driver=driver, isActive=True)
 
                     delivered_packages = Package.objects.filter(
-                        packageID__in=[pkg.get("packageID") for pkg in route.packageSequence if pkg.get("packageID") != "ADMIN"],
+                        packageID__in=_route_package_ids(route),
                         status="delivered",
                     )
                     undelivered_packages = Package.objects.filter(
-                        packageID__in=[pkg.get("packageID") for pkg in route.packageSequence if pkg.get("packageID") != "ADMIN"],
+                        packageID__in=_route_package_ids(route),
                         status="undelivered",
                     )
 
@@ -913,7 +966,7 @@ class getReturnRoute(APIView):
                     undelivered_kilos = undelivered_packages.aggregate(total_weight=Sum("weight"))["total_weight"] or 0.00
 
                     delivery_history, created = DeliveryHistory.objects.get_or_create(
-                        delivery_date=timezone.now().date(),
+                        delivery_date=timezone.localdate(),
                         driver=driver,
                         defaults={
                             "truck": route.truck,
@@ -953,14 +1006,22 @@ class getReturnRoute(APIView):
 
 
 class dropAllRoutes(APIView):
+    """Delete the company's routes and reset its packages/trucks (dev/testing aid)."""
+
+    permission_classes = [IsAuthenticated, IsManager]
+
     def delete(self, request):  # noqa: D401
-        count, _ = RouteAssignment.objects.all().delete()
-        Package.objects.all().update(status="pending")
+        company = get_user_company(request.user)
+        count, _ = RouteAssignment.objects.for_company(company).delete()
+        Package.objects.for_company(company).update(status="pending")
+        Truck.objects.for_company(company).update(isUsed=False)
         return Response({"detail": f"{count} route assignments dropped."}, status=status.HTTP_200_OK)
 
 
 class CheckDriverStatusView(APIView):
     """Check whether driver has an active route or completed deliveries today."""
+
+    permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request):  # noqa: D401
         driver_username = request.data.get("username")
@@ -971,12 +1032,14 @@ class CheckDriverStatusView(APIView):
             driver = User.objects.get(username=driver_username)
         except User.DoesNotExist:
             return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
+        ensure_same_company(request.user, driver)
 
-        today = timezone.now().date()
-        active_route = RouteAssignment.objects.filter(driver=driver, isActive=True, dateOfCreation=today).first()
+        today = timezone.localdate()
+        # Any active route blocks the driver, whatever its date (see getAllRoutings).
+        active_route = RouteAssignment.objects.active_for(driver)
 
         if active_route:
-            route_packages = [pkg.get("packageID") for pkg in active_route.packageSequence if pkg.get("packageID") != "ADMIN"]
+            route_packages = _route_package_ids(active_route)
             delivered_packages = Package.objects.filter(packageID__in=route_packages, status="delivered").count()
             undelivered_packages = Package.objects.filter(packageID__in=route_packages, status="undelivered").count()
 
@@ -1033,14 +1096,13 @@ class CheckDriverStatusView(APIView):
 
 class AssignTruckAndStartJourneyView(APIView):
     """Persist a prepared route (manual override / import).
-    
+
     This endpoint handles both creating new routes and updating existing routes.
     If a route already exists for the driver (e.g., from the plan endpoint),
     it will update that route instead of creating a new one.
     """
 
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated, IsManager]
+    permission_classes = [IsAuthenticated, IsManager]
 
     def post(self, request, *args, **kwargs):  # noqa: D401
         driver_username = request.data.get("driverUsername")
@@ -1050,47 +1112,49 @@ class AssignTruckAndStartJourneyView(APIView):
 
         if not all([driver_username, truck_license_plate, package_sequence, map_route]):
             return Response({"error": "Missing required data."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(package_sequence, list):
+            return Response({"error": "packageSequence must be a list."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            driver = User.objects.get(username=driver_username)
-        except User.DoesNotExist:
-            return Response({"error": f"Driver '{driver_username}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        driver, error = _company_driver(request, driver_username)
+        if error:
+            return error
 
+        company = get_user_company(request.user)
         try:
-            truck = Truck.objects.get(licensePlate=truck_license_plate)
+            truck = Truck.objects.for_company(company).get(licensePlate=truck_license_plate)
         except Truck.DoesNotExist:
             return Response({"error": f"Truck '{truck_license_plate}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         # Check if a route already exists for this driver (from plan endpoint)
-        existing_route = RouteAssignment.objects.filter(driver=driver, isActive=True).first()
-        
+        existing_route = RouteAssignment.objects.active_for(driver)
+
         if existing_route:
             # Update existing route instead of creating a new one
             old_truck = existing_route.truck
-            
+
             # Check if the new truck is already in use by another route
             if truck.isUsed and (not old_truck or old_truck.pk != truck.pk):
                 # Check if truck is used by a different route
                 other_route = RouteAssignment.objects.filter(truck=truck, isActive=True).exclude(pk=existing_route.pk).first()
                 if other_route:
                     return Response({"error": f"Truck '{truck_license_plate}' is already in use by another route."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Update route data
             existing_route.packageSequence = package_sequence
             existing_route.mapRoute = map_route
-            
+
             # Handle truck assignment
             if not old_truck or old_truck.pk != truck.pk:
                 # Release old truck if different
                 if old_truck:
                     old_truck.isUsed = False
                     old_truck.save()
-                
+
                 # Assign new truck
                 existing_route.truck = truck
                 truck.isUsed = True
                 truck.save()
-            
+
             existing_route.save()
             route_instance = existing_route
         else:
@@ -1101,19 +1165,19 @@ class AssignTruckAndStartJourneyView(APIView):
                     packageSequence=package_sequence,
                     mapRoute=map_route,
                     truck=truck,
-                    dateOfCreation=timezone.now().date(),
                 )
             except serializers.ValidationError as e:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:  # fail soft
-                return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception:  # fail soft
+                logger.exception("Unexpected error creating route for %s", driver_username)
+                return Response({"error": "Unexpected error while creating the route."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             truck.isUsed = True
             truck.save()
 
         # Mark packages as in transit
-        package_ids = [pkg.get("packageID") for pkg in package_sequence if pkg.get("packageID") != "ADMIN"]
-        Package.objects.filter(packageID__in=package_ids).update(status="in_transit")
+        package_ids = [pkg.get("packageID") for pkg in package_sequence if isinstance(pkg, dict) and pkg.get("packageID") != "ADMIN"]
+        Package.objects.for_company(company).filter(packageID__in=package_ids).update(status="in_transit")
 
         serializer = RouteAssignmentSerializer(route_instance)
         # Return 200 OK if updating existing route, 201 CREATED if creating new route
@@ -1124,6 +1188,8 @@ class AssignTruckAndStartJourneyView(APIView):
 class recalculateRoute(APIView):
     """Recalculate from driver's current position to remaining delivery points."""
 
+    permission_classes = [IsAuthenticated, IsTrucker]
+
     def post(self, request):  # noqa: D401
         try:
             driver_username = request.data.get("username")
@@ -1132,12 +1198,9 @@ class recalculateRoute(APIView):
         except (TypeError, ValueError):
             return Response({"error": "Invalid coordinates or username provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            driver = User.objects.get(username=driver_username)
-            route = RouteAssignment.objects.get(driver=driver, isActive=True)
-        except User.DoesNotExist:
-            return Response({"error": "Driver not found"}, status=status.HTTP_404_NOT_FOUND)
-        except RouteAssignment.DoesNotExist:
+        driver = ensure_own_username(request, driver_username)
+        route = RouteAssignment.objects.active_for(driver)
+        if route is None:
             return Response({"error": "No active route found for this driver"}, status=status.HTTP_404_NOT_FOUND)
 
         # Remaining packages = not yet marked delivered/undelivered

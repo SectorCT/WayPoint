@@ -3,41 +3,37 @@
 This module contains custom exception handlers and utility functions
 for the Django REST Framework application.
 """
-import traceback
-from django.conf import settings
+import logging
+
 from rest_framework.views import exception_handler
+
+logger = logging.getLogger(__name__)
+
 
 def custom_exception_handler(exc, context):
     """Custom exception handler for Django REST Framework.
-    
-    This handler extends the default DRF exception handler to include
-    debug information when DEBUG mode is enabled.
-    
+
+    Keeps error bodies in the shapes the client parses (`detail`, `error`, or
+    `errors` as a list/field map) and never includes exception text or stack
+    traces; those are logged server-side instead.
+
     Args:
         exc: The exception that was raised
         context: The context in which the exception occurred
-        
+
     Returns:
-        Response: The exception response with optional debug information
+        Response: The exception response, or None for unhandled exceptions
     """
-    # Call DRF's default handler first to get the standard error response
     response = exception_handler(exc, context)
 
-    # Only add debug info if we actually got a response *and* we're in DEBUG mode
-    if response is not None and settings.DEBUG:
-        # Some DRF errors give you `response.data` as a list, some as a dict
-        # so we must check the type first:
-        if isinstance(response.data, dict):
-            response.data["exception"] = str(exc)
-            response.data["trace"] = traceback.format_exc()
-        else:
-            # It's probably a list, e.g. ["This field is required", "Another error..."]
-            # You can decide how you want to handle it. For example:
-            # Turn it into a dict:
-            response.data = {
-                "errors": response.data,
-                "exception": str(exc),
-                "trace": traceback.format_exc()
-            }
+    if response is None:
+        view = context.get('view')
+        logger.exception("Unhandled exception in %s", type(view).__name__ if view else 'view', exc_info=exc)
+        return None
+
+    # A bare list (e.g. from `raise ValidationError("...")`) is wrapped so the
+    # body is always an object.
+    if isinstance(response.data, list):
+        response.data = {"errors": response.data}
 
     return response

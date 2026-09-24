@@ -362,9 +362,9 @@ setup_server() {
     fi
     
     # Setup environment file
-    if [ ! -f ".env" ] && [ -f "env_example.txt" ]; then
+    if [ ! -f ".env" ] && [ -f ".env.example" ]; then
         print_status "Creating environment file from template..."
-        cp env_example.txt .env
+        cp .env.example .env
         print_warning "Please edit .env file with your actual configuration values"
         print_status "Environment file created: $SERVER_DIR/.env"
     elif [ -f ".env" ]; then
