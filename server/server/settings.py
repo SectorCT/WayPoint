@@ -132,6 +132,13 @@ LANGUAGE_CODE = 'en-us'
 # Business dates ("today") follow this zone via timezone.localdate().
 TIME_ZONE = os.getenv('TIME_ZONE', 'Europe/Sofia')
 
+# Depot every route starts from and returns to. Defaults match the Bay Area seed
+# data (`manage.py all`); set these to the Sofia depot when using `manage.py all2`.
+WAREHOUSE_NAME = os.getenv('WAREHOUSE_NAME') or 'Google HQ Warehouse'
+WAREHOUSE_ADDRESS = os.getenv('WAREHOUSE_ADDRESS') or '1600 Amphitheatre Parkway, Mountain View, CA 94043'
+WAREHOUSE_LATITUDE = float(os.getenv('WAREHOUSE_LATITUDE') or '37.4220')
+WAREHOUSE_LONGITUDE = float(os.getenv('WAREHOUSE_LONGITUDE') or '-122.0841')
+
 USE_I18N = True
 
 USE_TZ = True

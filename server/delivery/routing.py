@@ -106,16 +106,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Factory / ADMIN sentinel record
 # ---------------------------------------------------------------------------
+# Location comes from the WAREHOUSE_* settings.
 FACTORY_ADDRESS: Dict[str, Any] = {
-    "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
-    "latitude": 37.4220,
-    "longitude": -122.0841,
+    "address": settings.WAREHOUSE_ADDRESS,
+    "latitude": settings.WAREHOUSE_LATITUDE,
+    "longitude": settings.WAREHOUSE_LONGITUDE,
     "package_info": {
-        "address": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
-        "latitude": 37.4220,
-        "longitude": -122.0841,
+        "address": settings.WAREHOUSE_ADDRESS,
+        "latitude": settings.WAREHOUSE_LATITUDE,
+        "longitude": settings.WAREHOUSE_LONGITUDE,
         "packageID": "ADMIN",
-        "recipient": "Google HQ Warehouse",
+        "recipient": settings.WAREHOUSE_NAME,
         "recipientPhoneNumber": "",
         "deliveryDate": "2025-03-21",
         "weight": 0,
