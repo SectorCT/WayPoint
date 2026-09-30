@@ -764,8 +764,15 @@ class RoutePlannerView(APIView):
         # Build optimized OSRM routes
         try:
             final_routes = connect_routes_and_assignments(clustered_data)
-        except RuntimeError:
+        except RuntimeError as e:
             logger.exception("Route planning failed while calling OSRM")
+            # OSRM is up but the depot and the packages are not connected by road,
+            # e.g. WAREHOUSE_* still points at another region than the packages.
+            if "NoTrips" in str(e):
+                return Response(
+                    {"error": "No drivable route between the depot and the packages. Check the WAREHOUSE_* depot settings."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response({"error": "Routing service unavailable. Try again later."}, status=status.HTTP_502_BAD_GATEWAY)
         logger.debug("DEBUG final_routes: %s", final_routes)
 
