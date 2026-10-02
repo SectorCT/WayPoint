@@ -15,6 +15,7 @@ from .models import OfficeDelivery
 from .serializers import OfficeDeliverySerializer
 from .email_service import DeliveryEmailService
 from django.utils import timezone
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -464,6 +465,8 @@ def optimize_office_route(request):
     except (TypeError, ValueError):
         return Response({"error": "Invalid coordinates provided"}, status=400)
     office_ids = request.data.get('office_ids', [])
+    # Opt-in: open trip current → offices → warehouse, with OSRM legs.
+    return_to_warehouse = request.data.get('return_to_warehouse') is True
 
     if not driver_username or not office_ids:
         return Response({"error": "driver_username and office_ids are required"}, status=400)
@@ -500,14 +503,28 @@ def optimize_office_route(request):
                 }
             ))
 
-        # Call OSRM for optimization
-        osrm_result = osrm_trip(locations)
+        if return_to_warehouse:
+            locations.append(Location(
+                lon=float(settings.WAREHOUSE_LONGITUDE),
+                lat=float(settings.WAREHOUSE_LATITUDE),
+                package_info={"address": settings.WAREHOUSE_ADDRESS, "warehouse": True},
+            ))
+            osrm_result = osrm_trip(locations, roundtrip=False)
+        else:
+            # Call OSRM for optimization
+            osrm_result = osrm_trip(locations)
         if "error" in osrm_result:
             logger.error("OSRM office optimization failed: %s", osrm_result)
             return Response({"error": "Routing service unavailable"}, status=502)
+        if return_to_warehouse and osrm_result.get("code") != "Ok":
+            logger.error("OSRM office optimization returned %s", osrm_result.get("code"))
+            return Response({"error": "Routing service unavailable"}, status=502)
 
         # Extract optimized route and waypoints using the proper function
-        visit_records = extract_visit_plan(osrm_result, locations)
+        if return_to_warehouse:
+            visit_records = extract_visit_plan(osrm_result, locations, include_return_leg=False)
+        else:
+            visit_records = extract_visit_plan(osrm_result, locations)
         if not visit_records:
             return Response({"error": "Failed to extract visit plan from OSRM response"}, status=500)
 
@@ -533,6 +550,17 @@ def optimize_office_route(request):
                         "longitude": office_info["longitude"],
                         "visit_order": record.visit_order
                     })
+
+        if return_to_warehouse:
+            # Offices only (no start, no warehouse), numbered 1..n by visit sequence.
+            for visit_order, office in enumerate(optimized_offices, start=1):
+                office["visit_order"] = visit_order
+            return Response({
+                "route_coordinates": route_coordinates,
+                "optimized_offices": optimized_offices,
+                "legs": osrm_result["trips"][0].get("legs", []),
+                "message": "Office route optimized successfully"
+            }, status=200)
 
         return Response({
             "route_coordinates": route_coordinates,

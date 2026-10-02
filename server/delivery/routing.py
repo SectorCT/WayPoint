@@ -70,6 +70,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -174,7 +175,7 @@ class VisitRecord:
 # OSRM Client
 # ---------------------------------------------------------------------------
 
-def osrm_trip(locations: Sequence[Location]) -> Dict[str, Any]:
+def osrm_trip(locations: Sequence[Location], roundtrip: bool = True) -> Dict[str, Any]:
     """Call OSRM Trip service (roundtrip loop starting at first coord).
 
     Parameters
@@ -182,6 +183,9 @@ def osrm_trip(locations: Sequence[Location]) -> Dict[str, Any]:
     locations:
         Ordered list of `Location` objects. First location is treated as the fixed
         start point (factory). We request `roundtrip=true` so OSRM returns there.
+    roundtrip:
+        False asks for an open trip that starts at the first location and ends at
+        the last one (`destination=last&roundtrip=false`).
 
     Returns
     -------
@@ -195,9 +199,10 @@ def osrm_trip(locations: Sequence[Location]) -> Dict[str, Any]:
     # public demo server expects the profile 'driving'; a self-hosted
     # osrm-routed serves one dataset and accepts any profile name.
     coord_str = ";".join(loc.to_coord_str() for loc in locations)
+    trip_shape = "source=first&roundtrip=true" if roundtrip else "source=first&destination=last&roundtrip=false"
     url = (
         f"{settings.OSRM_BASE_URL}/trip/v1/{settings.OSRM_PROFILE}/{coord_str}?"
-        "source=first&roundtrip=true&steps=true&geometries=geojson&annotations=false&overview=full"
+        f"{trip_shape}&steps=true&geometries=geojson&annotations=false&overview=full"
     )
     logger.debug("[OSRM] GET %s", url if len(url) < 500 else url[:500] + "…")
 
@@ -221,16 +226,76 @@ def osrm_trip(locations: Sequence[Location]) -> Dict[str, Any]:
     return js
 
 
+def _osrm_route_once(locations: Sequence[Location], start_bearing: Optional[float]) -> Dict[str, Any]:
+    coord_str = ";".join(loc.to_coord_str() for loc in locations)
+    url = (
+        f"{settings.OSRM_BASE_URL}/route/v1/{settings.OSRM_PROFILE}/{coord_str}?"
+        "steps=true&geometries=geojson&overview=full&annotations=false"
+    )
+    if start_bearing is not None:
+        # Constrain only the start; the remaining coordinates get empty entries.
+        url += f"&bearings={round(start_bearing) % 360},45" + ";" * (len(locations) - 1)
+    logger.debug("[OSRM] GET %s", url if len(url) < 500 else url[:500] + "…")
+
+    try:
+        resp = requests.get(url, timeout=settings.OSRM_TIMEOUT_S)
+    except Exception as e:  # network error
+        logger.error("[OSRM] request failed: %s", e)
+        return {"error": "request", "exception": str(e)}
+
+    try:
+        js = resp.json()
+    except ValueError as e:  # bad JSON
+        if resp.status_code != 200:
+            logger.warning("[OSRM] non-200 status=%s body[:200]=%s", resp.status_code, resp.text[:200])
+            return {"error": resp.status_code, "body": resp.text[:500]}
+        logger.error("[OSRM] JSON decode error: %s", e)
+        return {"error": "json", "body": resp.text[:500]}
+
+    if resp.status_code != 200:
+        # OSRM reports NoRoute and friends as HTTP 400 with a JSON `code`.
+        logger.warning("[OSRM] non-200 status=%s body[:200]=%s", resp.status_code, resp.text[:200])
+        code = js.get("code") if isinstance(js, dict) else None
+        return {"error": resp.status_code, "code": code, "body": resp.text[:500]}
+
+    logger.debug("[OSRM] parsed code=%s routes=%s", js.get("code"), len(js.get("routes") or []))
+    return js
+
+
+def osrm_route(locations: Sequence[Location], start_bearing: Optional[float] = None) -> Dict[str, Any]:
+    """Call OSRM Route service: visit `locations` in the given order, with steps.
+
+    `start_bearing` (degrees from north) makes OSRM leave the first location in
+    that direction, so a reroute doesn't open with a U-turn. If that yields
+    NoRoute, retry once without it.
+
+    Returns parsed JSON on success *OR* a dict with `{"error": ...}` on failure.
+    """
+    if len(locations) < 2:
+        return {"error": "no-locations"}
+
+    js = _osrm_route_once(locations, start_bearing)
+    if start_bearing is not None and js.get("code") == "NoRoute":
+        logger.info("[OSRM] NoRoute with start bearing %s; retrying without it", start_bearing)
+        js = _osrm_route_once(locations, None)
+    return js
+
+
 # ---------------------------------------------------------------------------
 # OSRM Response Parsing
 # ---------------------------------------------------------------------------
 
-def extract_visit_plan(osrm_js: Dict[str, Any], input_locations: Sequence[Location]) -> List[VisitRecord] | None:
+def extract_visit_plan(
+    osrm_js: Dict[str, Any],
+    input_locations: Sequence[Location],
+    include_return_leg: bool = True,
+) -> List[VisitRecord] | None:
     """Build visit-ordered waypoint records from an OSRM Trip response.
 
     Correctly maps OSRM's *input-ordered* `waypoints` back to `input_locations`, then
     reorders using `waypoint_index` to produce the visit order. Appends a synthetic
-    closing ADMIN return leg.
+    closing ADMIN return leg unless `include_return_leg` is False (open trips have
+    no closing leg).
     """
     trips = osrm_js.get("trips") or []
     waypoints = osrm_js.get("waypoints") or []
@@ -287,7 +352,7 @@ def extract_visit_plan(osrm_js: Dict[str, Any], input_locations: Sequence[Locati
         )
 
     # Synthetic closing return to start (ADMIN)
-    if legs:
+    if legs and include_return_leg:
         closing_leg = legs[-1]
         factory_loc = input_locations[0]
         start_wp = annotated[0]["wp"]
@@ -1249,6 +1314,76 @@ class recalculateRoute(APIView):
         return Response({"error": "No route found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+NAVIGATE_MAX_POINTS = 25
+
+
+def _parse_number(value: Any) -> Optional[float]:
+    """A finite real number, or None (bools and numeric strings are rejected)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    value = float(value)
+    return value if math.isfinite(value) else None
+
+
+def _parse_point(point: Any) -> Optional[Location]:
+    if not isinstance(point, dict):
+        return None
+    lat = _parse_number(point.get("lat"))
+    lng = _parse_number(point.get("lng"))
+    if lat is None or lng is None or not -90 <= lat <= 90 or not -180 <= lng <= 180:
+        return None
+    return Location(lon=lng, lat=lat, package_info={})
+
+
+class NavigateRouteView(APIView):
+    """Plain route from the truck through `to` in order, with turn-by-turn steps.
+
+    No side effects: reads nothing about the trucker's route and writes nothing.
+    """
+
+    permission_classes = [IsAuthenticated, IsTrucker]
+
+    def post(self, request):  # noqa: D401
+        start = _parse_point(request.data.get("from"))
+        if start is None:
+            return Response({"error": "'from' must be {lat, lng} with valid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+
+        targets = request.data.get("to")
+        if not isinstance(targets, list) or not targets:
+            return Response({"error": "'to' must be a non-empty list of {lat, lng}"}, status=status.HTTP_400_BAD_REQUEST)
+        if len(targets) > NAVIGATE_MAX_POINTS:
+            return Response({"error": f"'to' accepts at most {NAVIGATE_MAX_POINTS} points"}, status=status.HTTP_400_BAD_REQUEST)
+        locations = [start]
+        for i, point in enumerate(targets):
+            loc = _parse_point(point)
+            if loc is None:
+                return Response({"error": f"'to[{i}]' must be {{lat, lng}} with valid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+            locations.append(loc)
+
+        bearing = request.data.get("bearing")
+        if bearing is not None:
+            bearing = _parse_number(bearing)
+            if bearing is None:
+                return Response({"error": "'bearing' must be a number of degrees"}, status=status.HTTP_400_BAD_REQUEST)
+
+        osrm_js = osrm_route(locations, start_bearing=bearing)
+        routes = osrm_js.get("routes") or []
+        if osrm_js.get("error") is not None or osrm_js.get("code") != "Ok" or not routes:
+            logger.warning("[navigate] OSRM failed: %s", {k: osrm_js.get(k) for k in ("error", "code")})
+            return Response({"error": "Routing service unavailable"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        route = routes[0]
+        return Response(
+            {
+                "coordinates": route.get("geometry", {}).get("coordinates", []),
+                "legs": route.get("legs", []),
+                "distance": route.get("distance"),
+                "duration": route.get("duration"),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 # ---------------------------------------------------------------------------
 # GeoJSON Utilities
 # ---------------------------------------------------------------------------
@@ -1311,6 +1446,7 @@ def package_sequence_to_geojson(package_sequence, include_line=True, line_name="
 __all__ = [
     "FACTORY_ADDRESS",
     "osrm_trip",
+    "osrm_route",
     "extract_visit_plan",
     "create_routes",
     "create_routes_from_json",
@@ -1328,4 +1464,5 @@ __all__ = [
     "CheckDriverStatusView",
     "AssignTruckAndStartJourneyView",
     "recalculateRoute",
+    "NavigateRouteView",
 ]

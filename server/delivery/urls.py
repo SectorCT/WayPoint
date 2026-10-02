@@ -2,7 +2,7 @@ from django.urls import path
 from .package import createPackage, deletePackage, createManyPackages, getAllPackages, getTodaysPendingPackages, mark_delivered, mark_undelivered, get_package, save_office_delivery, optimize_office_route
 from .package import OfficeListCreate, OfficeDetail, UndeliveredPackagesByOffice, UndeliveredPackagesRouteSuggestion
 from .truck import createTruck, getAllTrucks, deleteTruck, getAvailableTrucks
-from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute
+from .routing import dropAllRoutes, finishRoute, RoutePlannerView, getRoutingBasedOnDriver, getAllRoutings, getReturnRoute, CheckDriverStatusView, AssignTruckAndStartJourneyView, recalculateRoute, NavigateRouteView
 from .delivery_history import CreateDeliveryHistoryView, GetDeliveryHistoryView, GetDetailedDeliveryHistoryView, CreateTodayDeliveryHistoryView
 from .authentication import ListUnverifiedTruckers, VerifyTrucker
 from .statistics import StatisticsView
@@ -36,6 +36,7 @@ urlpatterns = [
     path('route/dropAll/', dropAllRoutes.as_view(), name = 'drop-all-routes'),
     path('route/return/', getReturnRoute.as_view(), name = 'get-return-route'),
     path('route/recalculate/', recalculateRoute.as_view(), name = 'recalculate-route'),
+    path('route/navigate/', NavigateRouteView.as_view(), name = 'navigate-route'),
     path('route/checkDriverStatus/', CheckDriverStatusView.as_view(), name = 'check-driver-status'),
 
     # Delivery History endpoints
