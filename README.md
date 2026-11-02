@@ -2,6 +2,8 @@
 
 **Save Time, Cut Costs, Deliver Smart.**
 
+Built by team Sector C at **Hack TUES 11 (2025)**, where it won the **Bosch award**.
+
 Waypoint plans daily delivery routes for a company's trucks. A manager adds packages and trucks and picks which drivers work today. Waypoint then clusters the day's packages into one zone per driver, matches each zone to a truck with enough capacity, and orders the stops into an optimised round trip. Truckers follow their route in the app, collect a signature at each drop-off, and hand anything they couldn't deliver to the nearest company office.
 
 ## ✨ Features
@@ -61,6 +63,8 @@ The demo company ID for registering new truckers is `SFLOGISTICS2024`. Only `mik
 
 Point a client at `http://localhost:8000` (from an Android emulator, use `http://10.0.2.2:8000`).
 
+The React Native app in `Client/` needs a Google Maps key for Android. Don't commit it: set `GOOGLE_MAPS_API_KEY` as an environment variable or an EAS secret. See [Client/GOOGLE_MAPS_SETUP.md](Client/GOOGLE_MAPS_SETUP.md).
+
 [server/README.md](server/README.md) covers the rest:
 - configuration (time zone, CORS, secrets)
 - running the tests
@@ -75,6 +79,13 @@ Point a client at `http://localhost:8000` (from an Android emulator, use `http:/
 - **Routing:** OSRM (public demo server by default, self-hostable via Docker), scikit-learn K-means for zoning
 - **Clients:** Flutter (current); React Native / Expo (legacy, in `Client/`)
 - **Maps:** OpenStreetMap data
+
+## 👥 Team
+
+- Svetoslav Iliev ([@Svetoslav47](https://github.com/Svetoslav47)): React Native app (frontend lead)
+- Radoslav Dimitrov ([@RKDimitrov](https://github.com/RKDimitrov))
+- Antonio Gotev ([@tonigotev](https://github.com/tonigotev))
+- Damyan Myashkov ([@DMyashkov](https://github.com/DMyashkov))
 
 ## 📜 License
 

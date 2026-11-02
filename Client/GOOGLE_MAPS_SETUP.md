@@ -1,9 +1,15 @@
 # Google Maps Setup Verification Guide
 
-## ✅ Current Status
-- API Key is correctly configured in `gradle.properties`: `YOUR_GOOGLE_API_KEY`
-- API Key is correctly injected into AndroidManifest.xml
-- The key appears in the built APK's manifest
+## 🔑 Where to put your key
+
+Never commit a real key. `android/gradle.properties` only holds the placeholder `YOUR_GOOGLE_API_KEY`.
+
+`android/app/build.gradle` reads `GOOGLE_MAPS_API_KEY` from a Gradle property or from the environment, so use one of these:
+
+- **Local builds:** `export GOOGLE_MAPS_API_KEY=your_key` before building, or add `GOOGLE_MAPS_API_KEY=your_key` to your user-level `~/.gradle/gradle.properties` (outside the repo).
+- **EAS builds:** store it as an EAS secret named `GOOGLE_MAPS_API_KEY` (`eas secret:create --name GOOGLE_MAPS_API_KEY --value your_key`); EAS passes it to the build as an environment variable.
+
+The key ends up in the APK's manifest, so restrict it to the app's package name and SHA-1 (step 2 below).
 
 ## 🔍 Troubleshooting Steps
 
@@ -36,7 +42,7 @@ Your API key is currently **unrestricted**. For production, you should restrict 
 Run this command to get your release keystore's SHA-1:
 
 ```bash
-cd /home/zayko/Documents/WayPoint/Client/android/app
+cd Client/android/app
 keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
 ```
 
@@ -77,7 +83,7 @@ Look for errors like:
 You can verify the API key is being read by the app by checking the merged manifest:
 
 ```bash
-cd /home/zayko/Documents/WayPoint/Client/android
+cd Client/android
 ./gradlew :app:processReleaseManifest
 # Then check: app/build/intermediates/merged_manifests/release/AndroidManifest.xml
 ```
@@ -102,7 +108,7 @@ cd /home/zayko/Documents/WayPoint/Client/android
 - [ ] API key has correct restrictions (or is unrestricted for testing)
 - [ ] SHA-1 fingerprint is added to API key restrictions (if restricted)
 - [ ] Billing is enabled in Google Cloud Console
-- [ ] API key is in `gradle.properties`
+- [ ] `GOOGLE_MAPS_API_KEY` is set as an environment variable, EAS secret or in `~/.gradle/gradle.properties` (not in the repo)
 - [ ] App has been rebuilt after adding API key
 - [ ] Checked Logcat for errors
 
